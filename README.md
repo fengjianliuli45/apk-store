@@ -6,6 +6,7 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 - `flutter/`：双端（Android + iOS）源码，Flutter + Dart
 - `archive/android-compose/`：旧版 Kotlin + Jetpack Compose 原生工程，仅作参考保留，不再维护
 - `docs/figma-ref/`：Figma 设计稿截图对照
+- `docs/Stopwatch-app-design-blueprint-v2.md`：现行产品 / 交互 / 架构规范（视觉以 Figma 为准）
 
 ## Flutter（当前主线）
 
