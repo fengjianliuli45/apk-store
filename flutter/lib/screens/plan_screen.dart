@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../data/training_catalog.dart';
+import '../planner/plan_adapter.dart';
+import '../state/plan_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
 /// 计划 tab, embedded only inside the social module's bottom bar (screen
 /// screen-social-feed, node 193:65) — never shown on Home. table_calendar
-/// over the same fixed weekly plan used on the 训练 tab, marking training
-/// days and listing the selected day's moves.
+/// over the generated plan's weekly schedule when one exists, falling back
+/// to the fixed weekly sample otherwise (see TrainingScreen).
 class PlanScreen extends StatefulWidget {
-  const PlanScreen({super.key});
+  const PlanScreen({super.key, required this.plan});
+
+  final PlanController plan;
 
   @override
   State<PlanScreen> createState() => _PlanScreenState();
@@ -22,7 +26,11 @@ class _PlanScreenState extends State<PlanScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedPlan = TrainingCatalog.forDate(_selectedDay);
+    final generated = widget.plan.plan;
+    final selectedPlan =
+        generated != null ? dayWorkoutForDate(generated, _selectedDay) : TrainingCatalog.forDate(_selectedDay);
+    bool isRestDay(DateTime date) =>
+        generated != null ? dayWorkoutForDate(generated, date).isRestDay : TrainingCatalog.forDate(date).isRestDay;
     return Column(
         children: [
           Padding(
@@ -58,7 +66,7 @@ class _PlanScreenState extends State<PlanScreen> {
                   titleCentered: true,
                   titleTextStyle: TextStyle(fontFamily: AppFonts.inter, fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.ink),
                 ),
-                eventLoader: (day) => TrainingCatalog.forDate(day).isRestDay ? const [] : const [1],
+                eventLoader: (day) => isRestDay(day) ? const [] : const [1],
               ),
             ),
           ),

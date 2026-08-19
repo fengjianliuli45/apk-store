@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/chat_controller.dart';
 import '../state/diet_log_controller.dart';
+import '../state/plan_controller.dart';
 import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../widgets/app_bottom_nav.dart';
@@ -22,6 +23,7 @@ class SocialShell extends StatefulWidget {
     required this.dietLog,
     required this.chat,
     required this.settings,
+    required this.plan,
     required this.onLogout,
     this.initialTab = 3,
   });
@@ -30,6 +32,7 @@ class SocialShell extends StatefulWidget {
   final DietLogController dietLog;
   final ChatController chat;
   final SettingsController settings;
+  final PlanController plan;
   final VoidCallback onLogout;
 
   /// One of 0 (训练), 1 (计划), 3 (社交) or 4 (我的).
@@ -60,8 +63,8 @@ class _SocialShellState extends State<SocialShell> {
             child: IndexedStack(
               index: _localIndex(_tabIndex),
               children: [
-                const TrainingScreen(),
-                const PlanScreen(),
+                TrainingScreen(plan: widget.plan),
+                PlanScreen(plan: widget.plan),
                 SocialFeedScreen(
                   controller: widget.controller,
                   onBack: () => Navigator.of(context).pop(),

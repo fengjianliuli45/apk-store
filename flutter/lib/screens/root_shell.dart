@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../state/chat_controller.dart';
 import '../state/diet_log_controller.dart';
+import '../state/plan_controller.dart';
 import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../state/workout_session_controller.dart';
@@ -15,9 +16,10 @@ import 'social_shell.dart';
 /// are pushed on top via Navigator, not sibling tabs behind a shared bottom
 /// nav — see the Figma reference, each module has its own chrome.
 class RootShell extends StatefulWidget {
-  const RootShell({super.key, required this.onLogout});
+  const RootShell({super.key, required this.onLogout, required this.plan});
 
   final VoidCallback onLogout;
+  final PlanController plan;
 
   @override
   State<RootShell> createState() => _RootShellState();
@@ -67,6 +69,7 @@ class _RootShellState extends State<RootShell> {
           dietLog: _dietLog,
           chat: _chat,
           settings: _settings,
+          plan: widget.plan,
           onLogout: widget.onLogout,
           initialTab: initialTab,
         ),

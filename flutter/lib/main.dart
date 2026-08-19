@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'screens/generating_plan_screen.dart';
+import 'screens/goal_survey_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/profile_survey_screen.dart';
 import 'screens/root_shell.dart';
+import 'screens/welcome_animation_screen.dart';
 import 'state/auth_controller.dart';
+import 'state/goal_controller.dart';
+import 'state/plan_controller.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_text_styles.dart';
 
@@ -43,20 +49,28 @@ class _AppGate extends StatefulWidget {
 
 class _AppGateState extends State<_AppGate> {
   final _auth = AuthController();
+  final _goal = GoalController();
+  final _plan = PlanController();
   bool _ready = false;
+  bool _welcomeShown = false;
+  Map<String, dynamic>? _pendingProfileFields;
 
   @override
   void initState() {
     super.initState();
-    _auth.addListener(_onAuthChanged);
-    _auth.load().then((_) => setState(() => _ready = true));
+    _auth.addListener(_onChanged);
+    _goal.addListener(_onChanged);
+    _plan.addListener(_onChanged);
+    Future.wait([_auth.load(), _goal.load(), _plan.load()]).then((_) => setState(() => _ready = true));
   }
 
-  void _onAuthChanged() => setState(() {});
+  void _onChanged() => setState(() {});
 
   @override
   void dispose() {
-    _auth.removeListener(_onAuthChanged);
+    _auth.removeListener(_onChanged);
+    _goal.removeListener(_onChanged);
+    _plan.removeListener(_onChanged);
     super.dispose();
   }
 
@@ -66,8 +80,33 @@ class _AppGateState extends State<_AppGate> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (!_auth.loggedIn) {
+      _welcomeShown = false;
+      _pendingProfileFields = null;
       return LoginScreen(auth: _auth);
     }
-    return RootShell(onLogout: _auth.logout);
+    if (!_goal.hasChosen) {
+      return GoalSurveyScreen(goalController: _goal);
+    }
+    if (!_plan.hasPlan) {
+      final pending = _pendingProfileFields;
+      if (pending == null) {
+        return ProfileSurveyScreen(
+          onSubmit: (fields) => setState(() => _pendingProfileFields = fields),
+        );
+      }
+      return GeneratingPlanScreen(
+        goal: _goal.goal!,
+        profileFields: pending,
+        planController: _plan,
+        onDone: () {},
+      );
+    }
+    if (!_welcomeShown) {
+      return WelcomeAnimationScreen(
+        goal: _goal.goal!,
+        onDone: () => setState(() => _welcomeShown = true),
+      );
+    }
+    return RootShell(onLogout: _auth.logout, plan: _plan);
   }
 }

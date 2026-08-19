@@ -21,6 +21,37 @@ Future<void> _skipLogin(WidgetTester tester) async {
   }
   await tester.tap(find.text('跳过，先看看'));
   await tester.pump();
+
+  // Goal survey (first login only): pick a goal, then continue.
+  await tester.tap(find.text('增肌'));
+  await tester.pump();
+  await tester.tap(find.text('继续'));
+  await tester.pump();
+
+  // Profile survey (4 steps, defaults are fine — just walk through).
+  await tester.tap(find.text('下一步'));
+  await tester.pump();
+  await tester.tap(find.text('下一步'));
+  await tester.pump();
+  await tester.tap(find.text('下一步'));
+  await tester.pump();
+  await tester.tap(find.text('生成计划'));
+  await tester.pump();
+
+  // Generating plan: the exercise-library asset load is real IO — it
+  // doesn't respect FakeAsync's virtual clock, so let real time pass
+  // first. Then the screen's own minimum-perceived-duration delay
+  // (Future.delayed, fake-zone since it's created after that) needs
+  // virtual time advanced instead.
+  await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 500)));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 1000));
+  await tester.pump();
+
+  // Welcome animation: skip straight through, no need to wait on the
+  // (missing in tests) MiniMax clip or its placeholder pulse animation.
+  await tester.tap(find.text('进入 App'));
+  await tester.pump();
 }
 
 void main() {

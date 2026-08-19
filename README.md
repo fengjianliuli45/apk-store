@@ -10,7 +10,7 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 
 ## Flutter（当前主线）
 
-应用 ID / Bundle ID 统一为 `com.restpod.hud`。当前已接入：本地手机号 + OTP 登录、首页真计时训练舱、社交圈真评论、饮食打卡（相机/条码+历史+食谱）、训练与计划日历 tab、本地消息会话、附近的人地图、设置页、语音条；Unity 训练舱仍是占位，规划见 `docs/FEATURE_PLAN.md`。
+应用 ID / Bundle ID 统一为 `com.restpod.hud`。当前已接入：本地手机号 + OTP 登录、目标调研 + 身体数据问卷 → `PlannerGateway` 生成真实训练/营养计划（`lib/planner/` 是 [fitness-planner](https://github.com/fengjianliuli45/fitness-planner) 引擎的 Dart 移植，逐字段核对过与 Python 版一致，离线跑在设备上）、个性化欢迎动画、首页真计时训练舱、社交圈真评论、饮食打卡（相机/条码+历史+食谱）、训练与计划日历 tab（读生成的计划，无计划时回退固定示例）、本地消息会话、附近的人地图、设置页、语音条；Unity 训练舱仍是占位，规划见 `docs/FEATURE_PLAN.md`。
 
 ### Android
 
