@@ -1,144 +1,202 @@
 import 'package:flutter/material.dart';
 
+import '../state/diet_log_controller.dart';
+import '../state/workout_session_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_bottom_nav.dart';
+import '../widgets/dual_ring_painter.dart';
 import '../widgets/gradient_background.dart';
+import '../widgets/voice_bar.dart';
+import 'diet/diet_capture_screen.dart';
 import 'placeholder_screens.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
+    required this.session,
+    required this.dietLog,
     required this.onSelectTab,
   });
 
+  final WorkoutSessionController session;
+  final DietLogController dietLog;
   final ValueChanged<int> onSelectTab;
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  void _enterPod() {
+    if (widget.session.phase == WorkoutPhase.idle) {
+      widget.session.startSession();
+      widget.session.startSet();
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => UnityCoachPlaceholderScreen(session: widget.session),
+      ),
+    );
+  }
+
+  void _handleVoiceCommand(VoiceCommand command) {
+    switch (command) {
+      case VoiceCommand.startTraining:
+        _enterPod();
+      case VoiceCommand.openSocial:
+        widget.onSelectTab(3);
+      case VoiceCommand.openDiet:
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => DietCaptureScreen(dietLog: widget.dietLog)),
+        );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GradientBackground(
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text('STOPWATCH', style: AppTextStyles.wordmark),
-                      Text('READY', style: AppTextStyles.ready),
-                    ],
-                  ),
+    return AnimatedBuilder(
+      animation: widget.session,
+      builder: (context, _) {
+        final session = widget.session;
+        return GradientBackground(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('STOPWATCH', style: AppTextStyles.wordmark),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandGreen,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(session.phaseLabel, style: AppTextStyles.ready),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(top: 32),
-            child: Column(
-              children: [
-                const Text('00:00.00', style: AppTextStyles.timer),
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const UnityCoachPlaceholderScreen(),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: Column(
+                  children: [
+                    Text(
+                      '当前训练计时',
+                      style: TextStyle(
+                        fontFamily: AppFonts.inter,
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
                     ),
-                  ),
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: const BoxDecoration(
-                      color: AppColors.brandGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 6),
+                    Text(session.timerText, style: AppTextStyles.timer),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 28),
+                child: GestureDetector(
+                  onTap: _enterPod,
+                  onLongPress: session.phase == WorkoutPhase.idle ? null : session.abortWorkout,
+                  child: SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        const Text(
-                          '开始训练',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: AppColors.ink,
-                          ),
+                        CustomPaint(
+                          size: const Size(220, 220),
+                          painter: DualRingPainter(progress: session.ringProgress),
                         ),
-                        Text(
-                          '点击进入准备',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontSize: 11,
-                            color: AppColors.ink.withValues(alpha: 0.6),
+                        Container(
+                          width: 168,
+                          height: 168,
+                          decoration: const BoxDecoration(
+                            color: AppColors.brandGreen,
+                            shape: BoxShape.circle,
+                          ),
+                          alignment: Alignment.center,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.fitness_center, color: AppColors.ink, size: 26),
+                              const SizedBox(height: 6),
+                              const Text(
+                                '开始训练',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.inter,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                              Text(
+                                session.phase == WorkoutPhase.idle ? '轻触进入训练舱' : '长按结束训练',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.inter,
+                                  fontSize: 11,
+                                  color: AppColors.ink.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(24),
-            child: Row(
-              children: [
-                Text(
-                  '有什么可以帮你的？',
-                  style: TextStyle(
-                    fontFamily: AppFonts.inter,
-                    color: AppColors.textMuted,
-                    fontSize: 14,
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: VoiceBar(onCommand: _handleVoiceCommand),
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => DietCaptureScreen(dietLog: widget.dietLog)),
+                      ),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppColors.brandGreen, width: 1.5),
+                        ),
+                        child: const Icon(Icons.camera_alt, color: AppColors.ink, size: 20),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => widget.onSelectTab(4),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: AppColors.brandGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person_outline,
+                          color: AppColors.ink,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              AppBottomNav(currentIndex: AppBottomNav.homeIndex, onSelect: widget.onSelectTab),
+            ],
           ),
-          const Spacer(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const CameraPlaceholderScreen(),
-                    ),
-                  ),
-                  child: const Padding(
-                    padding: EdgeInsets.all(8),
-                    child: Icon(
-                      Icons.camera_alt,
-                      color: AppColors.ink,
-                      size: 24,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => onSelectTab(4),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: AppColors.brandGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.person_outline,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          AppBottomNav(currentIndex: AppBottomNav.homeIndex, onSelect: onSelectTab),
-        ],
-      ),
+        );
+      },
     );
   }
 }

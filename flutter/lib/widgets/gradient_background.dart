@@ -11,7 +11,12 @@ class GradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-      child: SafeArea(child: child),
+      // Material ancestor for TextField/Switch/ripples used by pushed
+      // screens — these bodies aren't wrapped in a Scaffold of their own.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(child: child),
+      ),
     );
   }
 }

@@ -1,14 +1,33 @@
 import 'package:flutter/material.dart';
 
+import '../state/chat_controller.dart';
+import '../state/diet_log_controller.dart';
+import '../state/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/gradient_background.dart';
+import 'diet/diet_history_screen.dart';
+import 'diet/diet_recipes_screen.dart';
+import 'messages/chat_list_screen.dart';
+import 'nearby_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key, required this.onSelectTab});
+  const ProfileScreen({
+    super.key,
+    required this.onSelectTab,
+    required this.dietLog,
+    required this.chat,
+    required this.settings,
+    required this.onLogout,
+  });
 
   final ValueChanged<int> onSelectTab;
+  final DietLogController dietLog;
+  final ChatController chat;
+  final SettingsController settings;
+  final VoidCallback onLogout;
 
   static const _recent = [
     ('胸推 · 腿', '42:59'),
@@ -34,27 +53,40 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      '源雅女',
-                      style: TextStyle(
-                        fontFamily: AppFonts.inter,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: AppColors.ink,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        '源雅女',
+                        style: TextStyle(
+                          fontFamily: AppFonts.inter,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                          color: AppColors.ink,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '坚持训练 128 天',
-                      style: TextStyle(
-                        fontFamily: AppFonts.inter,
-                        fontSize: 12,
-                        color: AppColors.textMuted,
+                      Text(
+                        '坚持训练 128 天',
+                        style: TextStyle(
+                          fontFamily: AppFonts.inter,
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => SettingsScreen(settings: settings, onLogout: onLogout)),
+                  ),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.7), shape: BoxShape.circle),
+                    child: const Icon(Icons.settings_outlined, color: AppColors.ink, size: 20),
+                  ),
                 ),
               ],
             ),
@@ -76,53 +108,63 @@ class ProfileScreen extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: _SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          '饮食记录',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => DietHistoryScreen(dietLog: dietLog)),
+                    ),
+                    child: _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            '饮食记录',
+                            style: TextStyle(
+                              fontFamily: AppFonts.inter,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '查看今日餐次',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontSize: 11,
-                            color: AppColors.textMuted,
+                          Text(
+                            '查看今日餐次',
+                            style: TextStyle(
+                              fontFamily: AppFonts.inter,
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: _SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          '健康食谱',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => DietRecipesScreen(dietLog: dietLog)),
+                    ),
+                    child: _SectionCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            '健康食谱',
+                            style: TextStyle(
+                              fontFamily: AppFonts.inter,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.ink,
+                            ),
                           ),
-                        ),
-                        Text(
-                          '减脂 / 增肌 / 维持',
-                          style: TextStyle(
-                            fontFamily: AppFonts.inter,
-                            fontSize: 11,
-                            color: AppColors.textMuted,
+                          Text(
+                            '减脂 / 增肌 / 维持',
+                            style: TextStyle(
+                              fontFamily: AppFonts.inter,
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -170,6 +212,47 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => ChatListScreen(chat: chat)),
+                    ),
+                    child: _SectionCard(
+                      child: Row(
+                        children: const [
+                          Icon(Icons.chat_bubble_outline, size: 18, color: AppColors.ink),
+                          SizedBox(width: 8),
+                          Text('消息', style: TextStyle(fontFamily: AppFonts.inter, fontWeight: FontWeight.w600, color: AppColors.ink)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const NearbyScreen()),
+                    ),
+                    child: _SectionCard(
+                      child: Row(
+                        children: const [
+                          Icon(Icons.place_outlined, size: 18, color: AppColors.ink),
+                          SizedBox(width: 8),
+                          Text('附近的人', style: TextStyle(fontFamily: AppFonts.inter, fontWeight: FontWeight.w600, color: AppColors.ink)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),

@@ -9,7 +9,7 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 
 ## Flutter（当前主线）
 
-应用 ID / Bundle ID 统一为 `com.restpod.hud`。
+应用 ID / Bundle ID 统一为 `com.restpod.hud`。当前已接入：本地手机号 + OTP 登录、首页真计时训练舱、社交圈真评论、饮食打卡（相机/条码+历史+食谱）、训练与计划日历 tab、本地消息会话、附近的人地图、设置页、语音条；Unity 训练舱仍是占位，规划见 `docs/FEATURE_PLAN.md`。
 
 ### Android
 

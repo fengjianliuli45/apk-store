@@ -17,7 +17,10 @@ class SocialFeedController extends ChangeNotifier {
       title: '完成胸推日',
       meta: '4 组卧推 · 36 分钟',
       likes: 24,
-      comments: 6,
+      comments: [
+        Comment(authorName: '陈可', text: '今天状态不错啊！', time: '07:20'),
+        Comment(authorName: '阿宇', text: '卧推重量加了吗', time: '08:02'),
+      ],
     ),
     SocialPost(
       authorName: '陈可',
@@ -28,7 +31,9 @@ class SocialFeedController extends ChangeNotifier {
       title: '夜跑收工',
       meta: '5.2 km · 28:16',
       likes: 18,
-      comments: 3,
+      comments: [
+        Comment(authorName: '林晨', text: '配速稳，带带我', time: '21:55'),
+      ],
     ),
   ];
 
@@ -38,8 +43,10 @@ class SocialFeedController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addComment(SocialPost post) {
-    post.comments += 1;
+  void addComment(SocialPost post, String text) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return;
+    post.comments.add(Comment(authorName: '我', text: trimmed, time: '刚刚'));
     notifyListeners();
   }
 

@@ -2,6 +2,18 @@ import 'package:flutter/material.dart';
 
 enum PostTag { strength, cardio }
 
+class Comment {
+  Comment({
+    required this.authorName,
+    required this.text,
+    required this.time,
+  });
+
+  final String authorName;
+  final String text;
+  final String time;
+}
+
 class SocialPost {
   SocialPost({
     required this.authorName,
@@ -13,8 +25,8 @@ class SocialPost {
     required this.meta,
     this.likes = 0,
     this.liked = false,
-    this.comments = 0,
-  });
+    List<Comment>? comments,
+  }) : comments = comments ?? [];
 
   final String authorName;
   final String initials;
@@ -26,5 +38,5 @@ class SocialPost {
 
   int likes;
   bool liked;
-  int comments;
+  final List<Comment> comments;
 }

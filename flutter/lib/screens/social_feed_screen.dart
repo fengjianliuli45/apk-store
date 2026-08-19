@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/gradient_background.dart';
+import 'post_comments_screen.dart';
 
 class SocialFeedScreen extends StatelessWidget {
   const SocialFeedScreen({
@@ -44,7 +45,11 @@ class SocialFeedScreen extends StatelessWidget {
                         return _SocialPostCard(
                           post: post,
                           onToggleLike: () => controller.toggleLike(post),
-                          onComment: () => _showCommentDialog(context, post),
+                          onComment: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => PostCommentsScreen(controller: controller, post: post),
+                            ),
+                          ),
                         );
                       },
                     );
@@ -80,46 +85,6 @@ class SocialFeedScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  void _showCommentDialog(BuildContext context, SocialPost post) {
-    final controllerText = TextEditingController();
-    showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(
-            '回复 ${post.authorName}',
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          content: TextField(
-            controller: controllerText,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: '说点什么'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
-            ),
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: controllerText,
-              builder: (context, value, _) {
-                return TextButton(
-                  onPressed: value.text.trim().isEmpty
-                      ? null
-                      : () {
-                          controller.addComment(post);
-                          Navigator.of(dialogContext).pop();
-                        },
-                  child: const Text('发送'),
-                );
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 
@@ -380,7 +345,7 @@ class _SocialPostCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.chat_bubble_outline, color: AppColors.textMuted, size: 18),
                     const SizedBox(width: 6),
-                    Text('${post.comments}', style: AppTextStyles.cardStat),
+                    Text('${post.comments.length}', style: AppTextStyles.cardStat),
                   ],
                 ),
               ),
