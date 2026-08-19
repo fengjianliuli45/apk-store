@@ -1,10 +1,9 @@
 *.iml
 .gradle/
-/local.properties
-/.idea/
+local.properties
+.idea/
 .DS_Store
-/build/
-/app/build/
+**/build/
 /captures/
 .externalNativeBuild
 .cxx
@@ -13,3 +12,11 @@
 *.ap_
 *.dex
 *.class
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+/flutter/android/gradlew
+/flutter/android/gradlew.bat
