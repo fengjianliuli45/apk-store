@@ -6,13 +6,14 @@ import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../state/workout_session_controller.dart';
 import 'home_screen.dart';
-import 'plan_screen.dart';
 import 'profile_screen.dart';
-import 'social_feed_screen.dart';
-import 'training_screen.dart';
+import 'social_shell.dart';
 
-/// Hosts the 5 root tabs (训练 / 计划 / home / 社交 / 我的) behind the shared
-/// bottom nav. Tab index mirrors AppBottomNav: 0=训练 1=计划 2=home 3=社交 4=我的.
+/// App root: owns the controllers that need to survive across screens, and
+/// hosts Home as the single root widget (screen home-with-fab, node
+/// 207:236). 我的 and the social module (screen-social-feed, node 193:65)
+/// are pushed on top via Navigator, not sibling tabs behind a shared bottom
+/// nav — see the Figma reference, each module has its own chrome.
 class RootShell extends StatefulWidget {
   const RootShell({super.key, required this.onLogout});
 
@@ -23,7 +24,6 @@ class RootShell extends StatefulWidget {
 }
 
 class _RootShellState extends State<RootShell> {
-  int _tabIndex = 2;
   final _socialFeedController = SocialFeedController();
   final _session = WorkoutSessionController();
   final _dietLog = DietLogController();
@@ -44,29 +44,43 @@ class _RootShellState extends State<RootShell> {
     super.dispose();
   }
 
-  void _selectTab(int index) => setState(() => _tabIndex = index);
-
-  @override
-  Widget build(BuildContext context) {
-    return IndexedStack(
-      index: _tabIndex,
-      children: [
-        TrainingScreen(onSelectTab: _selectTab),
-        PlanScreen(onSelectTab: _selectTab),
-        HomeScreen(session: _session, dietLog: _dietLog, onSelectTab: _selectTab),
-        SocialFeedScreen(
-          controller: _socialFeedController,
-          onSelectTab: _selectTab,
-          onBack: () => _selectTab(2),
-        ),
-        ProfileScreen(
-          onSelectTab: _selectTab,
+  void _openProfile(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProfileScreen(
           dietLog: _dietLog,
           chat: _chat,
           settings: _settings,
           onLogout: widget.onLogout,
+          onBack: () => Navigator.of(context).pop(),
+          onOpenSocial: () => _openSocial(context),
         ),
-      ],
+      ),
+    );
+  }
+
+  void _openSocial(BuildContext context, {int initialTab = 3}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SocialShell(
+          controller: _socialFeedController,
+          dietLog: _dietLog,
+          chat: _chat,
+          settings: _settings,
+          onLogout: widget.onLogout,
+          initialTab: initialTab,
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HomeScreen(
+      session: _session,
+      dietLog: _dietLog,
+      onOpenProfile: () => _openProfile(context),
+      onOpenSocial: () => _openSocial(context),
     );
   }
 }

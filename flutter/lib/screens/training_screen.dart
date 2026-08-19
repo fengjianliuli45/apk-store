@@ -3,21 +3,17 @@ import 'package:flutter/material.dart';
 import '../data/training_catalog.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/app_bottom_nav.dart';
-import '../widgets/gradient_background.dart';
 
-/// 训练 tab: today's plan (from the fixed weekly sample) + a flat exercise
-/// library. Replaces the old "训练计划开发中" placeholder.
+/// 训练 tab, embedded only inside the social module's bottom bar (screen
+/// screen-social-feed, node 193:65) — never shown on Home. Today's plan
+/// (from the fixed weekly sample) + a flat exercise library.
 class TrainingScreen extends StatelessWidget {
-  const TrainingScreen({super.key, required this.onSelectTab});
-
-  final ValueChanged<int> onSelectTab;
+  const TrainingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final today = TrainingCatalog.forDate(DateTime.now());
-    return GradientBackground(
-      child: Column(
+    return Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(24),
@@ -95,9 +91,7 @@ class TrainingScreen extends StatelessWidget {
               ],
             ),
           ),
-          AppBottomNav(currentIndex: 0, onSelect: onSelectTab),
         ],
-      ),
     );
   }
 }

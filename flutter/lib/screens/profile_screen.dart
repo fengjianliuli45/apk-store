@@ -5,7 +5,6 @@ import '../state/diet_log_controller.dart';
 import '../state/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/app_bottom_nav.dart';
 import '../widgets/gradient_background.dart';
 import 'diet/diet_history_screen.dart';
 import 'diet/diet_recipes_screen.dart';
@@ -13,21 +12,27 @@ import 'messages/chat_list_screen.dart';
 import 'nearby_screen.dart';
 import 'settings_screen.dart';
 
+/// "我的" — reached either by pushing this screen from Home's bottom-right
+/// FAB ([onBack] set, shows a back arrow) or embedded as the social module's
+/// last tab ([onBack] left null, no back arrow — the module's own bottom bar
+/// is the way out). Never carries its own 5-tab bottom bar.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
     super.key,
-    required this.onSelectTab,
     required this.dietLog,
     required this.chat,
     required this.settings,
     required this.onLogout,
+    required this.onOpenSocial,
+    this.onBack,
   });
 
-  final ValueChanged<int> onSelectTab;
   final DietLogController dietLog;
   final ChatController chat;
   final SettingsController settings;
   final VoidCallback onLogout;
+  final VoidCallback onOpenSocial;
+  final VoidCallback? onBack;
 
   static const _recent = [
     ('胸推 · 腿', '42:59'),
@@ -44,6 +49,21 @@ class ProfileScreen extends StatelessWidget {
             padding: const EdgeInsets.all(24),
             child: Row(
               children: [
+                if (onBack != null) ...[
+                  GestureDetector(
+                    onTap: onBack,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_back, color: AppColors.ink, size: 20),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 Container(
                   width: 56,
                   height: 56,
@@ -175,7 +195,7 @@ class ProfileScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: GestureDetector(
-              onTap: () => onSelectTab(3),
+              onTap: onOpenSocial,
               child: _SectionCard(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,7 +308,6 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
-          AppBottomNav(currentIndex: 4, onSelect: onSelectTab),
         ],
       ),
     );

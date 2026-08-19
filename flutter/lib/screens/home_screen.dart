@@ -4,24 +4,28 @@ import '../state/diet_log_controller.dart';
 import '../state/workout_session_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/app_bottom_nav.dart';
 import '../widgets/dual_ring_painter.dart';
 import '../widgets/gradient_background.dart';
 import '../widgets/voice_bar.dart';
 import 'diet/diet_capture_screen.dart';
 import 'placeholder_screens.dart';
 
+/// Home (screen home-with-fab, node 207:236) is the app root — a standalone
+/// module with no bottom tab bar, just the two corner FABs that push into
+/// 我的 and 饮食, plus a bare home-indicator strip at the bottom.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.session,
     required this.dietLog,
-    required this.onSelectTab,
+    required this.onOpenProfile,
+    required this.onOpenSocial,
   });
 
   final WorkoutSessionController session;
   final DietLogController dietLog;
-  final ValueChanged<int> onSelectTab;
+  final VoidCallback onOpenProfile;
+  final VoidCallback onOpenSocial;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -45,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case VoiceCommand.startTraining:
         _enterPod();
       case VoiceCommand.openSocial:
-        widget.onSelectTab(3);
+        widget.onOpenSocial();
       case VoiceCommand.openDiet:
         Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => DietCaptureScreen(dietLog: widget.dietLog)),
@@ -175,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => widget.onSelectTab(4),
+                      onTap: widget.onOpenProfile,
                       child: Container(
                         width: 48,
                         height: 48,
@@ -192,7 +196,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              AppBottomNav(currentIndex: AppBottomNav.homeIndex, onSelect: widget.onSelectTab),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Container(
+                  width: 134,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: AppColors.ink.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
             ],
           ),
         );

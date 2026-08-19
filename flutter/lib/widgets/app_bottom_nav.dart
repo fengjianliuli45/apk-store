@@ -3,20 +3,23 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// The 5-tab bottom bar shared by every root screen: 训练 / 计划 /
-/// [home shortcut] / 社交 / 我的. The center item is a fixed lime circle
-/// (matches Figma) that always jumps back to the stopwatch home tab.
+/// The 5-slot bottom bar that belongs to the social module only (screen
+/// screen-social-feed, node 193:65): 训练 / 计划 / [center] / 社交 / 我的.
+/// The center item is a fixed lime circle (matches Figma) whose action is
+/// supplied by the caller — inside the social shell it pops back out to the
+/// Home stopwatch screen. `currentIndex` only takes 0, 1, 3 or 4; the center
+/// slot has no tab of its own.
 class AppBottomNav extends StatelessWidget {
   const AppBottomNav({
     super.key,
     required this.currentIndex,
     required this.onSelect,
+    required this.onCenterTap,
   });
 
   final int currentIndex;
   final ValueChanged<int> onSelect;
-
-  static const homeIndex = 2;
+  final VoidCallback onCenterTap;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +50,7 @@ class AppBottomNav extends StatelessWidget {
               Expanded(
                 child: Center(
                   child: GestureDetector(
-                    onTap: () => onSelect(homeIndex),
+                    onTap: onCenterTap,
                     child: Container(
                       width: 46,
                       height: 46,

@@ -4,26 +4,25 @@ import '../models/social_post.dart';
 import '../state/social_feed_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
-import '../widgets/app_bottom_nav.dart';
-import '../widgets/gradient_background.dart';
 import 'post_comments_screen.dart';
 
+/// Body of the social module's feed tab (screen screen-social-feed, node
+/// 193:65). Only ever embedded inside [SocialShell]'s IndexedStack, which
+/// supplies the shared gradient background and the module's own 5-slot
+/// bottom bar — this widget owns just its top bar and the feed itself.
 class SocialFeedScreen extends StatelessWidget {
   const SocialFeedScreen({
     super.key,
     required this.controller,
-    required this.onSelectTab,
     required this.onBack,
   });
 
   final SocialFeedController controller;
-  final ValueChanged<int> onSelectTab;
   final VoidCallback onBack;
 
   @override
   Widget build(BuildContext context) {
-    return GradientBackground(
-      child: Stack(
+    return Stack(
         children: [
           Column(
             children: [
@@ -56,12 +55,11 @@ class SocialFeedScreen extends StatelessWidget {
                   },
                 ),
               ),
-              AppBottomNav(currentIndex: 3, onSelect: onSelectTab),
             ],
           ),
           Positioned(
             right: 20,
-            bottom: 96,
+            bottom: 20,
             child: GestureDetector(
               onTap: () => _showComposeDialog(context),
               child: Container(
@@ -84,7 +82,6 @@ class SocialFeedScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
     );
   }
 
