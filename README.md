@@ -2,7 +2,7 @@
 
 Stopwatch 休息舱 HUD 的私有备份仓库。
 
-- `app-debug.apk`：Flutter Android 端可安装的 debug 包
+- `app-release.apk`：Flutter Android 端可安装的 release 包（仍用 debug 签名，见下）
 - `flutter/`：双端（Android + iOS）源码，Flutter + Dart
 - `archive/android-compose/`：旧版 Kotlin + Jetpack Compose 原生工程，仅作参考保留，不再维护
 - `docs/figma-ref/`：Figma 设计稿截图对照
@@ -16,10 +16,10 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 
 ```bash
 cd flutter
-flutter build apk --debug --split-per-abi
+flutter build apk --release --split-per-abi
 ```
 
-产物在 `flutter/build/app/outputs/flutter-apk/`。默认的 `flutter build apk --debug`（不加 `--split-per-abi`）会打出包含全部 ABI 的 fat APK，Flutter debug 引擎体积很大，通常会超过 GitHub 100MB 单文件限制；仓库根目录的 `app-debug.apk` 用的是其中的 `app-arm64-v8a-debug.apk`（覆盖绝大多数真机），作为它的副本提交。
+产物在 `flutter/build/app/outputs/flutter-apk/`。以前这里提交的是 debug 包，但 `video_player` 接入后 debug 包三个 ABI 变体都涨到了 100MB+（Flutter debug 引擎本就大，未做任何瘦身），超过 GitHub 100MB 单文件限制推不上去；release 包会做 R8 收缩 + 图标资源树摇，arm64 版本只有 ~28MB。`android/app/build.gradle.kts` 里 release 的 `signingConfig` 还是指向 debug keystore（没配真正的发布签名），所以 release 包和以前的 debug 包一样可以直接装到测试机，不用额外签名。仓库根目录的 `app-release.apk` 是 `app-arm64-v8a-release.apk`（覆盖绝大多数真机）的副本。
 
 ### iOS
 
