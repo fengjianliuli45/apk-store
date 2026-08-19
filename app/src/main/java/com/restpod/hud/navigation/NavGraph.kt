@@ -17,6 +17,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.restpod.hud.session.DietLogViewModel
 import com.restpod.hud.session.WorkoutEvent
 import com.restpod.hud.session.WorkoutSessionViewModel
 import com.restpod.hud.ui.screens.CameraScreen
@@ -53,8 +54,10 @@ private const val TransitionMs = 280
 fun RestPodNavGraph(
     navController: NavHostController = rememberNavController(),
     session: WorkoutSessionViewModel = viewModel(),
+    dietLog: DietLogViewModel = viewModel(),
 ) {
     val workoutState by session.uiState.collectAsState()
+    val dietState by dietLog.uiState.collectAsState()
 
     fun goToTab(index: Int) {
         navController.navigate(tabDestinations[index]) {
@@ -158,7 +161,11 @@ fun RestPodNavGraph(
             })
         }
         composable(Routes.STOPWATCH_HOME) {
-            StopwatchHomeScreen(onStart = { session.startSession() }, onNavigate = ::goToTab)
+            StopwatchHomeScreen(
+                onStart = { session.startSession() },
+                onNavigate = ::goToTab,
+                onOpenCamera = { navController.navigate(Routes.CAMERA) },
+            )
         }
         composable(Routes.SOCIAL_FEED) {
             SocialFeedScreen(onNavigate = ::goToTab)
@@ -170,28 +177,67 @@ fun RestPodNavGraph(
             WorkoutMapScreen(onNavigate = ::goToTab)
         }
         composable(Routes.PROFILE) {
-            ProfileScreen(onOpenSettings = { navController.navigate(Routes.SETTINGS) }, onNavigate = ::goToTab)
+            ProfileScreen(
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                onNavigate = ::goToTab,
+                onOpenHistory = { navController.navigate(Routes.DIET_HISTORY) },
+                onOpenRecipes = { navController.navigate(Routes.RECIPE) },
+            )
         }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBack = { navController.popBackStack() })
         }
         composable(Routes.CAMERA) {
-            CameraScreen(onCaptured = { navController.navigate(Routes.DIET_ANALYSIS) })
+            CameraScreen(
+                onCaptured = { bitmap ->
+                    dietLog.beginAnalysis(bitmap)
+                    navController.navigate(Routes.DIET_ANALYSIS)
+                },
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.DIET_ANALYSIS) {
-            DietAnalysisScreen(onConfirm = { navController.navigate(Routes.CONFIRM_SUCCESS) })
+            DietAnalysisScreen(
+                state = dietState,
+                onConfirm = {
+                    dietLog.confirmPending()
+                    navController.navigate(Routes.CONFIRM_SUCCESS) {
+                        popUpTo(Routes.DIET_ANALYSIS) { inclusive = true }
+                    }
+                },
+                onBack = { navController.popBackStack() },
+                onOpenHistory = { navController.navigate(Routes.DIET_HISTORY) },
+                onOpenRecipes = { navController.navigate(Routes.RECIPE) },
+            )
         }
         composable(Routes.CONFIRM_SUCCESS) {
             ConfirmSuccessScreen(
-                onContinueScanning = { navController.navigate(Routes.CAMERA) },
-                onBackToAnalysis = { navController.popBackStack(Routes.STOPWATCH_HOME, inclusive = false) },
+                meal = dietState.lastSaved,
+                onContinueScanning = {
+                    navController.navigate(Routes.CAMERA) {
+                        popUpTo(Routes.CAMERA) { inclusive = true }
+                    }
+                },
+                onViewHistory = {
+                    navController.navigate(Routes.DIET_HISTORY) {
+                        popUpTo(Routes.STOPWATCH_HOME) { inclusive = false }
+                    }
+                },
             )
         }
         composable(Routes.DIET_HISTORY) {
-            DietHistoryScreen()
+            DietHistoryScreen(
+                state = dietState,
+                onAddMeal = { navController.navigate(Routes.CAMERA) },
+                onOpenRecipes = { navController.navigate(Routes.RECIPE) },
+                onBack = { navController.popBackStack() },
+            )
         }
         composable(Routes.RECIPE) {
-            RecipeScreen()
+            RecipeScreen(
+                onBack = { navController.popBackStack() },
+                onLogRecipe = { dietLog.logRecipe(it) },
+            )
         }
         composable(Routes.COACH_READY) {
             BackHandler { session.abortWorkout() }

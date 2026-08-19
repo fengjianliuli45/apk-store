@@ -16,12 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.PersonOutline
 import androidx.compose.material3.Icon
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,19 +31,15 @@ import com.restpod.hud.ui.components.pressable
 import com.restpod.hud.ui.theme.BrandGreen
 import com.restpod.hud.ui.theme.InkDark
 import com.restpod.hud.ui.theme.TextMuted
-import kotlinx.coroutines.launch
 
 @Composable
 fun StopwatchHomeScreen(
     onStart: () -> Unit,
     onNavigate: (Int) -> Unit = {},
+    onOpenCamera: () -> Unit = {},
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
-
     GradientScreen {
-        Box(Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
                     Text("STOPWATCH", fontWeight = FontWeight.Bold, letterSpacing = 2.sp, fontSize = 11.sp, color = TextMuted)
                     Text("READY", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = BrandGreen)
@@ -98,9 +90,7 @@ fun StopwatchHomeScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .pressable(onClick = {
-                                scope.launch { snackbarHostState.showSnackbar("饮食打卡下一版") }
-                            })
+                            .pressable(onClick = onOpenCamera)
                             .padding(8.dp),
                     )
                     Box(
@@ -125,13 +115,6 @@ fun StopwatchHomeScreen(
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
                     onSelect = onNavigate,
                 )
-            }
-            SnackbarHost(
-                hostState = snackbarHostState,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 96.dp),
-            )
         }
     }
 }

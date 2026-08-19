@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.restpod.hud.ui.components.BottomNavBar
 import com.restpod.hud.ui.components.GradientScreen
 import com.restpod.hud.ui.components.PillPrimaryButton
+import com.restpod.hud.ui.components.pressable
 import com.restpod.hud.ui.components.PillSecondaryButton
 import com.restpod.hud.ui.components.SectionCard
 import com.restpod.hud.ui.theme.BrandGreen
@@ -79,7 +80,12 @@ private fun StatBlock(value: String, label: String) {
 }
 
 @Composable
-fun ProfileScreen(onOpenSettings: () -> Unit, onNavigate: (Int) -> Unit) {
+fun ProfileScreen(
+    onOpenSettings: () -> Unit,
+    onNavigate: (Int) -> Unit,
+    onOpenHistory: () -> Unit = {},
+    onOpenRecipes: () -> Unit = {},
+) {
     val recent = listOf("胸推 · 腿" to "42:59", "夜跑 · 5.2km" to "28:59", "深蹲" to "50:59")
     GradientScreen {
         Column(Modifier.fillMaxSize()) {
@@ -103,6 +109,24 @@ fun ProfileScreen(onOpenSettings: () -> Unit, onNavigate: (Int) -> Unit) {
                 StatBlock("12.4k", "消耗")
             }
             Spacer(Modifier.height(20.dp))
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                SectionCard(
+                    Modifier.weight(1f).pressable(onClick = onOpenHistory),
+                ) {
+                    Text("饮食记录", fontWeight = FontWeight.SemiBold, color = InkDark)
+                    Text("查看今日餐次", fontSize = 11.sp, color = TextMuted)
+                }
+                SectionCard(
+                    Modifier.weight(1f).pressable(onClick = onOpenRecipes),
+                ) {
+                    Text("健康食谱", fontWeight = FontWeight.SemiBold, color = InkDark)
+                    Text("减脂 / 增肌 / 维持", fontSize = 11.sp, color = TextMuted)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
             SectionCard(Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
                 Text("体能进度雷达图", fontWeight = FontWeight.SemiBold, color = InkDark)
                 Spacer(Modifier.height(8.dp))
