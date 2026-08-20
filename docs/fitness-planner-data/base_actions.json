@@ -1,0 +1,618 @@
+[
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "home",
+    "name": "band one arm standing low row",
+    "equipment": "band",
+    "gif": "0988-km0sQC0.gif"
+  },
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "home",
+    "name": "inverted row",
+    "equipment": "body weight",
+    "gif": "0499-bZGHsAZ.gif"
+  },
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "gym",
+    "name": "alternate lateral pulldown",
+    "equipment": "cable",
+    "gif": "0007-4IKbhHV.gif"
+  },
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell bent over row",
+    "equipment": "barbell",
+    "gif": "0027-eZyBC3j.gif"
+  },
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "gym",
+    "name": "cable decline seated wide-grip row",
+    "equipment": "cable",
+    "gif": "0159-kesXOpB.gif"
+  },
+  {
+    "grp": "背",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell deadlift",
+    "equipment": "barbell",
+    "gif": "0032-ila4NZS.gif"
+  },
+  {
+    "grp": "肩",
+    "sub": null,
+    "loc": "home",
+    "name": "exercise ball pike push up",
+    "equipment": "stability ball",
+    "gif": "1296-sVvXT5J.gif"
+  },
+  {
+    "grp": "肩",
+    "sub": null,
+    "loc": "home",
+    "name": "handstand push-up",
+    "equipment": "body weight",
+    "gif": "0471-rQxwMxO.gif"
+  },
+  {
+    "grp": "肩",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell seated overhead press",
+    "equipment": "barbell",
+    "gif": "0091-kTbSH9h.gif"
+  },
+  {
+    "grp": "肩",
+    "sub": null,
+    "loc": "gym",
+    "name": "dumbbell press on exercise ball",
+    "equipment": "dumbbell",
+    "gif": "1293-O8o7q4d.gif"
+  },
+  {
+    "grp": "肩",
+    "sub": null,
+    "loc": "gym",
+    "name": "dumbbell full can lateral raise",
+    "equipment": "dumbbell",
+    "gif": "0311-AQ0mC4Y.gif"
+  },
+  {
+    "grp": "二头",
+    "sub": null,
+    "loc": "home",
+    "name": "band alternating biceps curl",
+    "equipment": "band",
+    "gif": "0968-3omWx6P.gif"
+  },
+  {
+    "grp": "二头",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell curl",
+    "equipment": "barbell",
+    "gif": "0031-25GPyDY.gif"
+  },
+  {
+    "grp": "二头",
+    "sub": null,
+    "loc": "gym",
+    "name": "dumbbell alternate seated hammer curl",
+    "equipment": "dumbbell",
+    "gif": "1648-6em2Dxj.gif"
+  },
+  {
+    "grp": "二头",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell lying preacher curl",
+    "equipment": "barbell",
+    "gif": "0059-SYJ4Bkt.gif"
+  },
+  {
+    "grp": "三头",
+    "sub": null,
+    "loc": "home",
+    "name": "diamond push-up",
+    "equipment": "body weight",
+    "gif": "0283-soIB2rj.gif"
+  },
+  {
+    "grp": "三头",
+    "sub": null,
+    "loc": "home",
+    "name": "bench dip (knees bent)",
+    "equipment": "body weight",
+    "gif": "0129-RrLske5.gif"
+  },
+  {
+    "grp": "三头",
+    "sub": null,
+    "loc": "gym",
+    "name": "cable incline pushdown",
+    "equipment": "cable",
+    "gif": "0172-1PK5Uo3.gif"
+  },
+  {
+    "grp": "三头",
+    "sub": null,
+    "loc": "gym",
+    "name": "elbow dips",
+    "equipment": "body weight",
+    "gif": "3287-LkoAWAE.gif"
+  },
+  {
+    "grp": "三头",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell lying triceps extension skull crusher",
+    "equipment": "barbell",
+    "gif": "0060-h8LFzo9.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "home",
+    "name": "bodyweight drop jump squat",
+    "equipment": "body weight",
+    "gif": "3543-wfotm7S.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "home",
+    "name": "forward lunge (male)",
+    "equipment": "body weight",
+    "gif": "3470-kMzUs9Y.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "home",
+    "name": "split squats",
+    "equipment": "body weight",
+    "gif": "2368-9E25EOx.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell bench front squat",
+    "equipment": "barbell",
+    "gif": "0024-Y7YcmIJ.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "gym",
+    "name": "lever alternate leg press",
+    "equipment": "leverage machine",
+    "gif": "2287-V07qpXy.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "gym",
+    "name": "lever leg extension",
+    "equipment": "leverage machine",
+    "gif": "0585-my33uHU.gif"
+  },
+  {
+    "grp": "股四头",
+    "sub": null,
+    "loc": "gym",
+    "name": "dumbbell goblet squat",
+    "equipment": "dumbbell",
+    "gif": "1760-yn8yg1r.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "home",
+    "name": "dumbbell romanian deadlift",
+    "equipment": "dumbbell",
+    "gif": "1459-rR0LJzx.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "home",
+    "name": "barbell good morning",
+    "equipment": "barbell",
+    "gif": "0044-XlZ4lAC.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "home",
+    "name": "glute bridge march",
+    "equipment": "body weight",
+    "gif": "3561-GibBPPg.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "gym",
+    "name": "cable assisted inverse leg curl",
+    "equipment": "cable",
+    "gif": "3235-zHEpuuc.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell romanian deadlift",
+    "equipment": "barbell",
+    "gif": "0085-wQ2c4XD.gif"
+  },
+  {
+    "grp": "腘绳肌",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell straight leg deadlift",
+    "equipment": "barbell",
+    "gif": "0116-hrVQWvE.gif"
+  },
+  {
+    "grp": "臀",
+    "sub": null,
+    "loc": "gym",
+    "name": "resistance band hip thrusts on knees (female)",
+    "equipment": "resistance band",
+    "gif": "3236-Pjbc0Kt.gif"
+  },
+  {
+    "grp": "臀",
+    "sub": null,
+    "loc": "gym",
+    "name": "cable kickback",
+    "equipment": "cable",
+    "gif": "0860-HEJ6DIX.gif"
+  },
+  {
+    "grp": "臀",
+    "sub": null,
+    "loc": "gym",
+    "name": "lever seated hip abduction",
+    "equipment": "leverage machine",
+    "gif": "0597-CHpahtl.gif"
+  },
+  {
+    "grp": "小腿",
+    "sub": null,
+    "loc": "home",
+    "name": "bodyweight standing calf raise",
+    "equipment": "body weight",
+    "gif": "1373-bJYHBIN.gif"
+  },
+  {
+    "grp": "小腿",
+    "sub": null,
+    "loc": "home",
+    "name": "jump rope",
+    "equipment": "rope",
+    "gif": "2612-e1e76I2.gif"
+  },
+  {
+    "grp": "小腿",
+    "sub": null,
+    "loc": "home",
+    "name": "box jump down with one leg stabilization",
+    "equipment": "body weight",
+    "gif": "1374-iPm26QU.gif"
+  },
+  {
+    "grp": "小腿",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell standing calf raise",
+    "equipment": "barbell",
+    "gif": "1372-8ozhUIZ.gif"
+  },
+  {
+    "grp": "小腿",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell seated calf raise",
+    "equipment": "barbell",
+    "gif": "0088-ktsFQAZ.gif"
+  },
+  {
+    "grp": "核心",
+    "sub": null,
+    "loc": "home",
+    "name": "bodyweight incline side plank",
+    "equipment": "body weight",
+    "gif": "3544-5VXmnV5.gif"
+  },
+  {
+    "grp": "核心",
+    "sub": null,
+    "loc": "home",
+    "name": "cross body crunch",
+    "equipment": "body weight",
+    "gif": "0262-rbu5UUb.gif"
+  },
+  {
+    "grp": "核心",
+    "sub": null,
+    "loc": "home",
+    "name": "bridge - mountain climber (cross body)",
+    "equipment": "body weight",
+    "gif": "2466-9c6T1YX.gif"
+  },
+  {
+    "grp": "核心",
+    "sub": null,
+    "loc": "gym",
+    "name": "hanging leg raise",
+    "equipment": "body weight",
+    "gif": "0472-I3tsCnC.gif"
+  },
+  {
+    "grp": "腹斜",
+    "sub": null,
+    "loc": "home",
+    "name": "russian twist",
+    "equipment": "body weight",
+    "gif": "0687-XVDdcoj.gif"
+  },
+  {
+    "grp": "腹斜",
+    "sub": null,
+    "loc": "home",
+    "name": "oblique crunch v. 2",
+    "equipment": "body weight",
+    "gif": "1495-cJgSTmh.gif"
+  },
+  {
+    "grp": "腹斜",
+    "sub": null,
+    "loc": "gym",
+    "name": "cable side bend",
+    "equipment": "cable",
+    "gif": "0222-wPypxFY.gif"
+  },
+  {
+    "grp": "斜方",
+    "sub": null,
+    "loc": "home",
+    "name": "band shrug",
+    "equipment": "band",
+    "gif": "1018-trmte8s.gif"
+  },
+  {
+    "grp": "斜方",
+    "sub": null,
+    "loc": "home",
+    "name": "band reverse fly",
+    "equipment": "band",
+    "gif": "0993-sTfvVsG.gif"
+  },
+  {
+    "grp": "斜方",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell shrug",
+    "equipment": "barbell",
+    "gif": "0095-dG7tG5y.gif"
+  },
+  {
+    "grp": "斜方",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell upright row",
+    "equipment": "barbell",
+    "gif": "0120-UDlhcO8.gif"
+  },
+  {
+    "grp": "下背",
+    "sub": null,
+    "loc": "home",
+    "name": "superman push-up",
+    "equipment": "body weight",
+    "gif": "0803-4GqRrAk.gif"
+  },
+  {
+    "grp": "下背",
+    "sub": null,
+    "loc": "gym",
+    "name": "back extension on exercise ball",
+    "equipment": "stability ball",
+    "gif": "1314-qLpO4vV.gif"
+  },
+  {
+    "grp": "前臂",
+    "sub": null,
+    "loc": "home",
+    "name": "farmers walk",
+    "equipment": "dumbbell",
+    "gif": "2133-qPEzJjA.gif"
+  },
+  {
+    "grp": "前臂",
+    "sub": null,
+    "loc": "gym",
+    "name": "barbell reverse curl",
+    "equipment": "barbell",
+    "gif": "0080-xNrS20v.gif"
+  },
+  {
+    "grp": "前臂",
+    "sub": null,
+    "loc": "gym",
+    "name": "dumbbell one arm reverse wrist curl",
+    "equipment": "dumbbell",
+    "gif": "0358-BwSNDGt.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "上胸",
+    "loc": "home",
+    "name": "incline push up depth jump",
+    "equipment": "body weight",
+    "gif": "0492-CB8WET1.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "上胸",
+    "loc": "gym",
+    "name": "barbell incline bench press",
+    "equipment": "barbell",
+    "gif": "0047-3TZduzM.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "中胸",
+    "loc": "home",
+    "name": "archer push up",
+    "equipment": "body weight",
+    "gif": "3294-A9qxk2F.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "中胸",
+    "loc": "home",
+    "name": "wide hand push up",
+    "equipment": "body weight",
+    "gif": "1311-JmMVpR3.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "中胸",
+    "loc": "gym",
+    "name": "barbell bench press",
+    "equipment": "barbell",
+    "gif": "0025-EIeI8Vf.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "中胸",
+    "loc": "gym",
+    "name": "dumbbell bench press",
+    "equipment": "dumbbell",
+    "gif": "0289-SpYC0Kp.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "下胸",
+    "loc": "home",
+    "name": "decline push-up",
+    "equipment": "body weight",
+    "gif": "0279-i5cEhka.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "下胸",
+    "loc": "home",
+    "name": "chest dip",
+    "equipment": "body weight",
+    "gif": "0251-9WTm7dq.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "下胸",
+    "loc": "gym",
+    "name": "barbell decline bench press",
+    "equipment": "barbell",
+    "gif": "0033-GrO65fd.gif"
+  },
+  {
+    "grp": "胸",
+    "sub": "下胸",
+    "loc": "gym",
+    "name": "elbow dips",
+    "equipment": "body weight",
+    "gif": "3287-LkoAWAE.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "上腹",
+    "loc": "home",
+    "name": "cross body crunch",
+    "equipment": "body weight",
+    "gif": "0262-rbu5UUb.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "上腹",
+    "loc": "home",
+    "name": "reverse crunch",
+    "equipment": "body weight",
+    "gif": "0872-nCU1Ekp.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "下腹",
+    "loc": "home",
+    "name": "captains chair straight leg raise",
+    "equipment": "body weight",
+    "gif": "2963-weoDEpH.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "下腹",
+    "loc": "home",
+    "name": "dead bug",
+    "equipment": "body weight",
+    "gif": "0276-iny3m5y.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "下腹",
+    "loc": "gym",
+    "name": "hanging leg raise",
+    "equipment": "body weight",
+    "gif": "0472-I3tsCnC.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "下腹",
+    "loc": "gym",
+    "name": "hanging oblique knee raise",
+    "equipment": "body weight",
+    "gif": "1761-BaE7O6U.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "腹斜",
+    "loc": "home",
+    "name": "russian twist",
+    "equipment": "body weight",
+    "gif": "0687-XVDdcoj.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "腹斜",
+    "loc": "home",
+    "name": "oblique crunch v. 2",
+    "equipment": "body weight",
+    "gif": "1495-cJgSTmh.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "腹斜",
+    "loc": "gym",
+    "name": "cable side bend",
+    "equipment": "cable",
+    "gif": "0222-wPypxFY.gif"
+  },
+  {
+    "grp": "腹",
+    "sub": "腹斜",
+    "loc": "gym",
+    "name": "cable russian twists",
+    "equipment": "cable",
+    "gif": "0211-d9Xaxq6.gif"
+  }
+]
