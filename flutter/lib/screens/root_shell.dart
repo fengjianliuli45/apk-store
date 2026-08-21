@@ -7,7 +7,6 @@ import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../state/workout_session_controller.dart';
 import 'home_screen.dart';
-import 'profile_screen.dart';
 import 'social_shell.dart';
 
 /// App root: owns the controllers that need to survive across screens, and
@@ -36,6 +35,8 @@ class _RootShellState extends State<RootShell> {
   void initState() {
     super.initState();
     _dietLog.load();
+    _dietLog.bindPlan(widget.plan.plan);
+    _session.applyToday(widget.plan.plan);
     _chat.load();
     _settings.load();
   }
@@ -47,18 +48,7 @@ class _RootShellState extends State<RootShell> {
   }
 
   void _openProfile(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ProfileScreen(
-          dietLog: _dietLog,
-          chat: _chat,
-          settings: _settings,
-          onLogout: widget.onLogout,
-          onBack: () => Navigator.of(context).pop(),
-          onOpenSocial: () => _openSocial(context),
-        ),
-      ),
-    );
+    _openSocial(context, initialTab: 4);
   }
 
   void _openSocial(BuildContext context, {int initialTab = 3}) {
@@ -66,7 +56,6 @@ class _RootShellState extends State<RootShell> {
       MaterialPageRoute(
         builder: (_) => SocialShell(
           controller: _socialFeedController,
-          dietLog: _dietLog,
           chat: _chat,
           settings: _settings,
           plan: widget.plan,

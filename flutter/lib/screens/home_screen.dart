@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../state/diet_log_controller.dart';
 import '../state/workout_session_controller.dart';
@@ -33,7 +34,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   void _enterPod() {
-    if (widget.session.phase == WorkoutPhase.idle) {
+    if (widget.session.canStart && widget.session.phase == WorkoutPhase.idle) {
       widget.session.startSession();
       widget.session.startSet();
     }
@@ -52,165 +53,325 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.onOpenSocial();
       case VoiceCommand.openDiet:
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => DietCaptureScreen(dietLog: widget.dietLog)),
+          MaterialPageRoute(
+            builder: (_) => DietCaptureScreen(dietLog: widget.dietLog),
+          ),
         );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: widget.session,
-      builder: (context, _) {
-        final session = widget.session;
-        return GradientBackground(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('STOPWATCH', style: AppTextStyles.wordmark),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.brandGreen,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(session.phaseLabel, style: AppTextStyles.ready),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 28),
-                child: Column(
-                  children: [
-                    Text(
-                      '当前训练计时',
-                      style: TextStyle(
-                        fontFamily: AppFonts.inter,
-                        fontSize: 12,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(session.timerText, style: AppTextStyles.timer),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 28),
-                child: GestureDetector(
-                  onTap: _enterPod,
-                  onLongPress: session.phase == WorkoutPhase.idle ? null : session.abortWorkout,
-                  child: SizedBox(
-                    width: 220,
-                    height: 220,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        CustomPaint(
-                          size: const Size(220, 220),
-                          painter: DualRingPainter(progress: session.ringProgress),
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: AnimatedBuilder(
+        animation: widget.session,
+        builder: (context, _) {
+          final session = widget.session;
+          return GradientBackground(
+            showHudTexture: true,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('STOPWATCH', style: AppTextStyles.wordmark),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
                         ),
-                        Container(
-                          width: 168,
-                          height: 168,
-                          decoration: const BoxDecoration(
-                            color: AppColors.brandGreen,
-                            shape: BoxShape.circle,
+                        decoration: BoxDecoration(
+                          color: AppColors.brandGreen,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x3D6B9E00),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          session.phaseLabel,
+                          style: AppTextStyles.ready,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  height: 1,
+                  color: AppColors.ink.withValues(alpha: 0.10),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+                  child: Column(
+                    children: [
+                      Text(
+                        '当前训练计时',
+                        style: const TextStyle(
+                          fontFamily: AppFonts.jetBrainsMono,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          letterSpacing: 1.8,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(session.timerText, style: AppTextStyles.timer),
+                      const SizedBox(height: 6),
+                      Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: AppColors.ink.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 32),
+                  child: GestureDetector(
+                    onTap: _enterPod,
+                    onLongPress: session.phase == WorkoutPhase.idle
+                        ? null
+                        : session.abortWorkout,
+                    child: SizedBox(
+                      width: 220,
+                      height: 220,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (session.phase == WorkoutPhase.idle)
+                            const _FigmaIdleRings()
+                          else
+                            CustomPaint(
+                              size: const Size(220, 220),
+                              painter: DualRingPainter(
+                                progress: session.ringProgress,
+                              ),
+                            ),
+                          Container(
+                            width: 134,
+                            height: 132,
+                            decoration: BoxDecoration(
+                              color: AppColors.brandGreen,
+                              shape: BoxShape.circle,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x3D6B9E00),
+                                  blurRadius: 24,
+                                  offset: Offset(0, 12),
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SvgPicture.asset(
+                                  'assets/figma-home/dumbbell.svg',
+                                  width: 24,
+                                  height: 24,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  session.isRestDay ? '今日休息' : '开始训练',
+                                  style: const TextStyle(
+                                    fontFamily: AppFonts.chakraPetch,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: AppColors.ink,
+                                  ),
+                                ),
+                                Text(
+                                  session.phase == WorkoutPhase.idle
+                                      ? session.previewCue
+                                      : '长按结束训练',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: AppFonts.jetBrainsMono,
+                                    fontWeight: FontWeight.w500,
+                                    fontSize: 8,
+                                    letterSpacing: 0.2,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                          alignment: Alignment.center,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                  child: VoiceBar(onCommand: _handleVoiceCommand),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                DietCaptureScreen(dietLog: widget.dietLog),
+                          ),
+                        ),
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.58),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.ink.withValues(alpha: 0.08),
+                            ),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x14000000),
+                                blurRadius: 18,
+                                offset: Offset(0, 8),
+                              ),
+                            ],
+                          ),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.fitness_center, color: AppColors.ink, size: 26),
+                              SvgPicture.asset(
+                                'assets/figma-home/camera.svg',
+                                width: 18,
+                                height: 18,
+                              ),
                               const SizedBox(height: 6),
                               const Text(
-                                '开始训练',
+                                '拍照',
                                 style: TextStyle(
                                   fontFamily: AppFonts.inter,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                  color: AppColors.ink,
-                                ),
-                              ),
-                              Text(
-                                session.phase == WorkoutPhase.idle ? '轻触进入训练舱' : '长按结束训练',
-                                style: TextStyle(
-                                  fontFamily: AppFonts.inter,
-                                  fontSize: 11,
-                                  color: AppColors.ink.withValues(alpha: 0.6),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 8,
+                                  color: AppColors.textMuted,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      GestureDetector(
+                        onTap: widget.onOpenProfile,
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: AppColors.brandGreen,
+                            shape: BoxShape.circle,
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x3D6B9E00),
+                                blurRadius: 20,
+                                offset: Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SvgPicture.asset(
+                                'assets/figma-home/user.svg',
+                                width: 18,
+                                height: 18,
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                '我的',
+                                style: TextStyle(
+                                  fontFamily: AppFonts.inter,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 8,
+                                  color: AppColors.ink,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The Figma export splits each ring into a 270-degree progress asset and a
+/// 90-degree remaining asset. They must be placed back into their original
+/// quadrants; centering every SVG stretches the quarter arcs into loose bands.
+class _FigmaIdleRings extends StatelessWidget {
+  const _FigmaIdleRings();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 220,
+      height: 220,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: SizedBox(
+          width: 234,
+          height: 234,
+          child: Stack(
+            children: [
+              SvgPicture.asset(
+                'assets/figma-home/ring_readiness.svg',
+                width: 234,
+                height: 234,
               ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: VoiceBar(onCommand: _handleVoiceCommand),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => DietCaptureScreen(dietLog: widget.dietLog)),
-                      ),
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.brandGreen, width: 1.5),
-                        ),
-                        child: const Icon(Icons.camera_alt, color: AppColors.ink, size: 20),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: widget.onOpenProfile,
-                      child: Container(
-                        width: 48,
-                        height: 48,
-                        decoration: const BoxDecoration(
-                          color: AppColors.brandGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person_outline,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                    ),
-                  ],
+              Positioned(
+                left: 12,
+                top: 12,
+                child: SvgPicture.asset(
+                  'assets/figma-home/ring_readiness_remaining.svg',
+                  width: 105,
+                  height: 105,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Container(
-                  width: 134,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.ink.withValues(alpha: 0.35),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
+              Positioned(
+                left: 28,
+                top: 32,
+                child: SvgPicture.asset(
+                  'assets/figma-home/ring_today_progress.svg',
+                  width: 178,
+                  height: 170,
+                ),
+              ),
+              Positioned(
+                left: 28,
+                top: 32,
+                child: SvgPicture.asset(
+                  'assets/figma-home/ring_today_remaining.svg',
+                  width: 89,
+                  height: 85,
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

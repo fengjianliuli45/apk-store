@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../state/chat_controller.dart';
-import '../state/diet_log_controller.dart';
 import '../state/plan_controller.dart';
 import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/gradient_background.dart';
+import 'messages/chat_list_screen.dart';
 import 'plan_screen.dart';
 import 'profile_screen.dart';
 import 'social_feed_screen.dart';
@@ -20,7 +20,6 @@ class SocialShell extends StatefulWidget {
   const SocialShell({
     super.key,
     required this.controller,
-    required this.dietLog,
     required this.chat,
     required this.settings,
     required this.plan,
@@ -29,7 +28,6 @@ class SocialShell extends StatefulWidget {
   });
 
   final SocialFeedController controller;
-  final DietLogController dietLog;
   final ChatController chat;
   final SettingsController settings;
   final PlanController plan;
@@ -48,11 +46,11 @@ class _SocialShellState extends State<SocialShell> {
   void _selectTab(int index) => setState(() => _tabIndex = index);
 
   static int _localIndex(int tab) => switch (tab) {
-        0 => 0,
-        1 => 1,
-        4 => 3,
-        _ => 2,
-      };
+    0 => 0,
+    1 => 1,
+    4 => 3,
+    _ => 2,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -68,13 +66,15 @@ class _SocialShellState extends State<SocialShell> {
                 SocialFeedScreen(
                   controller: widget.controller,
                   onBack: () => Navigator.of(context).pop(),
+                  onOpenMessages: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ChatListScreen(chat: widget.chat),
+                    ),
+                  ),
                 ),
                 ProfileScreen(
-                  dietLog: widget.dietLog,
-                  chat: widget.chat,
                   settings: widget.settings,
                   onLogout: widget.onLogout,
-                  onOpenSocial: () => _selectTab(3),
                 ),
               ],
             ),

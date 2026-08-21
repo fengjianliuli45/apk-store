@@ -43,7 +43,9 @@ Future<void> _skipLogin(WidgetTester tester) async {
   // first. Then the screen's own minimum-perceived-duration delay
   // (Future.delayed, fake-zone since it's created after that) needs
   // virtual time advanced instead.
-  await tester.runAsync(() => Future.delayed(const Duration(milliseconds: 500)));
+  await tester.runAsync(
+    () => Future.delayed(const Duration(milliseconds: 500)),
+  );
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 1000));
   await tester.pump();
@@ -59,20 +61,43 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('home tab shows STOPWATCH wordmark and start button', (tester) async {
+  testWidgets('home tab shows STOPWATCH wordmark and start button', (
+    tester,
+  ) async {
     await _skipLogin(tester);
 
     expect(find.text('STOPWATCH'), findsOneWidget);
-    expect(find.text('开始训练'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Text &&
+            (widget.data == '开始训练' || widget.data == '今日休息'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('social tab shows seeded posts', (tester) async {
     await _skipLogin(tester);
-    await tester.tap(find.byIcon(Icons.groups));
-    await tester.pump();
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ME'), findsOneWidget);
+    expect(find.text('体能维度雷达图'), findsOneWidget);
+    expect(find.text('最近训练记录'), findsOneWidget);
+
+    await tester.tap(find.text('社交'));
+    await tester.pumpAndSettle();
 
     expect(find.text('社交圈'), findsOneWidget);
     expect(find.text('完成胸推日'), findsOneWidget);
     expect(find.text('夜跑收工'), findsOneWidget);
+    expect(find.byTooltip('消息'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('消息'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('消息'), findsOneWidget);
+    expect(find.text('林晨'), findsOneWidget);
   });
 }

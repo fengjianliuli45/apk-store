@@ -239,10 +239,16 @@ class DietCatalog {
 
   /// Cycles through the catalog for [slot] so repeated captures don't always
   /// land on the same template — same trick as the old Compose picker.
-  static MealTemplate estimateFor(MealSlot slot, int cursor) {
+  /// When [preferKcal] is set (from the generated meal plan), pick the closest
+  /// match first, then rotate among near matches.
+  static MealTemplate estimateFor(MealSlot slot, int cursor, {int? preferKcal}) {
     final pool = meals.where((m) => m.slot == slot).toList();
-    final list = pool.isEmpty ? meals : pool;
-    return list[cursor % list.length];
+    final list = pool.isEmpty ? List<MealTemplate>.from(meals) : pool;
+    if (preferKcal == null) return list[cursor % list.length];
+    final sorted = [...list]..sort(
+        (a, b) => (a.kcal - preferKcal).abs().compareTo((b.kcal - preferKcal).abs()),
+      );
+    return sorted[cursor % sorted.length];
   }
 
   static MacroLevel levelOf(int total, int goal) {

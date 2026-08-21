@@ -16,24 +16,25 @@ class AppTextStyles {
   AppTextStyles._();
 
   static const wordmark = TextStyle(
-    fontFamily: AppFonts.inter,
+    fontFamily: AppFonts.chakraPetch,
     fontWeight: FontWeight.bold,
-    letterSpacing: 2,
-    fontSize: 11,
-    color: AppColors.textMuted,
+    letterSpacing: 1,
+    fontSize: 16,
+    color: AppColors.ink,
   );
 
   static const ready = TextStyle(
-    fontFamily: AppFonts.inter,
+    fontFamily: AppFonts.jetBrainsMono,
     fontWeight: FontWeight.bold,
-    fontSize: 12,
-    color: AppColors.brandGreen,
+    fontSize: 10,
+    letterSpacing: 0.5,
+    color: AppColors.ink,
   );
 
   static const timer = TextStyle(
     fontFamily: AppFonts.jetBrainsMono,
     fontWeight: FontWeight.bold,
-    fontSize: 40,
+    fontSize: 48,
     color: AppColors.ink,
   );
 

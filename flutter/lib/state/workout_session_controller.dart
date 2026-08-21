@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../planner/models.dart';
+import '../planner/plan_adapter.dart';
+
 /// Session phases. Idle/Ready/Active/Rest mirror the Compose
 /// `WorkoutSessionViewModel` state machine from archive/android-compose —
 /// Flutter only drives the timer + Home UI; the pod's own Ready/Active/Rest
@@ -12,24 +15,30 @@ import 'package:flutter/foundation.dart';
 enum WorkoutPhase { idle, ready, active, rest }
 
 class SetPlan {
-  const SetPlan(this.name, this.targetReps);
+  const SetPlan(this.name, this.targetReps, {this.restMs = WorkoutSessionController.restDefaultMs});
   final String name;
   final int targetReps;
+  final int restMs;
 }
 
 class WorkoutSessionController extends ChangeNotifier {
-  static const totalSets = 4;
   static const restDefaultMs = 30000;
   static const _tickInterval = Duration(milliseconds: 50);
   static const _lastFiveMs = 5000;
   static const _repIntervalMs = 2000;
 
-  static const plans = [
+  static const _fallbackPlans = [
     SetPlan('深蹲', 12),
     SetPlan('深蹲', 12),
     SetPlan('俯卧撑', 12),
     SetPlan('俯卧撑', 12),
   ];
+
+  List<SetPlan> plans = List<SetPlan>.of(_fallbackPlans);
+  bool isRestDay = false;
+  String sessionTitle = '';
+
+  int get totalSets => plans.length;
 
   WorkoutPhase phase = WorkoutPhase.idle;
   int currentSet = 1;
@@ -44,14 +53,72 @@ class WorkoutSessionController extends ChangeNotifier {
   final Stopwatch _stopwatch = Stopwatch();
   int _lastElapsedMs = 0;
 
-  String get exerciseName => plans[currentSet - 1].name;
+  String get exerciseName => plans.isEmpty ? sessionTitle : plans[currentSet - 1].name;
 
   String get nextExerciseName =>
       currentSet < plans.length ? plans[currentSet].name : exerciseName;
 
-  int get targetReps => plans[currentSet - 1].targetReps;
+  int get targetReps => plans.isEmpty ? 0 : plans[currentSet - 1].targetReps;
+
+  int get _currentRestMs => plans.isEmpty
+      ? restDefaultMs
+      : plans[currentSet - 1].restMs.clamp(5000, 180000);
+
+  /// Binds the live session queue to today's generated workout. Rest days
+  /// leave [isRestDay] true and refuse to start a dummy set list.
+  void applyToday(GeneratedPlan? plan) {
+    if (plan == null || plan.sessions.isEmpty) {
+      plans = List<SetPlan>.of(_fallbackPlans);
+      isRestDay = false;
+      sessionTitle = '';
+      _reset(notify: false);
+      notifyListeners();
+      return;
+    }
+    final session = sessionForDate(plan, DateTime.now());
+    sessionTitle = sessionTypeLabels[session.type] ?? session.type;
+    if (session.isRest || session.exercises.isEmpty) {
+      plans = const [];
+      isRestDay = true;
+      _reset(notify: false);
+      notifyListeners();
+      return;
+    }
+    plans = _setPlansFromSession(session);
+    isRestDay = false;
+    _reset(notify: false);
+    notifyListeners();
+  }
+
+  static List<SetPlan> _setPlansFromSession(SessionResult session) {
+    final sets = <SetPlan>[];
+    for (final exercise in session.exercises) {
+      final reps = _parseTargetReps(exercise.reps);
+      final restMs = (exercise.restSec <= 0 ? 30 : exercise.restSec) * 1000;
+      for (var i = 0; i < exercise.sets; i++) {
+        sets.add(SetPlan(exercise.name, reps, restMs: restMs));
+      }
+    }
+    return sets;
+  }
+
+  static int _parseTargetReps(String reps) {
+    final nums = RegExp(r'\d+').allMatches(reps).map((m) => int.parse(m.group(0)!)).toList();
+    if (nums.isEmpty) return 10;
+    return nums.last.clamp(5, 20);
+  }
 
   bool get isRunning => phase == WorkoutPhase.active || phase == WorkoutPhase.rest;
+
+  bool get canStart => !isRestDay && plans.isNotEmpty;
+
+  /// Idle HUD subtitle: today's first move, or a rest-day cue.
+  String get previewCue {
+    if (isRestDay) return '按计划恢复';
+    if (plans.isEmpty) return '轻触进入训练舱';
+    final first = plans.first.name;
+    return '$first · $totalSets组';
+  }
 
   /// mm:ss.cc — set-elapsed while active, rest countdown while resting.
   String get timerText {
@@ -82,6 +149,7 @@ class WorkoutSessionController extends ChangeNotifier {
       };
 
   void startSession() {
+    if (plans.isEmpty) return;
     _applySet(1, WorkoutPhase.ready);
   }
 
@@ -135,8 +203,8 @@ class WorkoutSessionController extends ChangeNotifier {
 
   void _beginRest() {
     phase = WorkoutPhase.rest;
-    restRemainingMs = restDefaultMs;
-    restDurationMs = restDefaultMs;
+    restRemainingMs = _currentRestMs;
+    restDurationMs = _currentRestMs;
     isLastFiveSeconds = false;
     isPaused = false;
     _startTicker();
@@ -163,13 +231,13 @@ class WorkoutSessionController extends ChangeNotifier {
     completedReps = 0;
     setElapsedMs = 0;
     isPaused = false;
-    restRemainingMs = restDefaultMs;
-    restDurationMs = restDefaultMs;
+    restRemainingMs = _currentRestMs;
+    restDurationMs = _currentRestMs;
     isLastFiveSeconds = false;
     notifyListeners();
   }
 
-  void _reset() {
+  void _reset({bool notify = true}) {
     _ticker?.cancel();
     _ticker = null;
     _stopwatch
@@ -183,7 +251,7 @@ class WorkoutSessionController extends ChangeNotifier {
     restRemainingMs = restDefaultMs;
     restDurationMs = restDefaultMs;
     isLastFiveSeconds = false;
-    notifyListeners();
+    if (notify) notifyListeners();
   }
 
   void _startTicker() {

@@ -45,6 +45,7 @@ dependencies:
   geolocator: ^14.0.3
   speech_to_text: ^7.4.0
   video_player: ^2.9.2
+  flutter_svg: ^2.2.1
 
 dev_dependencies:
   flutter_test:
@@ -72,6 +73,9 @@ flutter:
   assets:
     - assets/videos/
     - assets/data/
+    - assets/figma-home/
+    - assets/diet/
+    - assets/profile/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

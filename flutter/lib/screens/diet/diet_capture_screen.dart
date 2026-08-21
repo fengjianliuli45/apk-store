@@ -4,17 +4,14 @@ import 'package:flutter/material.dart';
 import '../../state/diet_log_controller.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
-import '../../widgets/back_bar.dart';
-import '../../widgets/gradient_background.dart';
 import 'diet_barcode_screen.dart';
 import 'diet_estimate_sheet.dart';
 import 'diet_history_screen.dart';
 import 'diet_meal_picker_screen.dart';
 import 'diet_recipes_screen.dart';
 
-/// Replaces the old CameraPlaceholderScreen. Take a photo → the app shows a
-/// local-catalog *estimate* (never framed as AI vision), or scan a barcode →
-/// Open Food Facts lookup, or skip straight to picking a meal by hand.
+/// Figma screen-camera (199:65). The bundled meal image is only used when a
+/// live camera preview is unavailable.
 class DietCaptureScreen extends StatefulWidget {
   const DietCaptureScreen({super.key, required this.dietLog});
 
@@ -26,7 +23,6 @@ class DietCaptureScreen extends StatefulWidget {
 
 class _DietCaptureScreenState extends State<DietCaptureScreen> {
   CameraController? _controller;
-  String? _cameraError;
   bool _initializing = true;
 
   @override
@@ -38,26 +34,20 @@ class _DietCaptureScreenState extends State<DietCaptureScreen> {
   Future<void> _initCamera() async {
     try {
       final cameras = await availableCameras();
-      if (cameras.isEmpty) {
-        setState(() {
-          _cameraError = '没有可用摄像头';
-          _initializing = false;
-        });
-        return;
+      if (cameras.isNotEmpty) {
+        final controller = CameraController(
+          cameras.first,
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+        await controller.initialize();
+        if (!mounted) return;
+        setState(() => _controller = controller);
       }
-      final controller = CameraController(cameras.first, ResolutionPreset.medium, enableAudio: false);
-      await controller.initialize();
-      if (!mounted) return;
-      setState(() {
-        _controller = controller;
-        _initializing = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _cameraError = '相机不可用（$e）';
-        _initializing = false;
-      });
+    } catch (_) {
+      // Fallback image keeps the designed state useful without permission.
+    } finally {
+      if (mounted) setState(() => _initializing = false);
     }
   }
 
@@ -69,222 +59,399 @@ class _DietCaptureScreenState extends State<DietCaptureScreen> {
 
   Future<void> _takePhoto() async {
     final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) return;
-    try {
-      await controller.takePicture();
-    } catch (_) {
-      // Fall through to the catalog estimate regardless — the photo is only
-      // a visual record, the log itself comes from the local catalog.
+    if (controller != null && controller.value.isInitialized) {
+      try {
+        await controller.takePicture();
+      } catch (_) {}
     }
     if (!mounted) return;
-    _showEstimate();
-  }
-
-  void _showEstimate() {
-    final template = widget.dietLog.estimateForPhoto();
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (_) => DietEstimateSheet(
-        initial: template,
-        onReroll: widget.dietLog.estimateForPhoto,
-        onConfirm: (t) async {
-          await widget.dietLog.logTemplate(t);
-          if (!mounted) return;
-          Navigator.of(context).pop();
-          _showLoggedSnack(t.name);
-        },
-        onManualPick: () {
-          Navigator.of(context).pop();
-          _openPicker();
-        },
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DietEstimateSheet(
+          dietLog: widget.dietLog,
+          initial: widget.dietLog.estimateForPhoto(),
+          onReroll: widget.dietLog.estimateForPhoto,
+          onConfirm: widget.dietLog.logTemplate,
+          onManualPick: _openPicker,
+        ),
       ),
-    );
-  }
-
-  void _showLoggedSnack(String name) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已打卡：$name')),
-    );
-  }
-
-  void _openBarcodeScan() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => DietBarcodeScreen(dietLog: widget.dietLog)),
     );
   }
 
   void _openPicker() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => DietMealPickerScreen(dietLog: widget.dietLog)),
+      MaterialPageRoute(
+        builder: (_) => DietMealPickerScreen(dietLog: widget.dietLog),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return GradientBackground(
-      child: Column(
-        children: [
-          BackBar(
-            title: '饮食打卡',
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _IconChip(
-                  icon: Icons.history,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => DietHistoryScreen(dietLog: widget.dietLog)),
-                  ),
+    return Material(
+      color: const Color(0xFF0C0F11),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _RoundAction(
+                  icon: Icons.cancel_outlined,
+                  onTap: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(width: 8),
-                _IconChip(
-                  icon: Icons.restaurant_menu,
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => DietRecipesScreen(dietLog: widget.dietLog)),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: _buildPreview(),
               ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Text(
-                  '拍照仅作记录留存，餐次热量来自本地目录估算，不是 AI 视觉识别',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontFamily: AppFonts.inter, fontSize: 11, color: AppColors.textMuted),
+              const SizedBox(height: 28),
+              Container(
+                height: 42,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.08),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.15),
+                  ),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ActionButton(
-                        label: '拍照记录',
-                        icon: Icons.camera_alt,
-                        filled: true,
-                        onTap: _takePhoto,
+                child: AnimatedBuilder(
+                  animation: widget.dietLog,
+                  builder: (context, _) {
+                    final remaining =
+                        widget.dietLog.goals.kcal - widget.dietLog.todayKcal;
+                    final line = remaining > 0
+                        ? '拍一张你的餐食吧 · 还差 $remaining kcal'
+                        : remaining == 0
+                            ? '今日热量已达标'
+                            : '今日已超 ${-remaining} kcal';
+                    return Row(
+                      children: [
+                        const _GlowIndicator(),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            line,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: AppFonts.inter,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 30),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _cameraPreview(),
+                      ColoredBox(color: Colors.black.withValues(alpha: 0.18)),
+                      const CustomPaint(painter: _ViewfinderPainter()),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                _initializing ? '正在准备相机…' : '对准食物进行识别',
+                style: TextStyle(
+                  fontFamily: AppFonts.inter,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.70),
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _RoundAction(
+                    icon: Icons.qr_code_scanner,
+                    label: '条码',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            DietBarcodeScreen(dietLog: widget.dietLog),
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ActionButton(
-                        label: '扫条码',
-                        icon: Icons.qr_code_scanner,
-                        filled: false,
-                        onTap: _openBarcodeScan,
+                  ),
+                  GestureDetector(
+                    onTap: _takePhoto,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 4),
+                      ),
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                _ActionButton(
-                  label: '手动选择食物',
-                  icon: Icons.list_alt,
-                  filled: false,
-                  onTap: _openPicker,
-                ),
-              ],
-            ),
+                  ),
+                  _RoundAction(
+                    icon: Icons.more_horiz,
+                    label: '更多',
+                    onTap: () => _showMore(context),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildPreview() {
-    if (_initializing) {
-      return const ColoredBox(color: Colors.black12, child: Center(child: CircularProgressIndicator()));
-    }
+  Widget _cameraPreview() {
     final controller = _controller;
-    if (controller == null || _cameraError != null) {
-      return ColoredBox(
-        color: Colors.black12,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Text(
-              _cameraError ?? '相机不可用',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontFamily: AppFonts.inter, color: AppColors.textMuted),
-            ),
-          ),
+    if (controller != null && controller.value.isInitialized) {
+      return FittedBox(
+        fit: BoxFit.cover,
+        child: SizedBox(
+          width: controller.value.previewSize?.height ?? 720,
+          height: controller.value.previewSize?.width ?? 1280,
+          child: CameraPreview(controller),
         ),
       );
     }
-    return CameraPreview(controller);
+    return Image.asset('assets/diet/camera-meal.png', fit: BoxFit.cover);
+  }
+
+  void _showMore(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Row(
+            children: [
+              Expanded(
+                child: _SheetAction(
+                  icon: Icons.edit_note,
+                  label: '手动记录',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _openPicker();
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SheetAction(
+                  icon: Icons.history,
+                  label: '饮食记录',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            DietHistoryScreen(dietLog: widget.dietLog),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _SheetAction(
+                  icon: Icons.restaurant_menu,
+                  label: '推荐食谱',
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            DietRecipesScreen(dietLog: widget.dietLog),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
-class _IconChip extends StatelessWidget {
-  const _IconChip({required this.icon, required this.onTap});
-
-  final IconData icon;
-  final VoidCallback onTap;
-
+class _GlowIndicator extends StatelessWidget {
+  const _GlowIndicator();
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.6),
+  Widget build(BuildContext context) => Row(
+    children: [
+      Container(
+        width: 8,
+        height: 8,
+        decoration: const BoxDecoration(
+          color: AppColors.brandGreen,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: AppColors.brandGreen, blurRadius: 8)],
+        ),
+      ),
+      const SizedBox(width: 5),
+      Container(
+        width: 4,
+        height: 4,
+        decoration: const BoxDecoration(
+          color: AppColors.brandGreen,
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 18, color: AppColors.ink),
       ),
-    );
-  }
+    ],
+  );
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.label,
-    required this.icon,
-    required this.filled,
-    required this.onTap,
-  });
-
-  final String label;
+class _RoundAction extends StatelessWidget {
+  const _RoundAction({required this.icon, required this.onTap, this.label});
   final IconData icon;
-  final bool filled;
   final VoidCallback onTap;
-
+  final String? label;
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: filled ? AppColors.brandGreen : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: AppColors.ink),
-            const SizedBox(width: 8),
+  Widget build(BuildContext context) => GestureDetector(
+    onTap: onTap,
+    child: SizedBox(
+      width: 56,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.20)),
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          if (label != null) ...[
+            const SizedBox(height: 5),
             Text(
-              label,
-              style: const TextStyle(fontFamily: AppFonts.inter, fontWeight: FontWeight.w600, color: AppColors.ink),
+              label!,
+              style: const TextStyle(
+                fontFamily: AppFonts.inter,
+                fontSize: 10,
+                color: Colors.white70,
+              ),
             ),
           ],
-        ),
+        ],
       ),
+    ),
+  );
+}
+
+class _ViewfinderPainter extends CustomPainter {
+  const _ViewfinderPainter();
+  @override
+  void paint(Canvas canvas, Size size) {
+    final grid = Paint()..color = Colors.white.withValues(alpha: 0.12);
+    canvas.drawLine(
+      Offset(size.width / 3, 0),
+      Offset(size.width / 3, size.height),
+      grid,
+    );
+    canvas.drawLine(
+      Offset(size.width * 2 / 3, 0),
+      Offset(size.width * 2 / 3, size.height),
+      grid,
+    );
+    canvas.drawLine(
+      Offset(0, size.height / 3),
+      Offset(size.width, size.height / 3),
+      grid,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 2 / 3),
+      Offset(size.width, size.height * 2 / 3),
+      grid,
+    );
+    final corner = Paint()
+      ..color = AppColors.brandGreen
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    const i = 20.0;
+    const l = 24.0;
+    final paths = [
+      Path()
+        ..moveTo(i, i + l)
+        ..lineTo(i, i)
+        ..lineTo(i + l, i),
+      Path()
+        ..moveTo(size.width - i - l, i)
+        ..lineTo(size.width - i, i)
+        ..lineTo(size.width - i, i + l),
+      Path()
+        ..moveTo(i, size.height - i - l)
+        ..lineTo(i, size.height - i)
+        ..lineTo(i + l, size.height - i),
+      Path()
+        ..moveTo(size.width - i - l, size.height - i)
+        ..lineTo(size.width - i, size.height - i)
+        ..lineTo(size.width - i, size.height - i - l),
+    ];
+    for (final path in paths) {
+      canvas.drawPath(path, corner);
+    }
+    canvas.drawCircle(
+      size.center(Offset.zero),
+      10,
+      Paint()..color = AppColors.brandGreen.withValues(alpha: 0.25),
+    );
+    canvas.drawCircle(
+      size.center(Offset.zero),
+      4,
+      Paint()..color = AppColors.brandGreen,
     );
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _SheetAction extends StatelessWidget {
+  const _SheetAction({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F5F4),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Icon(icon),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(fontSize: 12)),
+        ],
+      ),
+    ),
+  );
 }

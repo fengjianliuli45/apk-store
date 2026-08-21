@@ -82,7 +82,10 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            '${session.exerciseName} · 第 ${session.currentSet}/${WorkoutSessionController.totalSets} 组',
+                            session.isRestDay
+                                ? (session.sessionTitle.isEmpty ? '休息日' : session.sessionTitle)
+                                : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
+                            textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
                               fontWeight: FontWeight.w600,
@@ -90,10 +93,13 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(session.timerText, style: AppTextStyles.timer.copyWith(fontSize: 28)),
+                          Text(
+                            session.isRestDay ? '按计划恢复' : session.timerText,
+                            style: AppTextStyles.timer.copyWith(fontSize: 28),
+                          ),
                           const SizedBox(height: 4),
                           Text(
-                            session.phaseLabel,
+                            session.isRestDay ? '今日无训练组' : session.phaseLabel,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
                               fontSize: 12,

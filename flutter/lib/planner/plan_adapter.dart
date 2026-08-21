@@ -33,10 +33,14 @@ Map<int, DayWorkout> weeklyPlanFromGenerated(GeneratedPlan plan) {
   };
 }
 
+SessionResult sessionForDate(GeneratedPlan plan, DateTime date) {
+  return plan.sessions[(date.weekday - 1) % plan.sessions.length];
+}
+
 /// The generated plan repeats week over week (same as TrainingCatalog),
 /// so any date maps onto the 7-day schedule by weekday.
 DayWorkout dayWorkoutForDate(GeneratedPlan plan, DateTime date) {
-  return dayWorkoutFromSession(plan.sessions[(date.weekday - 1) % plan.sessions.length]);
+  return dayWorkoutFromSession(sessionForDate(plan, date));
 }
 
 /// Flat, de-duplicated move list across the week, for the 训练 tab's 动作库.

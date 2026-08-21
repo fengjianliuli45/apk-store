@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
@@ -73,7 +74,9 @@ class _VoiceBarState extends State<VoiceBar> {
   }
 
   VoiceCommand? _matchCommand(String text) {
-    if (text.contains('训练') || text.contains('开始')) return VoiceCommand.startTraining;
+    if (text.contains('训练') || text.contains('开始')) {
+      return VoiceCommand.startTraining;
+    }
     if (text.contains('社交')) return VoiceCommand.openSocial;
     if (text.contains('饮食') || text.contains('拍照') || text.contains('吃饭')) {
       return VoiceCommand.openDiet;
@@ -92,16 +95,30 @@ class _VoiceBarState extends State<VoiceBar> {
     return GestureDetector(
       onTap: _toggleListening,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28)),
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 16,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
         child: Row(
           children: [
-            Icon(
-              _listening ? Icons.mic : Icons.mic_none,
-              color: _listening ? AppColors.brandGreen : AppColors.textMuted,
-              size: 18,
-            ),
-            const SizedBox(width: 10),
+            if (_listening)
+              const Icon(Icons.mic, color: AppColors.brandGreen, size: 16)
+            else
+              SvgPicture.asset(
+                'assets/figma-home/assistant_pulse.svg',
+                width: 16,
+                height: 16,
+              ),
+            const SizedBox(width: 12),
             Expanded(
               child: Text(
                 _hint,
@@ -109,8 +126,9 @@ class _VoiceBarState extends State<VoiceBar> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: AppFonts.inter,
-                  color: AppColors.textMuted,
+                  color: AppColors.ink,
                   fontSize: 14,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),

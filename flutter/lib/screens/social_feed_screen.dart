@@ -15,73 +15,78 @@ class SocialFeedScreen extends StatelessWidget {
     super.key,
     required this.controller,
     required this.onBack,
+    required this.onOpenMessages,
   });
 
   final SocialFeedController controller;
   final VoidCallback onBack;
+  final VoidCallback onOpenMessages;
 
   @override
   Widget build(BuildContext context) {
     return Stack(
-        children: [
-          Column(
-            children: [
-              _SocialTopBar(onBack: onBack),
-              Expanded(
-                child: AnimatedBuilder(
-                  animation: controller,
-                  builder: (context, _) {
-                    final posts = controller.posts;
-                    return ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: posts.length + 1,
-                      separatorBuilder: (_, _) => const SizedBox(height: 14),
-                      itemBuilder: (context, index) {
-                        if (index == posts.length) {
-                          return const SizedBox(height: 84);
-                        }
-                        final post = posts[index];
-                        return _SocialPostCard(
-                          post: post,
-                          onToggleLike: () => controller.toggleLike(post),
-                          onComment: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => PostCommentsScreen(controller: controller, post: post),
+      children: [
+        Column(
+          children: [
+            _SocialTopBar(onBack: onBack, onOpenMessages: onOpenMessages),
+            Expanded(
+              child: AnimatedBuilder(
+                animation: controller,
+                builder: (context, _) {
+                  final posts = controller.posts;
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: posts.length + 1,
+                    separatorBuilder: (_, _) => const SizedBox(height: 14),
+                    itemBuilder: (context, index) {
+                      if (index == posts.length) {
+                        return const SizedBox(height: 84);
+                      }
+                      final post = posts[index];
+                      return _SocialPostCard(
+                        post: post,
+                        onToggleLike: () => controller.toggleLike(post),
+                        onComment: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PostCommentsScreen(
+                              controller: controller,
+                              post: post,
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: GestureDetector(
-              onTap: () => _showComposeDialog(context),
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.brandGreen, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.add, color: AppColors.ink),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
+          ],
+        ),
+        Positioned(
+          right: 20,
+          bottom: 20,
+          child: GestureDetector(
+            onTap: () => _showComposeDialog(context),
+            child: Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.brandGreen, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.add, color: AppColors.ink),
+            ),
           ),
-        ],
+        ),
+      ],
     );
   }
 
@@ -117,7 +122,10 @@ class SocialFeedScreen extends StatelessWidget {
                     children: [
                       const Text(
                         '类型:',
-                        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       const SizedBox(width: 8),
                       _TagChip(
@@ -206,9 +214,10 @@ class _TagChip extends StatelessWidget {
 }
 
 class _SocialTopBar extends StatelessWidget {
-  const _SocialTopBar({required this.onBack});
+  const _SocialTopBar({required this.onBack, required this.onOpenMessages});
 
   final VoidCallback onBack;
+  final VoidCallback onOpenMessages;
 
   @override
   Widget build(BuildContext context) {
@@ -228,20 +237,47 @@ class _SocialTopBar extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.6),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.arrow_back, color: AppColors.ink, size: 20),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: AppColors.ink,
+                    size: 20,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
               const Text('社交圈', style: AppTextStyles.screenTitle),
             ],
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.55),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text('SOCIAL', style: AppTextStyles.socialPill),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Text('SOCIAL', style: AppTextStyles.socialPill),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: onOpenMessages,
+                tooltip: '消息',
+                visualDensity: VisualDensity.compact,
+                style: IconButton.styleFrom(
+                  minimumSize: const Size(40, 40),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: const Icon(
+                  Icons.message_outlined,
+                  color: AppColors.ink,
+                  size: 28,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -262,7 +298,9 @@ class _SocialPostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tagColor = post.tag == PostTag.strength ? AppColors.brandGreen : AppColors.cardioBlue;
+    final tagColor = post.tag == PostTag.strength
+        ? AppColors.brandGreen
+        : AppColors.cardioBlue;
     final tagLabel = post.tag == PostTag.strength ? 'STRENGTH' : 'CARDIO';
 
     return Container(
@@ -283,7 +321,10 @@ class _SocialPostCard extends StatelessWidget {
                   Container(
                     width: 38,
                     height: 38,
-                    decoration: BoxDecoration(color: post.avatarColor, shape: BoxShape.circle),
+                    decoration: BoxDecoration(
+                      color: post.avatarColor,
+                      shape: BoxShape.circle,
+                    ),
                     alignment: Alignment.center,
                     child: Text(
                       post.initials,
@@ -306,8 +347,14 @@ class _SocialPostCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: tagColor, borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: tagColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
                 child: Text(tagLabel, style: AppTextStyles.tagLabel),
               ),
             ],
@@ -327,7 +374,9 @@ class _SocialPostCard extends StatelessWidget {
                   children: [
                     Icon(
                       post.liked ? Icons.favorite : Icons.favorite_border,
-                      color: post.liked ? AppColors.likeRed : AppColors.textMuted,
+                      color: post.liked
+                          ? AppColors.likeRed
+                          : AppColors.textMuted,
                       size: 18,
                     ),
                     const SizedBox(width: 6),
@@ -340,9 +389,16 @@ class _SocialPostCard extends StatelessWidget {
                 onTap: onComment,
                 child: Row(
                   children: [
-                    const Icon(Icons.chat_bubble_outline, color: AppColors.textMuted, size: 18),
+                    const Icon(
+                      Icons.chat_bubble_outline,
+                      color: AppColors.textMuted,
+                      size: 18,
+                    ),
                     const SizedBox(width: 6),
-                    Text('${post.comments.length}', style: AppTextStyles.cardStat),
+                    Text(
+                      '${post.comments.length}',
+                      style: AppTextStyles.cardStat,
+                    ),
                   ],
                 ),
               ),

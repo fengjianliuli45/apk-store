@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/diet_catalog.dart';
 import '../models/meal.dart';
+import '../planner/models.dart';
+import '../planner/plan_sync.dart';
 
 /// Local-only meal log (shared_preferences, no server). Mirrors the shape of
 /// the old Compose DietLogViewModel but as a ChangeNotifier.
@@ -14,8 +16,14 @@ class DietLogController extends ChangeNotifier {
   final List<LoggedMeal> meals = [];
   final Map<MealSlot, int> _pickCursor = {};
   bool _loaded = false;
+  DietGoals goals = DietGoals.fallback;
 
   bool get loaded => _loaded;
+
+  void bindPlan(GeneratedPlan? plan) {
+    goals = plan == null ? DietGoals.fallback : DietGoals.fromPlan(plan);
+    notifyListeners();
+  }
 
   Future<void> load() async {
     if (_loaded) return;
@@ -41,7 +49,7 @@ class DietLogController extends ChangeNotifier {
     final slot = currentSlot();
     final cursor = _pickCursor[slot] ?? 0;
     _pickCursor[slot] = cursor + 1;
-    return DietCatalog.estimateFor(slot, cursor);
+    return DietCatalog.estimateFor(slot, cursor, preferKcal: goals.kcalForSlot(slot));
   }
 
   List<LoggedMeal> mealsOn(String dayKey) => meals.where((m) => m.dayKey == dayKey).toList();
@@ -54,6 +62,12 @@ class DietLogController extends ChangeNotifier {
   List<LoggedMeal> get todayMeals => mealsOn(todayKey);
 
   int get todayKcal => todayMeals.fold(0, (sum, m) => sum + m.kcal);
+
+  int get todayProtein => todayMeals.fold(0, (sum, m) => sum + m.proteinG);
+
+  int get todayCarbs => todayMeals.fold(0, (sum, m) => sum + m.carbG);
+
+  int get todayFat => todayMeals.fold(0, (sum, m) => sum + m.fatG);
 
   Future<LoggedMeal> logTemplate(MealTemplate template, {MealSource source = MealSource.catalogEstimate}) {
     return _log(
