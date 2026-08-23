@@ -317,6 +317,9 @@ class ProgressionResult {
     required this.doubleProgression,
     required this.nextCheckWeek,
     required this.triggers,
+    this.deloadEveryWeeks = 4,
+    this.deloadVolumePct = 60,
+    this.deloadNote = '',
   });
 
   final String strategy;
@@ -325,6 +328,9 @@ class ProgressionResult {
   final String progressionFreq;
   final String doubleProgression;
   final int nextCheckWeek;
+  final int deloadEveryWeeks;
+  final int deloadVolumePct;
+  final String deloadNote;
   final List<ReassessmentTrigger> triggers;
 
   Map<String, dynamic> toJson() => {
@@ -334,6 +340,9 @@ class ProgressionResult {
         'progression_freq': progressionFreq,
         'double_progression': doubleProgression,
         'next_check_week': nextCheckWeek,
+        'deload_every_weeks': deloadEveryWeeks,
+        'deload_volume_pct': deloadVolumePct,
+        'deload_note': deloadNote,
         'reassessment_triggers': triggers.map((t) => t.toJson()).toList(),
       };
 }
@@ -547,6 +556,9 @@ class GeneratedPlan {
         progressionFreq: progressionJson['progression_freq'] as String,
         doubleProgression: progressionJson['double_progression'] as String,
         nextCheckWeek: progressionJson['next_check_week'] as int,
+        deloadEveryWeeks: (progressionJson['deload_every_weeks'] as int?) ?? 4,
+        deloadVolumePct: (progressionJson['deload_volume_pct'] as int?) ?? 60,
+        deloadNote: (progressionJson['deload_note'] as String?) ?? '',
         triggers: (progressionJson['reassessment_triggers'] as List)
             .map((t) => ReassessmentTrigger(condition: t['condition'] as String, action: t['action'] as String, week: t['week'] as int?))
             .toList(),

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>秒表开练 · 计划如何体现</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0c0f12; --surface:#151a20; --ink:#f2f4f6; --muted:#8b95a1;
+      --accent:#3dff9a; --accent-ink:#04140c; --warn:#ffb020; --line:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;color:var(--ink);
+      font-family:"IBM Plex Sans",system-ui,sans-serif;
+      background:radial-gradient(900px 420px at 20% -10%,#1a3d2c 0%,transparent 55%),var(--bg);
+      display:grid;place-items:center;padding:20px 12px 36px;gap:14px;
+    }
+    .meta{width:min(420px,100%)}
+    .meta h1{font-family:Outfit,sans-serif;font-size:1.15rem;margin:0 0 4px}
+    .meta p{margin:0;color:var(--muted);font-size:.86rem;line-height:1.45}
+    .phone{
+      width:min(390px,100%);min-height:min(780px,88vh);
+      background:linear-gradient(180deg,#12171d,#0a0d10);
+      border:1px solid var(--line);border-radius:36px;padding:48px 22px 24px;
+      display:flex;flex-direction:column;gap:12px;box-shadow:0 28px 70px rgba(0,0,0,.45);
+    }
+    .screen{display:none;flex-direction:column;gap:12px;flex:1}
+    .screen.active{display:flex}
+    .eyebrow{color:var(--muted);font-size:.82rem;margin:0}
+    .title{font-family:Outfit,sans-serif;font-size:1.85rem;margin:0;letter-spacing:-.02em;line-height:1.1}
+    .sub{color:var(--muted);margin:0;font-size:.9rem;line-height:1.45}
+    .row{display:flex;justify-content:space-between;align-items:center}
+    .link{color:var(--accent);font-weight:600;font-size:.9rem;background:none;border:0;cursor:pointer;font-family:inherit}
+    .card{background:var(--surface);border-radius:18px;padding:16px}
+    .card.today{border:1px solid color-mix(in srgb,var(--accent) 55%,transparent)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .stat{background:rgba(0,0,0,.25);border-radius:12px;padding:10px 6px;text-align:center}
+    .stat b{display:block;font-family:Outfit,sans-serif;font-size:1.1rem}
+    .stat span{color:var(--muted);font-size:.7rem}
+    .hint{color:var(--warn);font-size:.8rem;margin:0}
+    .spacer{flex:1}
+    .btn{width:100%;border:0;border-radius:999px;padding:15px 18px;font-family:Outfit,sans-serif;font-weight:700;font-size:1.05rem;cursor:pointer}
+    .btn-primary{background:var(--accent);color:var(--accent-ink)}
+    .btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+    .day{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.2);margin-bottom:8px}
+    .day.today{background:var(--surface);border:1px solid color-mix(in srgb,var(--accent) 50%,transparent)}
+    .day .muted{color:var(--muted);font-size:.8rem}
+    .macros{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+    .list{margin:8px 0 0;padding:0;list-style:none;color:var(--ink);font-size:.92rem}
+    .list li{padding:6px 0;border-bottom:1px solid var(--line)}
+    .list li:last-child{border:0}
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>计划如何体现 · 可点流程</h1>
+    <p>主屏只承载「今天」；周览次要；饮食练完解锁。数据读自 <code>demo_plan.json</code>。</p>
+  </div>
+
+  <div class="phone">
+    <section class="screen active" data-s="ready">
+      <p class="eyebrow" style="color:var(--accent);font-weight:700;letter-spacing:.12em">STOPWATCH</p>
+      <h2 class="title">计划已生成</h2>
+      <p class="sub" id="readySub">加载中…</p>
+      <div class="card">
+        <p class="eyebrow">今日</p>
+        <p class="title" style="font-size:1.35rem;margin-top:4px" id="readyToday">—</p>
+        <div class="stats">
+          <div class="stat"><b id="stDur">—</b><span>分钟</span></div>
+          <div class="stat"><b id="stSets">—</b><span>总组</span></div>
+          <div class="stat"><b id="stMoves">—</b><span>动作</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="home">进入主屏 · 准备开练</button>
+    </section>
+
+    <section class="screen" data-s="home">
+      <div class="row">
+        <p class="eyebrow" id="homeDay">今天</p>
+        <button class="link" data-go="week">本周 ›</button>
+      </div>
+      <h2 class="title" id="homeTitle">—</h2>
+      <p class="sub" id="homeSub">—</p>
+      <div class="card">
+        <p class="eyebrow">今日计划（预览）</p>
+        <ul class="list" id="previewList"></ul>
+        <p class="sub" style="margin-top:8px">完整动作表在点「开始」后展开</p>
+      </div>
+      <p class="hint">🔒 饮食目标已备好 · 练完解锁</p>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="train">开始</button>
+      <button class="btn btn-ghost" data-go="week">看本周（次要）</button>
+    </section>
+
+    <section class="screen" data-s="week">
+      <p class="eyebrow">本周计划</p>
+      <h2 class="title" id="weekSplit">—</h2>
+      <p class="sub">点某一天只预览。默认仍回主屏开练今天。</p>
+      <div id="weekList"></div>
+      <div class="card">
+        <strong>漏练不惩罚</strong>
+        <p class="sub" style="margin-top:6px">错过的那天标「可顺延」，不会断 streak。</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="home">回主屏 · 练今天</button>
+    </section>
+
+    <section class="screen" data-s="train">
+      <p class="eyebrow">训练中（示意）</p>
+      <h2 class="title" id="exName">—</h2>
+      <p class="sub" id="exMeta">—</p>
+      <p class="sub">这里接原有秒表训练流；计划字段来自 schedule.exercises。</p>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="done">模拟练完</button>
+      <button class="btn btn-ghost" data-go="home">退出回主屏</button>
+    </section>
+
+    <section class="screen" data-s="done">
+      <p class="eyebrow">今日完成</p>
+      <h2 class="title">练完了</h2>
+      <p class="sub">饮食摘要从引擎 nutrition 解锁。</p>
+      <div class="card">
+        <p class="eyebrow">今日营养目标</p>
+        <div class="macros">
+          <div class="stat"><b id="mKcal">—</b><span>kcal</span></div>
+          <div class="stat"><b id="mPro">—</b><span>蛋白 g</span></div>
+          <div class="stat"><b id="mCarb">—</b><span>碳水 g</span></div>
+          <div class="stat"><b id="mFat">—</b><span>脂肪 g</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <p class="eyebrow">下一餐提示</p>
+        <p id="mealHint" style="margin:6px 0 0;font-family:Outfit,sans-serif;font-weight:600">—</p>
+        <p class="sub" style="margin-top:6px">不记食物库；需要时再拍照估一下。</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="home">回主屏</button>
+      <a class="btn btn-ghost" href="./onboarding.html" style="text-align:center;text-decoration:none;display:block">重新填写用户数据</a>
+    </section>
+  </div>
+
+  <script>
+    let plan, today, exercises = [];
+
+    const typeLabel = { upper: "上肢日", lower: "下肢日", rest: "休息日", full: "全身" };
+
+    function show(name) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.dataset.s === name));
+    }
+
+    function render() {
+      const t = today;
+      const title = typeLabel[t.type] || t.type;
+      $("readySub").textContent = `${plan.training.split} · 今天先练${title.replace("日","")}。饮食目标已备好，练完再看。`;
+      $("readyToday").textContent = `${t.day} · ${title}`;
+      $("stDur").textContent = t.duration_min;
+      $("stSets").textContent = t.total_sets || exercises.reduce((n, e) => n + e.sets, 0);
+      $("stMoves").textContent = exercises.length;
+      $("homeDay").textContent = `今天 · ${t.day}`;
+      $("homeTitle").textContent = title;
+      $("homeSub").textContent = `${exercises[0]?.name || "—"}开场 · ${plan.training.split}`;
+      $("previewList").innerHTML = exercises.slice(0, 3).map((e) =>
+        `<li>${e.name} ${e.sets}×${e.reps}</li>`
+      ).join("") + (exercises.length > 3 ? `<li style="color:var(--muted)">…还有 ${exercises.length - 3} 个动作</li>` : "");
+      $("weekSplit").textContent = plan.training.split;
+      $("weekList").innerHTML = (plan.training.schedule || []).map((d) => {
+        const isToday = d.day === t.day;
+        const label = typeLabel[d.type] || d.type;
+        const meta = (d.exercises || []).length ? `${d.duration_min}分` : "恢复日";
+        return `<div class="day ${isToday ? "today" : ""}">
+          <div><div>${d.day}${isToday ? " · 今天" : ""}</div><div class="muted">${label}</div></div>
+          <div class="muted">${meta}</div>
+        </div>`;
+      }).join("");
+      $("exName").textContent = exercises[0]?.name || "—";
+      $("exMeta").textContent = exercises[0] ? `${exercises[0].sets} 组 × ${exercises[0].reps} · RPE ${exercises[0].rpe}` : "";
+      const m = plan.nutrition.macros.daily_targets;
+      $("mKcal").textContent = Math.round(m.kcal);
+      $("mPro").textContent = Math.round(m.protein_g);
+      $("mCarb").textContent = Math.round(m.carbs_g);
+      $("mFat").textContent = Math.round(m.fat_g);
+      const meals = plan.nutrition.meals?.meals || [];
+      const post = meals.find((x) => /练后/.test(x.name || "")) || meals[0];
+      $("mealHint").textContent = post
+        ? `${post.name} · 蛋白 ${Math.round(post.protein_g)}g · ${Math.round(post.kcal)} kcal`
+        : "按宏量均分";
+    }
+
+    document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => show(b.dataset.go)));
+
+    fetch("./demo_plan.json")
+      .then((r) => r.json())
+      .then((data) => {
+        plan = data;
+        today = (data.training.schedule || []).find((s) => (s.exercises || []).length) || data.training.schedule[0];
+        exercises = today.exercises || [];
+        render();
+      });
+
+    function $(id) { return document.getElementById(id); }
+  </script>
+</body>
+</html>

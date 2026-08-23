@@ -2,6 +2,9 @@ import 'exercise_library.dart';
 import 'models.dart';
 
 /// Port of fitness-planner's `session_builder.py`.
+///
+/// Volume = weekly target ÷ **actual** schedule frequency, capped per session,
+/// and clipped by session time budget.
 const weeklyVolume = {
   'beginner': {
     'chest': 10, 'back': 12, 'quads': 10, 'hamstrings': 6, 'shoulders': 8,
@@ -15,6 +18,12 @@ const weeklyVolume = {
     'chest': 18, 'back': 20, 'quads': 18, 'hamstrings': 10, 'shoulders': 16,
     'biceps': 10, 'triceps': 10, 'calves': 8, 'core': 8,
   },
+};
+
+const maxSetsPerMuscleSession = {
+  'beginner': 6,
+  'intermediate': 10,
+  'advanced': 12,
 };
 
 const _trainingVars = {
@@ -34,6 +43,7 @@ const _sessionMuscles = {
   'core': ['core', 'abs'],
 };
 
+/// Kept for docs/compat; volume math now uses [_actualMuscleFrequency].
 const splitFrequency = {
   'full_body': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2, 'biceps': 2, 'triceps': 2, 'calves': 1, 'core': 2},
   'upper_lower': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2, 'biceps': 2, 'triceps': 2, 'calves': 2, 'core': 1},
@@ -42,19 +52,47 @@ const splitFrequency = {
   'ppl_ppl': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2.5, 'biceps': 2, 'triceps': 2, 'calves': 2, 'core': 1},
 };
 
+Map<String, int> _actualMuscleFrequency(List<ScheduleDay> schedule) {
+  final freq = <String, int>{};
+  for (final dayInfo in schedule) {
+    if (dayInfo.type == 'rest') continue;
+    for (final muscle in _sessionMuscles[dayInfo.type] ?? const <String>[]) {
+      freq[muscle] = (freq[muscle] ?? 0) + 1;
+    }
+  }
+  return freq;
+}
+
+Map<String, int> _setsPerSessionMap(
+  Map<String, int> volume,
+  Map<String, int> frequency,
+  String level,
+) {
+  final cap = maxSetsPerMuscleSession[level] ?? 8;
+  final out = <String, int>{};
+  volume.forEach((muscle, totalSets) {
+    final freq = frequency[muscle] ?? 0;
+    final f = freq < 1 ? 1 : freq;
+    final per = (totalSets / f).round();
+    final clamped = per < 2 ? 2 : per;
+    out[muscle] = clamped > cap ? cap : clamped;
+  });
+  return out;
+}
+
+int _estimateSetSeconds(int restSec) => 45 + restSec;
+
 List<SessionResult> buildSessions(UserProfile profile, SplitResult split, ExerciseLibrary library) {
   final level = profile.level;
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
-  final volume = weeklyVolume[level] ?? weeklyVolume['beginner']!;
-  final frequency = splitFrequency[split.splitName] ?? splitFrequency['full_body']!;
+  final volume = Map<String, int>.from(weeklyVolume[level] ?? weeklyVolume['beginner']!);
+  final frequency = _actualMuscleFrequency(split.weeklySchedule);
+  final muscleSetsPerSession = _setsPerSessionMap(volume, frequency, level);
 
-  final muscleSetsPerSession = <String, int>{};
-  volume.forEach((muscle, totalSets) {
-    final freq = (frequency[muscle] ?? 1).toDouble();
-    final perSession = (totalSets / freq).round();
-    muscleSetsPerSession[muscle] = perSession < 2 ? 2 : perSession;
-  });
+  final budgetSec = (profile.minutesPerSession * 60 * 0.85).round().clamp(15 * 60, 24 * 60 * 60);
+  final setCost = _estimateSetSeconds(vars_['rest_sec'] as int);
+  final setsRange = (vars_['sets_range'] as List).cast<int>();
 
   final sessions = <SessionResult>[];
   for (final dayInfo in split.weeklySchedule) {
@@ -92,11 +130,22 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
     final sessionExercises = <ExerciseEntry>[];
     var order = 1;
     final usedIds = <String>{};
-
-    final setsRange = (vars_['sets_range'] as List).cast<int>();
+    var usedSec = 0;
 
     for (final muscle in targetMuscles) {
-      final setsNeeded = muscleSetsPerSession[muscle] ?? 3;
+      var setsNeeded = muscleSetsPerSession[muscle];
+      if (setsNeeded == null) {
+        if (muscle == 'glutes' || muscle == 'rear_delt') {
+          setsNeeded = 3;
+        } else {
+          continue;
+        }
+      }
+      if (setsNeeded <= 0) continue;
+
+      var remainingBudgetSets = ((budgetSec - usedSec) / setCost).floor();
+      if (remainingBudgetSets < 2) break;
+      if (setsNeeded > remainingBudgetSets) setsNeeded = remainingBudgetSets;
 
       var muscleExercises = exercises.where((e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id)).toList();
       if (muscleExercises.isEmpty) {
@@ -105,10 +154,33 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
       if (muscleExercises.isEmpty) continue;
 
       var remainingSets = setsNeeded;
-      for (final ex in muscleExercises.take(2)) {
+      final candidates = muscleExercises.take(3).toList();
+      final nEx = candidates.length;
+      for (var i = 0; i < nEx; i++) {
         if (remainingSets <= 0) break;
-        var sets = remainingSets < setsRange[1] ? remainingSets : setsRange[1];
-        if (sets < setsRange[0]) sets = setsRange[0];
+        remainingBudgetSets = ((budgetSec - usedSec) / setCost).floor();
+        if (remainingBudgetSets < 2) break;
+
+        final ex = candidates[i];
+        int sets;
+        if (i == nEx - 1) {
+          sets = remainingSets < remainingBudgetSets ? remainingSets : remainingBudgetSets;
+        } else {
+          sets = remainingSets;
+          if (sets > setsRange[1]) sets = setsRange[1];
+          if (sets > remainingBudgetSets) sets = remainingBudgetSets;
+        }
+
+        if (sets < setsRange[0]) {
+          if (remainingSets >= 2 && i == nEx - 1) {
+            sets = remainingSets < remainingBudgetSets ? remainingSets : remainingBudgetSets;
+          } else if (remainingSets >= setsRange[0]) {
+            sets = setsRange[0];
+          } else {
+            break;
+          }
+        }
+        if (sets < 2) break;
 
         sessionExercises.add(ExerciseEntry(
           name: ex.name,
@@ -129,14 +201,23 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
         usedIds.add(ex.id);
         order++;
         remainingSets -= sets;
+        usedSec += sets * setCost;
       }
     }
 
     final totalSets = sessionExercises.fold<int>(0, (sum, e) => sum + e.sets);
+    var estMin = profile.minutesPerSession;
+    if (totalSets > 0) {
+      final warmupPad = (profile.minutesPerSession * 0.15).round();
+      final pad = warmupPad < 5 ? 5 : warmupPad;
+      estMin = ((usedSec / 60).round() + pad);
+      if (estMin > profile.minutesPerSession) estMin = profile.minutesPerSession;
+      if (estMin < 0) estMin = 0;
+    }
     sessions.add(SessionResult(
       day: dayName,
       type: sessionType,
-      durationMin: profile.minutesPerSession,
+      durationMin: totalSets == 0 ? profile.minutesPerSession : (estMin == 0 ? profile.minutesPerSession : estMin),
       exercises: sessionExercises,
       totalSets: totalSets,
     ));

@@ -15,10 +15,17 @@ const _strategyMap = {
 
 ProgressionResult planProgression(UserProfile profile) {
   final rules = _progressionRules[profile.level] ?? _progressionRules['beginner']!;
+  final deloadEvery = rules['cycle_weeks'] as int;
+  const deloadPct = 60;
 
   final triggers = [
     ReassessmentTrigger(condition: '体重变化 >2kg', action: '重新计算 TDEE + 营养素'),
     ReassessmentTrigger(condition: '训练满 4 周', action: '全动作组数+1 或试加重', week: 4),
+    ReassessmentTrigger(
+      condition: '每 $deloadEvery 周减载周',
+      action: '组数降至平时的 $deloadPct%，负荷可略降或不加重量',
+      week: deloadEvery,
+    ),
     ReassessmentTrigger(condition: '训练满 12 周', action: '建议切换分肢方案，检查是否改目标', week: 12),
     ReassessmentTrigger(condition: '连续 2 周无法完成计划', action: '下调 10% 容量'),
     ReassessmentTrigger(condition: '中断 >2 周', action: '回退 10-20% 容量'),
@@ -31,7 +38,10 @@ ProgressionResult planProgression(UserProfile profile) {
     incrementLowerKg: rules['lower_kg'] as double,
     progressionFreq: rules['freq'] as String,
     doubleProgression: '双进阶：当无法再加重量时：先+1次→达到上限次数后降次加重循环',
-    nextCheckWeek: rules['cycle_weeks'] as int,
+    nextCheckWeek: deloadEvery,
+    deloadEveryWeeks: deloadEvery,
+    deloadVolumePct: deloadPct,
+    deloadNote: '第 $deloadEvery、${deloadEvery * 2}、${deloadEvery * 3}… 周为减载周：组数×${deloadPct / 100}，保动作模式、不加重量',
     triggers: triggers,
   );
 }

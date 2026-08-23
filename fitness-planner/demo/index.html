@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>秒表开练 · 引擎 Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0f12;
+      --bg2: #151a20;
+      --ink: #f2f4f6;
+      --muted: #8b95a1;
+      --accent: #3dff9a;
+      --accent-ink: #04140c;
+      --warn: #ffb020;
+      --line: rgba(255,255,255,.08);
+      --phone-w: 390px;
+      --phone-h: 780px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1000px 500px at 20% -10%, #1a3d2c 0%, transparent 55%),
+        radial-gradient(800px 400px at 100% 0%, #1b2430 0%, transparent 50%),
+        var(--bg);
+      display: grid;
+      place-items: center;
+      padding: 24px 16px 40px;
+      gap: 20px;
+    }
+    .meta {
+      width: min(920px, 100%);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 20px;
+      justify-content: space-between;
+      align-items: end;
+    }
+    .meta h1 {
+      font-family: Outfit, sans-serif;
+      font-size: 1.35rem;
+      margin: 0 0 4px;
+      letter-spacing: -.02em;
+    }
+    .meta p { margin: 0; color: var(--muted); font-size: .9rem; max-width: 46ch; }
+    .badge {
+      font-size: .75rem;
+      color: var(--accent);
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+    }
+    .shell {
+      width: min(var(--phone-w), 100%);
+      height: min(var(--phone-h), 86vh);
+      background: linear-gradient(180deg, #12171d, #0a0d10);
+      border: 1px solid var(--line);
+      border-radius: 36px;
+      box-shadow: 0 30px 80px rgba(0,0,0,.45);
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .notch {
+      height: 28px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: .7rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .screen { flex: 1; padding: 8px 22px 28px; display: none; flex-direction: column; }
+    .screen.active { display: flex; }
+    .eyebrow { color: var(--muted); font-size: .8rem; margin: 0 0 8px; }
+    .title {
+      font-family: Outfit, sans-serif;
+      font-size: 2rem;
+      line-height: 1.1;
+      margin: 0 0 8px;
+      letter-spacing: -.03em;
+    }
+    .sub { color: var(--muted); margin: 0 0 24px; line-height: 1.45; }
+    .card {
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .card strong { font-family: Outfit, sans-serif; font-size: 1.05rem; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0 0;
+    }
+    .stat {
+      background: rgba(255,255,255,.03);
+      border-radius: 12px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+    .stat b { display: block; font-family: Outfit, sans-serif; font-size: 1.1rem; }
+    .stat span { color: var(--muted); font-size: .72rem; }
+    .spacer { flex: 1; }
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 16px 20px;
+      font-family: Outfit, sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      margin-top: 10px;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+      50% { box-shadow: 0 0 0 12px transparent; }
+    }
+    .timer {
+      font-family: Outfit, sans-serif;
+      font-size: 4.2rem;
+      font-weight: 800;
+      letter-spacing: -.04em;
+      text-align: center;
+      margin: 8px 0 4px;
+    }
+    .phase { text-align: center; color: var(--muted); margin-bottom: 18px; }
+    .ex-name {
+      font-family: Outfit, sans-serif;
+      font-size: 1.55rem;
+      margin: 0 0 6px;
+    }
+    .ex-meta { color: var(--muted); margin: 0 0 14px; }
+    .cues { margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; }
+    .cues li { margin: 4px 0; }
+    .progress {
+      height: 6px;
+      background: rgba(255,255,255,.06);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 16px 0 8px;
+    }
+    .progress > i {
+      display: block;
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width .25s ease;
+    }
+    .done-hero {
+      text-align: center;
+      padding: 20px 0 8px;
+    }
+    .done-hero .big {
+      font-family: Outfit, sans-serif;
+      font-size: 2.4rem;
+      margin: 8px 0;
+    }
+    .macros {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .locked-note {
+      color: var(--warn);
+      font-size: .85rem;
+      margin: 0 0 12px;
+    }
+    .list { margin: 0; padding: 0; list-style: none; }
+    .list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+      font-size: .92rem;
+    }
+    .list li:last-child { border-bottom: 0; }
+    .err { color: #ff6b6b; padding: 20px; }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <div>
+      <h1>秒表开练 · 引擎 Demo</h1>
+      <p>数据来自 <code>fitness-planner</code> 真实管线（<code>demo_plan.json</code>）。主屏只留「开始」；练完才解锁饮食摘要。</p>
+    </div>
+    <span class="badge" id="sourceBadge">加载计划中…</span>
+  </div>
+
+  <div class="shell" id="app">
+    <div class="notch">Stopwatch Demo</div>
+
+    <section class="screen active" id="home">
+      <p class="eyebrow" id="homeDay">今日训练</p>
+      <h2 class="title" id="homeTitle">上肢日</h2>
+      <p class="sub" id="homeSub">打开即练 · 社交与饮食练完再看</p>
+      <div class="card">
+        <strong id="homeFocus">杠铃卧推开场</strong>
+        <div class="stats">
+          <div class="stat"><b id="stDur">60</b><span>分钟</span></div>
+          <div class="stat"><b id="stSets">30</b><span>总组</span></div>
+          <div class="stat"><b id="stMoves">8</b><span>动作</span></div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <p class="locked-note">🔒 饮食 / 社交 · 完成今日训练后解锁</p>
+      <button class="btn btn-primary" id="btnStart" type="button">开始</button>
+      <button class="btn btn-ghost" id="btnPreview" type="button">看一眼动作列表</button>
+    </section>
+
+    <section class="screen" id="preview">
+      <p class="eyebrow">今日清单</p>
+      <h2 class="title" style="font-size:1.6rem">还没开始</h2>
+      <p class="sub">确认后回主屏点「开始」。不要在清单页耗时间。</p>
+      <div class="card" style="flex:1; overflow:auto">
+        <ul class="list" id="previewList"></ul>
+      </div>
+      <button class="btn btn-primary" id="btnBackHome" type="button">回主屏</button>
+    </section>
+
+    <section class="screen" id="train">
+      <p class="eyebrow" id="trainPhaseLabel">动作 1 / 8 · 第 1 组</p>
+      <div class="timer" id="timer">00:00</div>
+      <p class="phase" id="phaseText">训练中</p>
+      <div class="progress"><i id="bar"></i></div>
+      <h3 class="ex-name" id="exName">—</h3>
+      <p class="ex-meta" id="exMeta">—</p>
+      <ul class="cues" id="exCues"></ul>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btnNext" type="button">完成本组</button>
+      <button class="btn btn-ghost" id="btnSkipRest" type="button" hidden>跳过休息</button>
+    </section>
+
+    <section class="screen" id="done">
+      <div class="done-hero">
+        <p class="eyebrow">今日完成</p>
+        <div class="big">练完了</div>
+        <p class="sub" style="margin:0">饮食摘要已解锁 · 社交仍可以后再加</p>
+      </div>
+      <div class="card">
+        <strong>今日营养目标</strong>
+        <div class="macros" style="margin-top:12px">
+          <div class="stat"><b id="mKcal">—</b><span>kcal</span></div>
+          <div class="stat"><b id="mPro">—</b><span>蛋白 g</span></div>
+          <div class="stat"><b id="mCarb">—</b><span>碳水 g</span></div>
+          <div class="stat"><b id="mFat">—</b><span>脂肪 g</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <strong>下一餐提示</strong>
+        <p class="sub" id="mealHint" style="margin:8px 0 0">—</p>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btnAgain" type="button">再测一遍</button>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let plan, today, exercises = [];
+    let exIdx = 0, setIdx = 0;
+    let mode = "work"; // work | rest
+    let restLeft = 0;
+    let tick = null;
+    let elapsed = 0;
+
+    function show(id) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+      $(id).classList.add("active");
+    }
+
+    function fmt(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+    }
+
+    function totalSets() {
+      return exercises.reduce((n, e) => n + (e.sets || 0), 0);
+    }
+
+    function doneSets() {
+      let n = 0;
+      for (let i = 0; i < exIdx; i++) n += exercises[i].sets;
+      n += setIdx;
+      return n;
+    }
+
+    function renderHome() {
+      $("homeDay").textContent = `今日训练 · ${today.day}`;
+      $("homeTitle").textContent = today.type === "upper" ? "上肢日" : today.type === "lower" ? "下肢日" : today.type;
+      $("homeSub").textContent = `${plan.training.split} · ${plan.profile.goal} · 引擎 v${plan.meta.version}`;
+      $("homeFocus").textContent = exercises[0] ? `${exercises[0].name} 开场` : "休息日";
+      $("stDur").textContent = today.duration_min;
+      $("stSets").textContent = today.total_sets ?? totalSets();
+      $("stMoves").textContent = exercises.length;
+      $("previewList").innerHTML = exercises.map((e, i) =>
+        `<li><span>${i + 1}. ${e.name}</span><span>${e.sets}×${e.reps}</span></li>`
+      ).join("");
+      const t = plan.nutrition.macros.daily_targets;
+      $("mKcal").textContent = Math.round(t.kcal);
+      $("mPro").textContent = Math.round(t.protein_g);
+      $("mCarb").textContent = Math.round(t.carbs_g);
+      $("mFat").textContent = Math.round(t.fat_g);
+      const meals = plan.nutrition.meals?.meals || [];
+      const post = meals.find((m) => /练后/.test(m.name || "")) || meals[0];
+      $("mealHint").textContent = post
+        ? `${post.name}：蛋白 ${Math.round(post.protein_g)}g · 碳水 ${Math.round(post.carbs_g)}g · ${Math.round(post.kcal)} kcal`
+        : "按宏量均分四餐；练后餐略倾斜蛋白/碳水。";
+      $("sourceBadge").textContent = `引擎样例 · TDEE ${Math.round(plan.nutrition.tdee.tdee)} kcal`;
+    }
+
+    function renderExercise() {
+      const e = exercises[exIdx];
+      if (!e) return finish();
+      $("trainPhaseLabel").textContent = `动作 ${exIdx + 1} / ${exercises.length} · 第 ${setIdx + 1} 组 / ${e.sets}`;
+      $("exName").textContent = e.name;
+      $("exMeta").textContent = `${e.sets} 组 × ${e.reps} · ${e.load} · RPE ${e.rpe}`;
+      $("exCues").innerHTML = (e.form_cues || []).slice(0, 4).map((c) => `<li>${c}</li>`).join("");
+      $("bar").style.width = `${Math.min(100, (doneSets() / Math.max(1, totalSets())) * 100)}%`;
+      if (mode === "work") {
+        $("phaseText").textContent = "训练中 · 做完点下方";
+        $("btnNext").textContent = "完成本组";
+        $("btnNext").hidden = false;
+        $("btnSkipRest").hidden = true;
+        $("timer").textContent = fmt(elapsed);
+      } else {
+        $("phaseText").textContent = `休息 ${e.rest_sec}s`;
+        $("btnNext").hidden = true;
+        $("btnSkipRest").hidden = false;
+        $("timer").textContent = fmt(restLeft);
+      }
+    }
+
+    function startClock() {
+      clearInterval(tick);
+      tick = setInterval(() => {
+        if (mode === "work") {
+          elapsed += 1;
+          $("timer").textContent = fmt(elapsed);
+        } else {
+          restLeft -= 1;
+          $("timer").textContent = fmt(Math.max(0, restLeft));
+          if (restLeft <= 0) {
+            mode = "work";
+            renderExercise();
+          }
+        }
+      }, 1000);
+    }
+
+    function completeSet() {
+      const e = exercises[exIdx];
+      if (setIdx + 1 < e.sets) {
+        setIdx += 1;
+        mode = "rest";
+        restLeft = e.rest_sec || 90;
+        renderExercise();
+        return;
+      }
+      exIdx += 1;
+      setIdx = 0;
+      if (exIdx >= exercises.length) return finish();
+      mode = "rest";
+      restLeft = e.rest_sec || 90;
+      renderExercise();
+    }
+
+    function finish() {
+      clearInterval(tick);
+      show("done");
+    }
+
+    function resetSession() {
+      clearInterval(tick);
+      exIdx = 0; setIdx = 0; mode = "work"; elapsed = 0; restLeft = 0;
+      show("home");
+    }
+
+    $("btnStart").onclick = () => {
+      if (!exercises.length) return alert("今日无训练动作");
+      exIdx = 0; setIdx = 0; mode = "work"; elapsed = 0;
+      show("train");
+      renderExercise();
+      startClock();
+    };
+    $("btnPreview").onclick = () => show("preview");
+    $("btnBackHome").onclick = () => show("home");
+    $("btnNext").onclick = () => completeSet();
+    $("btnSkipRest").onclick = () => { mode = "work"; renderExercise(); };
+    $("btnAgain").onclick = () => resetSession();
+
+    fetch("./demo_plan.json")
+      .then((r) => r.json())
+      .then((data) => {
+        plan = data;
+        today = (data.training.schedule || []).find((s) => (s.exercises || []).length) || data.training.schedule[0];
+        exercises = today.exercises || [];
+        renderHome();
+      })
+      .catch((err) => {
+        $("sourceBadge").textContent = "计划加载失败";
+        document.querySelector(".shell").innerHTML = `<p class="err">无法加载 demo_plan.json：${err}</p>`;
+      });
+  </script>
+</body>
+</html>

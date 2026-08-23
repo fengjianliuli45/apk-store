@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>秒表开练 · 用户数据输入</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0c0f12; --surface: #151a20; --ink: #f2f4f6; --muted: #8b95a1;
+      --accent: #3dff9a; --accent-ink: #04140c; --warn: #ffb020; --line: rgba(255,255,255,.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--ink);
+      font-family: "IBM Plex Sans", system-ui, sans-serif;
+      background: radial-gradient(900px 420px at 15% -10%, #1a3d2c 0%, transparent 55%), var(--bg);
+      display: grid; place-items: center; padding: 20px 12px 36px; gap: 16px;
+    }
+    .meta { width: min(420px, 100%); }
+    .meta h1 { font-family: Outfit, sans-serif; font-size: 1.2rem; margin: 0 0 4px; }
+    .meta p { margin: 0; color: var(--muted); font-size: .88rem; }
+    .phone {
+      width: min(390px, 100%); min-height: min(780px, 88vh);
+      background: linear-gradient(180deg, #12171d, #0a0d10);
+      border: 1px solid var(--line); border-radius: 36px; padding: 48px 22px 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      box-shadow: 0 28px 70px rgba(0,0,0,.45);
+    }
+    .screen { display: none; flex-direction: column; gap: 14px; flex: 1; }
+    .screen.active { display: flex; }
+    .progress { display: flex; gap: 6px; align-items: center; }
+    .progress i { display: block; height: 4px; width: 18px; border-radius: 99px; background: var(--line); }
+    .progress i.on { width: 28px; background: var(--accent); }
+    .progress span { color: var(--muted); font-size: .75rem; margin-left: 4px; }
+    .eyebrow { color: var(--muted); font-size: .82rem; margin: 0; }
+    .title { font-family: Outfit, sans-serif; font-size: 1.7rem; line-height: 1.15; margin: 0; letter-spacing: -.02em; }
+    .sub { color: var(--muted); margin: 0; font-size: .9rem; line-height: 1.45; }
+    .brand { color: var(--accent); font-family: Outfit, sans-serif; font-weight: 700; letter-spacing: .16em; font-size: .72rem; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+      border-radius: 999px; padding: 11px 15px; font-family: Outfit, sans-serif;
+      font-weight: 600; font-size: .9rem; cursor: pointer;
+    }
+    .chip.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+    .label { color: var(--muted); font-size: .75rem; font-weight: 600; margin: 2px 0 0; }
+    .field {
+      display: flex; align-items: center; gap: 10px; background: var(--surface);
+      border-radius: 16px; padding: 12px 12px 12px 16px;
+    }
+    .field .left { flex: 1; }
+    .field .left small { display: block; color: var(--muted); font-size: .75rem; }
+    .field .left b { font-family: Outfit, sans-serif; font-size: 1.7rem; }
+    .stepper { display: flex; gap: 8px; }
+    .stepper button {
+      width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--bg);
+      color: var(--accent); font-size: 1.25rem; font-weight: 700; cursor: pointer;
+    }
+    .unit { color: var(--muted); font-size: .85rem; min-width: 2ch; }
+    .card { background: var(--surface); border-radius: 18px; padding: 16px; }
+    .card li { margin: 6px 0; }
+    .hint { color: var(--warn); font-size: .8rem; margin: 0; }
+    .spacer { flex: 1; min-height: 8px; }
+    .btn {
+      width: 100%; border: 0; border-radius: 999px; padding: 16px 18px;
+      font-family: Outfit, sans-serif; font-weight: 700; font-size: 1.05rem; cursor: pointer;
+    }
+    .btn-primary { background: var(--accent); color: var(--accent-ink); }
+    .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .summary dt { color: var(--muted); font-size: .72rem; margin-top: 10px; }
+    .summary dd { margin: 2px 0 0; font-family: Outfit, sans-serif; font-weight: 600; }
+    .out {
+      margin-top: 8px; background: #0a0d10; border: 1px solid var(--line);
+      border-radius: 12px; padding: 12px; font-size: .75rem; color: var(--muted);
+      white-space: pre-wrap; word-break: break-all; max-height: 160px; overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="meta">
+    <h1>用户数据输入 · 对齐 Figma</h1>
+    <p>对抗「开箱慢 / 找不到开始 / 饮食麻烦」：3 步点选 + 步进器，终态一键生成引擎 JSON。</p>
+  </div>
+
+  <div class="phone" id="app">
+    <section class="screen active" data-screen="welcome">
+      <p class="brand">STOPWATCH</p>
+      <h2 class="title">先花 60 秒<br />告诉我你会怎么练</h2>
+      <p class="sub">只要 3 步。不注册社区、不填饮食日记、不设打卡羞辱。</p>
+      <div class="card">
+        <ol style="margin:0;padding-left:18px;color:var(--ink);font-size:.92rem">
+          <li>身体数字（算热量）</li>
+          <li>想怎么练（目标/频率）</li>
+          <li>手头器械（能练什么）</li>
+        </ol>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="body">开始填写</button>
+      <button class="btn btn-ghost" id="btnDemo">我先随便看看（示例数据）</button>
+    </section>
+
+    <section class="screen" data-screen="body">
+      <div class="progress"><i class="on"></i><i></i><i></i><span>1 / 3</span></div>
+      <p class="eyebrow">第 1 步 · 身体</p>
+      <h2 class="title">大概的身体数字就行</h2>
+      <p class="sub">不用精确到小数。用来算消耗，不是体检。</p>
+      <div class="chips" data-key="gender" data-single>
+        <button type="button" class="chip on" data-value="M">男</button>
+        <button type="button" class="chip" data-value="F">女</button>
+      </div>
+      <div class="field" data-num="age" data-min="16" data-max="80" data-step="1">
+        <div class="left"><small>年龄</small><b>28</b></div>
+        <div class="stepper"><button type="button" data-d="-1">−</button><button type="button" data-d="1">+</button></div>
+        <span class="unit">岁</span>
+      </div>
+      <div class="field" data-num="height_cm" data-min="120" data-max="250" data-step="1">
+        <div class="left"><small>身高</small><b>175</b></div>
+        <div class="stepper"><button type="button" data-d="-1">−</button><button type="button" data-d="1">+</button></div>
+        <span class="unit">cm</span>
+      </div>
+      <div class="field" data-num="weight_kg" data-min="35" data-max="250" data-step="0.5">
+        <div class="left"><small>体重</small><b>72</b></div>
+        <div class="stepper"><button type="button" data-d="-1">−</button><button type="button" data-d="1">+</button></div>
+        <span class="unit">kg</span>
+      </div>
+      <p class="hint">体脂、围度以后练完再补，现在不拦你。</p>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="intent">下一步 · 怎么练</button>
+    </section>
+
+    <section class="screen" data-screen="intent">
+      <div class="progress"><i class="on"></i><i class="on"></i><i></i><span>2 / 3</span></div>
+      <p class="eyebrow">第 2 步 · 怎么练</p>
+      <h2 class="title">选目标，别写论文</h2>
+      <p class="sub">点一下就行。漏练了也不会骂你。</p>
+      <p class="label">目标</p>
+      <div class="chips" data-key="goal" data-single>
+        <button type="button" class="chip on" data-value="hypertrophy">增肌</button>
+        <button type="button" class="chip" data-value="fat_loss">减脂</button>
+        <button type="button" class="chip" data-value="strength">力量</button>
+        <button type="button" class="chip" data-value="recomposition">重组</button>
+      </div>
+      <p class="label">水平</p>
+      <div class="chips" data-key="level" data-single>
+        <button type="button" class="chip on" data-value="beginner">新手</button>
+        <button type="button" class="chip" data-value="intermediate">进阶</button>
+        <button type="button" class="chip" data-value="advanced">高阶</button>
+      </div>
+      <p class="label">每周能练几天</p>
+      <div class="chips" data-key="days_per_week" data-single>
+        <button type="button" class="chip" data-value="2">2 天</button>
+        <button type="button" class="chip" data-value="3">3 天</button>
+        <button type="button" class="chip on" data-value="4">4 天</button>
+        <button type="button" class="chip" data-value="5">5 天</button>
+      </div>
+      <p class="label">单次大概多久</p>
+      <div class="chips" data-key="minutes_per_session" data-single>
+        <button type="button" class="chip" data-value="30">30 分</button>
+        <button type="button" class="chip" data-value="45">45 分</button>
+        <button type="button" class="chip on" data-value="60">60 分</button>
+        <button type="button" class="chip" data-value="90">90 分</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="gear">下一步 · 器械</button>
+    </section>
+
+    <section class="screen" data-screen="gear">
+      <div class="progress"><i class="on"></i><i class="on"></i><i class="on"></i><span>3 / 3</span></div>
+      <p class="eyebrow">第 3 步 · 器械</p>
+      <h2 class="title">你手头有什么？</h2>
+      <p class="sub">多选。没有器械也能出徒手计划。</p>
+      <div class="chips" data-key="equipment" data-multi>
+        <button type="button" class="chip" data-value="bodyweight">徒手</button>
+        <button type="button" class="chip" data-value="dumbbell">哑铃</button>
+        <button type="button" class="chip" data-value="barbell">杠铃</button>
+        <button type="button" class="chip on" data-value="gym">器械健身房</button>
+        <button type="button" class="chip" data-value="band">弹力带</button>
+        <button type="button" class="chip" data-value="kettlebell">壶铃</button>
+      </div>
+      <div class="card">
+        <p style="margin:0 0 8px;font-weight:600">有伤痛或忌口？（可跳过）</p>
+        <p class="sub" style="margin:0 0 10px">不填也能生成。不会因为空白惩罚你。</p>
+        <div class="chips" data-key="injuries" data-multi>
+          <button type="button" class="chip" data-value="shoulder">肩不适</button>
+          <button type="button" class="chip" data-value="knee">膝不适</button>
+          <button type="button" class="chip" data-value="back">腰不适</button>
+          <button type="button" class="chip on" data-value="none">无</button>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" data-go="confirm">看一眼确认</button>
+      <button class="btn btn-ghost" data-go="confirm">跳过可选项，直接确认</button>
+    </section>
+
+    <section class="screen" data-screen="confirm">
+      <p class="eyebrow">马上开练</p>
+      <h2 class="title">这样生成可以吗？</h2>
+      <p class="sub">不对就回上一步改。生成后主屏只剩「开始」。</p>
+      <dl class="card summary" id="summary"></dl>
+      <p class="hint">生成后不会要求你先加好友、开会员或填饮食库。</p>
+      <div class="spacer"></div>
+      <button class="btn btn-primary" id="btnGen">生成计划 JSON</button>
+      <button class="btn btn-ghost" data-go="body">返回修改</button>
+      <pre class="out" id="out" hidden></pre>
+    </section>
+  </div>
+
+  <script>
+    const state = {
+      gender: "M", age: 28, height_cm: 175, weight_kg: 72,
+      goal: "hypertrophy", level: "beginner",
+      days_per_week: 4, minutes_per_session: 60,
+      equipment: ["gym"], injuries: [],
+      meals_per_day: 4, cooking_access: "home", supplements: ["creatine"],
+    };
+
+    const labels = {
+      goal: { hypertrophy: "增肌", fat_loss: "减脂", strength: "力量", recomposition: "重组" },
+      level: { beginner: "新手", intermediate: "进阶", advanced: "高阶" },
+      equipment: { bodyweight: "徒手", dumbbell: "哑铃", barbell: "杠铃", gym: "器械健身房", band: "弹力带", kettlebell: "壶铃" },
+    };
+
+    function show(name) {
+      document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("active", s.dataset.screen === name));
+      if (name === "confirm") renderSummary();
+    }
+
+    function renderSummary() {
+      const eq = state.equipment.map((e) => labels.equipment[e] || e).join(" · ") || "徒手";
+      $("summary").innerHTML = `
+        <dt>身体</dt><dd>${state.gender === "M" ? "男" : "女"} · ${state.age}岁 · ${state.height_cm}cm · ${state.weight_kg}kg</dd>
+        <dt>目标</dt><dd>${labels.goal[state.goal]} · ${labels.level[state.level]}</dd>
+        <dt>节奏</dt><dd>每周 ${state.days_per_week} 天 · 每次 ${state.minutes_per_session} 分</dd>
+        <dt>器械</dt><dd>${eq}</dd>
+        <dt>饮食</dt><dd>入门不记食物 · 练完再轻量看</dd>`;
+    }
+
+    function syncNum(el) {
+      const key = el.dataset.num;
+      el.querySelector("b").textContent = state[key];
+    }
+
+    document.querySelectorAll(".chips").forEach((group) => {
+      group.addEventListener("click", (e) => {
+        const btn = e.target.closest(".chip");
+        if (!btn) return;
+        const key = group.dataset.key;
+        const val = btn.dataset.value;
+        if (group.dataset.single !== undefined) {
+          group.querySelectorAll(".chip").forEach((c) => c.classList.remove("on"));
+          btn.classList.add("on");
+          state[key] = key.includes("days") || key.includes("minutes") ? Number(val) : val;
+        } else {
+          if (val === "none") {
+            group.querySelectorAll(".chip").forEach((c) => c.classList.remove("on"));
+            btn.classList.add("on");
+            state[key] = key === "equipment" ? ["bodyweight"] : [];
+            return;
+          }
+          group.querySelector('[data-value="none"]')?.classList.remove("on");
+          btn.classList.toggle("on");
+          state[key] = [...group.querySelectorAll(".chip.on")].map((c) => c.dataset.value).filter((v) => v !== "none");
+          if (key === "equipment" && state.equipment.length === 0) state.equipment = ["bodyweight"];
+        }
+      });
+    });
+
+    document.querySelectorAll("[data-num]").forEach((el) => {
+      el.querySelectorAll("[data-d]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const key = el.dataset.num;
+          const step = Number(el.dataset.step);
+          const min = Number(el.dataset.min);
+          const max = Number(el.dataset.max);
+          const next = Math.round((state[key] + Number(btn.dataset.d) * step) * 10) / 10;
+          state[key] = Math.min(max, Math.max(min, next));
+          syncNum(el);
+        });
+      });
+    });
+
+    document.querySelectorAll("[data-go]").forEach((btn) => {
+      btn.addEventListener("click", () => show(btn.dataset.go));
+    });
+
+    $("btnDemo").onclick = () => {
+      Object.assign(state, {
+        gender: "M", age: 28, height_cm: 175, weight_kg: 72,
+        goal: "hypertrophy", level: "beginner", days_per_week: 4,
+        minutes_per_session: 60, equipment: ["gym"], injuries: [],
+      });
+      show("confirm");
+    };
+
+    $("btnGen").onclick = () => {
+      const payload = {
+        ...state,
+        injuries: state.injuries.filter((x) => x !== "none"),
+        equipment: state.equipment.length ? state.equipment : ["bodyweight"],
+      };
+      const out = $("out");
+      out.hidden = false;
+      out.textContent = JSON.stringify(payload, null, 2);
+      try {
+        localStorage.setItem("stopwatch_profile_draft", JSON.stringify(payload));
+      } catch (_) {}
+      setTimeout(() => { location.href = "./plan-home.html"; }, 400);
+    };
+
+    function $(id) { return document.getElementById(id); }
+  </script>
+</body>
+</html>

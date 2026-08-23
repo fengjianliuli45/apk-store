@@ -4,9 +4,11 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 
 - `app-release.apk`：Flutter Android 端可安装的 release 包（仍用 debug 签名，见下）
 - `flutter/`：双端（Android + iOS）源码，Flutter + Dart
+- `fitness-planner/`：Python 健身规划引擎权威源（与 `flutter/lib/planner/` Dart 移植同步）
 - `archive/android-compose/`：旧版 Kotlin + Jetpack Compose 原生工程，仅作参考保留，不再维护
 - `docs/figma-ref/`：Figma 设计稿截图对照
 - `docs/Stopwatch-app-design-blueprint-v2.md`：现行产品 / 交互 / 架构规范（视觉以 Figma 为准）
+- `docs/fitness-planner-data/`：动作 + GIF 映射数据
 
 ## Flutter（当前主线）
 
