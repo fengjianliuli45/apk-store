@@ -8,7 +8,8 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 - `archive/android-compose/`：旧版 Kotlin + Jetpack Compose 原生工程，仅作参考保留，不再维护
 - `docs/figma-ref/`：Figma 设计稿截图对照
 - `docs/Stopwatch-app-design-blueprint-v2.md`：现行产品 / 交互 / 架构规范（视觉以 Figma 为准）
-- `docs/Stopwatch-Unity-P0-Figma-Make-design-spec.md`：Unity 两动作训练闭环的 Figma Make UI 生成与验收规范
+- `docs/Stopwatch-Full-App-Figma-Make-design-spec.md`：完整 App 全模块 UI 的 Figma Make 分阶段生成与验收规范
+- `docs/Stopwatch-Unity-P0-Figma-Make-design-spec.md`：仅 Unity 两动作训练闭环的 Figma Make UI 规范
 - `docs/fitness-planner-data/`：动作 + GIF 映射数据
 
 ## Flutter（当前主线）
