@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../data/training_catalog.dart';
+import '../models/training_plan.dart';
 import '../planner/models.dart';
 import '../planner/plan_adapter.dart';
+import '../planner/plan_copy.dart';
 import '../state/plan_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../widgets/exercise_glyph.dart';
 
 /// 训练 tab, embedded only inside the social module's bottom bar (screen
 /// screen-social-feed, node 193:65) — never shown on Home. Shows the plan
@@ -60,17 +63,7 @@ class TrainingScreen extends StatelessWidget {
                       if (today.isRestDay)
                         Text('今天是休息日，好好恢复', style: TextStyle(fontFamily: AppFonts.inter, color: AppColors.textMuted))
                       else
-                        for (final ex in today.exercises)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(ex.name, style: const TextStyle(fontFamily: AppFonts.inter, color: AppColors.ink)),
-                                Text('${ex.sets} 组 × ${ex.reps}', style: AppTextStyles.cardMeta),
-                              ],
-                            ),
-                          ),
+                        for (final ex in today.exercises) _ExerciseRow(exercise: ex),
                     ],
                   ),
                 ),
@@ -82,30 +75,42 @@ class TrainingScreen extends StatelessWidget {
                     margin: const EdgeInsets.only(bottom: 10),
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(color: AppColors.brandGreen.withValues(alpha: 0.4), shape: BoxShape.circle),
-                              child: const Icon(Icons.fitness_center, size: 16, color: AppColors.ink),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(ex.name, style: AppTextStyles.cardName),
-                          ],
-                        ),
-                        Text('${ex.sets} 组 × ${ex.reps}', style: AppTextStyles.cardMeta),
-                      ],
-                    ),
+                    child: _ExerciseRow(exercise: ex, padded: false),
                   ),
                 const SizedBox(height: 20),
               ],
             ),
           ),
         ],
+    );
+  }
+}
+
+class _ExerciseRow extends StatelessWidget {
+  const _ExerciseRow({required this.exercise, this.padded = true});
+
+  final PlannedExercise exercise;
+  final bool padded;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: padded ? 6 : 0),
+      child: Row(
+        children: [
+          ExerciseGlyphAvatar(id: exercise.id, name: exercise.name),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              exercise.name,
+              style: padded
+                  ? const TextStyle(fontFamily: AppFonts.inter, color: AppColors.ink)
+                  : AppTextStyles.cardName,
+            ),
+          ),
+          Text('${exercise.sets} 组 × ${exercise.reps}', style: AppTextStyles.cardMeta),
+        ],
+      ),
     );
   }
 }
@@ -141,6 +146,11 @@ class _NutritionSummaryCard extends StatelessWidget {
               _MacroStat(label: '脂肪', value: '${dt['fat_g']}g'),
               _MacroStat(label: '碳水', value: '${dt['carbs_g']}g'),
             ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '第 ${planWeekNumber(plan.generatedAt)} 周 · ${progressionStrategyLabel(plan.progression.strategy)} · ${supplementLine(plan.supplements)}',
+            style: TextStyle(fontFamily: AppFonts.inter, fontSize: 11, height: 1.4, color: Colors.white.withValues(alpha: 0.7)),
           ),
         ],
       ),

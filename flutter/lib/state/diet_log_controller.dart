@@ -69,6 +69,19 @@ class DietLogController extends ChangeNotifier {
 
   int get todayFat => todayMeals.fold(0, (sum, m) => sum + m.fatG);
 
+  /// Newest → oldest kcal totals for the last [days] calendar days, used by
+  /// the profile radar so "饮食" is logged intake vs the plan target.
+  List<int> lastDayKcals({int days = 7, DateTime? now}) {
+    final today = now ?? DateTime.now();
+    return [
+      for (var i = 0; i < days; i++)
+        mealsOn(_dayKey(today.subtract(Duration(days: i)))).fold(0, (sum, m) => sum + m.kcal),
+    ];
+  }
+
+  static String _dayKey(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
   Future<LoggedMeal> logTemplate(MealTemplate template, {MealSource source = MealSource.catalogEstimate}) {
     return _log(
       name: template.name,

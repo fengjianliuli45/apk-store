@@ -93,3 +93,21 @@ class DietGoals {
     return match.isEmpty ? DietCatalog.recipes : match;
   }
 }
+
+/// Raw PlannerGateway fields reconstructed from a saved plan, so the
+/// input flow can be reopened and edited after the first generation.
+Map<String, dynamic> profileFieldsFrom(UserProfile profile) {
+  return {
+    'gender': profile.gender,
+    'age': profile.age,
+    'height_cm': profile.heightCm,
+    'weight_kg': profile.weightKg,
+    'level': profile.level,
+    'days_per_week': profile.daysPerWeek,
+    'minutes_per_session': profile.minutesPerSession,
+    'equipment': List<String>.from(profile.equipment),
+    'meals_per_day': profile.mealsPerDay,
+    if (profile.bodyFatPct != null) 'body_fat_pct': profile.bodyFatPct,
+    if (profile.targetWeightKg != null) 'target_weight_kg': profile.targetWeightKg,
+  };
+}

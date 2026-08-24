@@ -84,7 +84,9 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                           Text(
                             session.isRestDay
                                 ? (session.sessionTitle.isEmpty ? '休息日' : session.sessionTitle)
-                                : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
+                                : session.justFinished
+                                    ? '本课完成'
+                                    : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
@@ -109,6 +111,24 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (!session.isRestDay && !session.justFinished) ...[
+                      const SizedBox(height: 16),
+                      if (session.phase == WorkoutPhase.active)
+                        _PodButton(
+                          label: '完成这组',
+                          onTap: session.completeSet,
+                        )
+                      else if (session.phase == WorkoutPhase.rest)
+                        _PodButton(
+                          label: '进入下一组',
+                          onTap: session.startNextSetNow,
+                        )
+                      else if (session.phase == WorkoutPhase.ready)
+                        _PodButton(
+                          label: '开始本组',
+                          onTap: session.startSet,
+                        ),
+                    ],
                   ],
                 ),
               ),
@@ -117,7 +137,7 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: GestureDetector(
                   onTap: () {
-                    session.abortWorkout();
+                    if (!session.justFinished) session.abortWorkout();
                     Navigator.of(context).pop();
                   },
                   child: Container(
@@ -128,9 +148,9 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      '结束训练',
-                      style: TextStyle(
+                    child: Text(
+                      session.justFinished ? '返回' : '结束训练',
+                      style: const TextStyle(
                         fontFamily: AppFonts.inter,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
@@ -143,6 +163,37 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _PodButton extends StatelessWidget {
+  const _PodButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.brandGreen,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: AppFonts.inter,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
     );
   }
 }

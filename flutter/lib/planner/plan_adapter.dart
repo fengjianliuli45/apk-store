@@ -19,7 +19,8 @@ DayWorkout dayWorkoutFromSession(SessionResult session) {
   return DayWorkout(
     title: label,
     exercises: [
-      for (final e in session.exercises) PlannedExercise(name: e.name, sets: e.sets, reps: e.reps),
+      for (final e in session.exercises)
+        PlannedExercise(id: e.exerciseId, name: e.name, sets: e.sets, reps: e.reps),
     ],
   );
 }
@@ -50,7 +51,7 @@ List<PlannedExercise> exerciseLibraryFromGenerated(GeneratedPlan plan) {
   for (final session in plan.sessions) {
     for (final e in session.exercises) {
       if (seen.add(e.exerciseId)) {
-        result.add(PlannedExercise(name: e.name, sets: e.sets, reps: e.reps));
+        result.add(PlannedExercise(id: e.exerciseId, name: e.name, sets: e.sets, reps: e.reps));
       }
     }
   }

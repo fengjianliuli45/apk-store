@@ -10,21 +10,33 @@ import '../widgets/gradient_background.dart';
 /// once goalController notifies a choice was made) and, later, can steer
 /// default training/diet recommendations.
 class GoalSurveyScreen extends StatefulWidget {
-  const GoalSurveyScreen({super.key, required this.goalController});
+  const GoalSurveyScreen({
+    super.key,
+    required this.goalController,
+    this.allowExit = false,
+    this.checkInWeek,
+    this.onExit,
+    this.onContinue,
+  });
 
   final GoalController goalController;
+  final bool allowExit;
+  final int? checkInWeek;
+  final VoidCallback? onExit;
+  final VoidCallback? onContinue;
 
   @override
   State<GoalSurveyScreen> createState() => _GoalSurveyScreenState();
 }
 
 class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
-  FitnessGoal? _selected;
+  late FitnessGoal? _selected = widget.goalController.goal;
 
   Future<void> _continue() async {
     final selected = _selected;
     if (selected == null) return;
     await widget.goalController.choose(selected);
+    widget.onContinue?.call();
   }
 
   @override
@@ -35,11 +47,24 @@ class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.allowExit)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: widget.onExit ?? () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.close, color: AppColors.ink),
+                ),
+              ),
             const SizedBox(height: 12),
-            const Text('你的健身目标是？', style: AppTextStyles.cardTitle),
+            Text(
+              widget.checkInWeek == null ? '你的健身目标是？' : '第 ${widget.checkInWeek} 周检查',
+              style: AppTextStyles.cardTitle,
+            ),
             const SizedBox(height: 4),
             Text(
-              '选一个，我们会据此生成专属欢迎动画和训练建议',
+              widget.checkInWeek == null
+                  ? '选一个，我们会据此生成专属欢迎动画和训练建议'
+                  : '到检查周了。请确认目标，并在下一步更新体重和训练条件，我们会按新数据重算计划。',
               style: TextStyle(fontFamily: AppFonts.inter, fontSize: 13, color: AppColors.textMuted),
             ),
             const SizedBox(height: 24),

@@ -71,6 +71,10 @@ class RecipeItem {
   final int carbG;
   final int fatG;
   final String blurb;
+
+  int get prepMinutes => (8 + items.length * 4).clamp(10, 35);
+
+  String get difficulty => items.length <= 3 ? '简单' : items.length == 4 ? '中等' : '稍繁';
 }
 
 enum MealSource { catalogEstimate, barcode, recipe }

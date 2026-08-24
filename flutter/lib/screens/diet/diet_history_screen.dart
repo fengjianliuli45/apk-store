@@ -358,9 +358,12 @@ class _MealRow extends StatelessWidget {
   final LoggedMeal meal;
   @override
   Widget build(BuildContext context) {
-    final image = meal.slot == MealSlot.breakfast
-        ? 'assets/diet/breakfast.png'
-        : 'assets/diet/lunch.png';
+    final image = switch (meal.slot) {
+      MealSlot.breakfast => 'assets/diet/breakfast.png',
+      MealSlot.lunch => 'assets/diet/lunch.png',
+      MealSlot.dinner => 'assets/diet/lunch.png',
+      MealSlot.snack => 'assets/diet/breakfast.png',
+    };
     final time = DateTime.fromMillisecondsSinceEpoch(meal.timestampMs);
     return Container(
       padding: const EdgeInsets.all(12),
@@ -379,7 +382,13 @@ class _MealRow extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: Image.asset(image, width: 48, height: 48, fit: BoxFit.cover),
+            child: Image.asset(
+              image,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _SlotThumb(slot: meal.slot),
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -446,4 +455,28 @@ class _AddMealButton extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _SlotThumb extends StatelessWidget {
+  const _SlotThumb({required this.slot});
+
+  final MealSlot slot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 48,
+      height: 48,
+      color: AppColors.brandGreen.withValues(alpha: 0.35),
+      alignment: Alignment.center,
+      child: Text(
+        slot.label.substring(0, 1),
+        style: const TextStyle(
+          fontFamily: AppFonts.inter,
+          fontWeight: FontWeight.w700,
+          color: AppColors.ink,
+        ),
+      ),
+    );
+  }
 }

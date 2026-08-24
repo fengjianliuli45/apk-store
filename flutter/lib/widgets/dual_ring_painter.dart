@@ -9,7 +9,8 @@ import '../theme/app_colors.dart';
 class DualRingPainter extends CustomPainter {
   const DualRingPainter({required this.progress});
 
-  /// 0..1 — set/rest progress. Idle shows a faint full track only.
+  /// 0..1 — set/rest progress, or weekly completion while idle. Empty
+  /// progress draws the track only (no decorative 86% fill).
   final double progress;
 
   static const _dotCount = 28;
@@ -40,7 +41,8 @@ class DualRingPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(center, innerRadius, innerTrack);
 
-    final sweep = 2 * math.pi * (progress <= 0 ? 0.86 : progress.clamp(0.0, 1.0));
+    final sweep = 2 * math.pi * progress.clamp(0.0, 1.0);
+    if (sweep <= 0) return;
     final progressPaint = Paint()
       ..color = AppColors.brandGreen
       ..style = PaintingStyle.stroke

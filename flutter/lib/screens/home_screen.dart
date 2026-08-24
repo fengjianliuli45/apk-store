@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../state/diet_log_controller.dart';
+import '../state/workout_log_controller.dart';
 import '../state/workout_session_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -19,14 +20,20 @@ class HomeScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.dietLog,
+    required this.workoutLog,
+    required this.plannedDaysPerWeek,
     required this.onOpenProfile,
     required this.onOpenSocial,
+    required this.onEditPlan,
   });
 
   final WorkoutSessionController session;
   final DietLogController dietLog;
+  final WorkoutLogController workoutLog;
+  final int plannedDaysPerWeek;
   final VoidCallback onOpenProfile;
   final VoidCallback onOpenSocial;
+  final VoidCallback onEditPlan;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -65,9 +72,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
       child: AnimatedBuilder(
-        animation: widget.session,
+        animation: Listenable.merge([widget.session, widget.workoutLog]),
         builder: (context, _) {
           final session = widget.session;
+          final weekProgress = widget.workoutLog.weekProgress(
+            plannedDays: widget.plannedDaysPerWeek,
+          );
+          final ringProgress = session.phase == WorkoutPhase.idle
+              ? weekProgress
+              : session.ringProgress;
           return GradientBackground(
             showHudTexture: true,
             child: Column(
@@ -147,13 +160,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          if (session.phase == WorkoutPhase.idle)
-                            const _FigmaIdleRings()
-                          else
                             CustomPaint(
                               size: const Size(220, 220),
                               painter: DualRingPainter(
-                                progress: session.ringProgress,
+                                progress: ringProgress,
                               ),
                             ),
                           Container(
@@ -212,7 +222,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 0),
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                  child: GestureDetector(
+                    onTap: widget.onEditPlan,
+                    child: Text(
+                      '填写规划数据',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: AppFonts.inter,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: AppColors.ink.withValues(alpha: 0.72),
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.ink.withValues(alpha: 0.32),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
                   child: VoiceBar(onCommand: _handleVoiceCommand),
                 ),
                 const Spacer(),
@@ -313,64 +341,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// The Figma export splits each ring into a 270-degree progress asset and a
-/// 90-degree remaining asset. They must be placed back into their original
-/// quadrants; centering every SVG stretches the quarter arcs into loose bands.
-class _FigmaIdleRings extends StatelessWidget {
-  const _FigmaIdleRings();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 220,
-      height: 220,
-      child: FittedBox(
-        fit: BoxFit.contain,
-        child: SizedBox(
-          width: 234,
-          height: 234,
-          child: Stack(
-            children: [
-              SvgPicture.asset(
-                'assets/figma-home/ring_readiness.svg',
-                width: 234,
-                height: 234,
-              ),
-              Positioned(
-                left: 12,
-                top: 12,
-                child: SvgPicture.asset(
-                  'assets/figma-home/ring_readiness_remaining.svg',
-                  width: 105,
-                  height: 105,
-                ),
-              ),
-              Positioned(
-                left: 28,
-                top: 32,
-                child: SvgPicture.asset(
-                  'assets/figma-home/ring_today_progress.svg',
-                  width: 178,
-                  height: 170,
-                ),
-              ),
-              Positioned(
-                left: 28,
-                top: 32,
-                child: SvgPicture.asset(
-                  'assets/figma-home/ring_today_remaining.svg',
-                  width: 89,
-                  height: 85,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

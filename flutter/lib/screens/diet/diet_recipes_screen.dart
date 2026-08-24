@@ -142,9 +142,9 @@ class _DietRecipesScreenState extends State<DietRecipesScreen> {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          const _Meta(icon: Icons.schedule, label: '15 min'),
+                          _Meta(icon: Icons.schedule, label: '${_recipe.prepMinutes} min'),
                           const SizedBox(width: 14),
-                          const _Meta(icon: Icons.fitness_center, label: '简单'),
+                          _Meta(icon: Icons.fitness_center, label: _recipe.difficulty),
                           const SizedBox(width: 14),
                           _Meta(
                             icon: Icons.local_fire_department,

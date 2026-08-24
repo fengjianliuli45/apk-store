@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../state/auth_controller.dart';
 import '../state/chat_controller.dart';
+import '../state/diet_log_controller.dart';
+import '../state/goal_controller.dart';
 import '../state/plan_controller.dart';
 import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
+import '../state/workout_log_controller.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/gradient_background.dart';
 import 'messages/chat_list_screen.dart';
@@ -23,7 +27,12 @@ class SocialShell extends StatefulWidget {
     required this.chat,
     required this.settings,
     required this.plan,
+    required this.goal,
+    required this.auth,
+    required this.workoutLog,
+    required this.dietLog,
     required this.onLogout,
+    required this.onEditPlan,
     this.initialTab = 3,
   });
 
@@ -31,7 +40,12 @@ class SocialShell extends StatefulWidget {
   final ChatController chat;
   final SettingsController settings;
   final PlanController plan;
+  final GoalController goal;
+  final AuthController auth;
+  final WorkoutLogController workoutLog;
+  final DietLogController dietLog;
   final VoidCallback onLogout;
+  final VoidCallback onEditPlan;
 
   /// One of 0 (训练), 1 (计划), 3 (社交) or 4 (我的).
   final int initialTab;
@@ -74,7 +88,13 @@ class _SocialShellState extends State<SocialShell> {
                 ),
                 ProfileScreen(
                   settings: widget.settings,
+                  plan: widget.plan,
+                  goal: widget.goal,
+                  auth: widget.auth,
+                  workoutLog: widget.workoutLog,
+                  dietLog: widget.dietLog,
                   onLogout: widget.onLogout,
+                  onEditPlan: widget.onEditPlan,
                 ),
               ],
             ),

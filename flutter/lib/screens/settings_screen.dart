@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../state/auth_controller.dart';
+import '../state/identity.dart';
 import '../state/settings_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
@@ -7,15 +9,23 @@ import '../widgets/back_bar.dart';
 import '../widgets/gradient_background.dart';
 
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key, required this.settings, required this.onLogout});
+  const SettingsScreen({
+    super.key,
+    required this.settings,
+    required this.onLogout,
+    this.auth,
+    this.onEditPlan,
+  });
 
   final SettingsController settings;
+  final AuthController? auth;
   final VoidCallback onLogout;
+  final VoidCallback? onEditPlan;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: settings,
+      animation: Listenable.merge([settings, ?auth]),
       builder: (context, _) {
         return GradientBackground(
           child: Column(
@@ -27,11 +37,25 @@ class SettingsScreen extends StatelessWidget {
                   children: [
                     _GroupLabel('账号'),
                     _SectionCard(children: [
-                      const _NavRow(label: '账号与安全'),
-                      const _NavRow(label: '手机号', value: '+86 138 **** 0000'),
+                      _NavRow(
+                        label: '账号与安全',
+                        value: auth?.phone == null ? '本地调试' : '已登录',
+                        onTap: () => _showAccountInfo(context),
+                      ),
+                      _NavRow(label: '手机号', value: auth?.maskedPhone ?? '未绑定'),
                     ]),
                     _GroupLabel('训练'),
                     _SectionCard(children: [
+                      _NavRow(
+                        label: '规划数据',
+                        value: '目标 / 身体 / 训练条件',
+                        onTap: onEditPlan == null
+                            ? null
+                            : () {
+                                Navigator.of(context).pop();
+                                onEditPlan!();
+                              },
+                      ),
                       _SwitchRow(label: '训练提醒', value: settings.trainingReminder, onChanged: settings.setTrainingReminder),
                       _SwitchRow(label: '社交互动通知', value: settings.socialNotify, onChanged: settings.setSocialNotify),
                       _SwitchRow(label: '系统通知', value: settings.systemNotify, onChanged: settings.setSystemNotify),
@@ -85,6 +109,34 @@ class SettingsScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  void _showAccountInfo(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '账号与安全',
+                style: TextStyle(fontFamily: AppFonts.inter, fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                auth?.phone == null
+                    ? '当前是跳过登录的本地调试会话，没有绑定手机号，也没有云端账号。'
+                    : '手机号已保存在本机。验证码仍是调试码 ${AuthController.debugOtp}，还没有短信通道。',
+                style: const TextStyle(fontFamily: AppFonts.inter, fontSize: 13, height: 1.5, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

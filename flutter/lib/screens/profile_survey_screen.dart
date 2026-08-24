@@ -10,11 +10,20 @@ import '../widgets/gradient_background.dart';
 /// questions 2-5). One step per screen via an internal index, matching the
 /// v2 "每屏一个问题" constraint.
 class ProfileSurveyScreen extends StatefulWidget {
-  const ProfileSurveyScreen({super.key, required this.onSubmit});
+  const ProfileSurveyScreen({
+    super.key,
+    required this.onSubmit,
+    this.initialFields,
+    this.allowExit = false,
+    this.onBackToGoal,
+  });
 
   /// Raw fields PlannerGateway.generate() needs besides `goal` (added by
   /// the caller, which already knows the chosen FitnessGoal).
   final void Function(Map<String, dynamic> profileFields) onSubmit;
+  final Map<String, dynamic>? initialFields;
+  final bool allowExit;
+  final VoidCallback? onBackToGoal;
 
   @override
   State<ProfileSurveyScreen> createState() => _ProfileSurveyScreenState();
@@ -47,27 +56,76 @@ const _minuteOptions = [15, 30, 45, 60];
 class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   int _step = 0;
 
-  String _gender = 'M';
-  final _ageController = TextEditingController(text: '28');
-  final _heightController = TextEditingController(text: '170');
-  final _weightController = TextEditingController(text: '65');
+  late String _gender;
+  late final TextEditingController _ageController;
+  late final TextEditingController _heightController;
+  late final TextEditingController _weightController;
+  late final TextEditingController _bodyFatController;
+  late final TextEditingController _targetWeightController;
 
-  _Scene _scene = _Scene.home;
-  String _level = 'beginner';
+  late _Scene _scene;
+  late String _level;
 
-  int _daysPerWeek = 3;
-  int _minutesPerSession = 30;
+  late int _daysPerWeek;
+  late int _minutesPerSession;
+  late int _mealsPerDay;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialFields ?? const <String, dynamic>{};
+    _gender = (initial['gender'] as String?) ?? 'M';
+    _ageController = TextEditingController(text: '${initial['age'] ?? 28}');
+    _heightController = TextEditingController(text: _numText(initial['height_cm'], 170));
+    _weightController = TextEditingController(text: _numText(initial['weight_kg'], 65));
+    _bodyFatController = TextEditingController(
+      text: initial['body_fat_pct'] == null ? '' : _numText(initial['body_fat_pct'], 0),
+    );
+    _targetWeightController = TextEditingController(
+      text: initial['target_weight_kg'] == null ? '' : _numText(initial['target_weight_kg'], 0),
+    );
+    _scene = _sceneFromEquipment(initial['equipment']);
+    _level = (initial['level'] as String?) ?? 'beginner';
+    _daysPerWeek = (initial['days_per_week'] as num?)?.toInt() ?? 3;
+    _minutesPerSession = (initial['minutes_per_session'] as num?)?.toInt() ?? 30;
+    _mealsPerDay = (initial['meals_per_day'] as num?)?.toInt() ?? 4;
+  }
+
+  static String _numText(Object? value, num fallback) {
+    if (value is num) {
+      return value == value.roundToDouble() ? '${value.round()}' : '$value';
+    }
+    return '$fallback';
+  }
+
+  static _Scene _sceneFromEquipment(Object? raw) {
+    final equipment = raw is List ? raw.map((e) => '$e').toSet() : <String>{};
+    if (equipment.contains('barbell') ||
+        equipment.contains('machine') ||
+        equipment.contains('cable')) {
+      return _Scene.gym;
+    }
+    if (equipment.contains('dumbbell')) return _Scene.home;
+    if (equipment.contains('bodyweight') && equipment.length <= 1) {
+      return _Scene.street;
+    }
+    return _Scene.home;
+  }
 
   @override
   void dispose() {
     _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
+    _bodyFatController.dispose();
+    _targetWeightController.dispose();
     super.dispose();
   }
 
   void _next() {
     if (_step == 3) {
+      final bodyFat = double.tryParse(_bodyFatController.text);
+      final targetWeight = double.tryParse(_targetWeightController.text);
       widget.onSubmit({
         'gender': _gender,
         'age': int.tryParse(_ageController.text) ?? 28,
@@ -77,6 +135,9 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
         'days_per_week': _daysPerWeek,
         'minutes_per_session': _minutesPerSession,
         'equipment': _scene.equipment,
+        'meals_per_day': _mealsPerDay,
+        if (bodyFat != null) 'body_fat_pct': bodyFat,
+        if (targetWeight != null) 'target_weight_kg': targetWeight,
       });
       return;
     }
@@ -84,7 +145,10 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   }
 
   void _back() {
-    if (_step == 0) return;
+    if (_step == 0) {
+      widget.onBackToGoal?.call();
+      return;
+    }
     setState(() => _step--);
   }
 
@@ -98,7 +162,7 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
           children: [
             Row(
               children: [
-                if (_step > 0)
+                if (_step > 0 || widget.onBackToGoal != null)
                   IconButton(onPressed: _back, icon: const Icon(Icons.arrow_back, color: AppColors.ink)),
                 Expanded(
                   child: Row(
@@ -193,6 +257,10 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
           _NumberField(label: '身高', suffix: 'cm', controller: _heightController),
           const SizedBox(height: 12),
           _NumberField(label: '体重', suffix: 'kg', controller: _weightController),
+          const SizedBox(height: 12),
+          _NumberField(label: '目标体重', suffix: 'kg', controller: _targetWeightController, hint: '选填'),
+          const SizedBox(height: 12),
+          _NumberField(label: '体脂', suffix: '%', controller: _bodyFatController, hint: '选填'),
         ],
       ),
     );
@@ -247,6 +315,21 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
                   selected: _minutesPerSession == m,
                   selectedColor: AppColors.brandGreen,
                   onSelected: (_) => setState(() => _minutesPerSession = m),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Text('每天几餐', style: AppTextStyles.cardMeta),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 10,
+            children: [
+              for (final n in const [3, 4, 5, 6])
+                ChoiceChip(
+                  label: Text('$n 餐'),
+                  selected: _mealsPerDay == n,
+                  selectedColor: AppColors.brandGreen,
+                  onSelected: (_) => setState(() => _mealsPerDay = n),
                 ),
             ],
           ),
@@ -305,11 +388,17 @@ class _ChoiceCard extends StatelessWidget {
 }
 
 class _NumberField extends StatelessWidget {
-  const _NumberField({required this.label, required this.suffix, required this.controller});
+  const _NumberField({
+    required this.label,
+    required this.suffix,
+    required this.controller,
+    this.hint,
+  });
 
   final String label;
   final String suffix;
   final TextEditingController controller;
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -325,7 +414,11 @@ class _NumberField extends StatelessWidget {
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.right,
               style: const TextStyle(fontFamily: AppFonts.jetBrainsMono, fontSize: 16, color: AppColors.ink),
-              decoration: const InputDecoration(border: InputBorder.none),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: hint,
+                hintStyle: AppTextStyles.cardMeta,
+              ),
             ),
           ),
           Text(suffix, style: AppTextStyles.cardMeta),

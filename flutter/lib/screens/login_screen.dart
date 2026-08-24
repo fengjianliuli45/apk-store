@@ -80,10 +80,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 ),
                 onPressed: () {
-                  final phone = _phoneController.text.trim().isEmpty ? '138 0013 0000' : _phoneController.text.trim();
+                  final digits = _phoneController.text.replaceAll(RegExp(r'\D'), '');
+                  if (digits.length != 11) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('请输入 11 位手机号')),
+                    );
+                    return;
+                  }
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => OtpScreen(auth: widget.auth, phone: phone),
+                      builder: (_) => OtpScreen(auth: widget.auth, phone: digits),
                     ),
                   );
                 },

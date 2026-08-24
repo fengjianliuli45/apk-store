@@ -169,7 +169,7 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: const Text(
-                              '● AI SCANNING COMPLETE',
+                              '目录估算 · 非拍照识别',
                               style: TextStyle(
                                 fontFamily: AppFonts.jetBrainsMono,
                                 fontWeight: FontWeight.bold,
@@ -187,13 +187,13 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('AI 识别结果', style: TextStyle(fontSize: 14)),
+                            const Text('目录匹配结果', style: TextStyle(fontSize: 14)),
                             Text(
-                              '置信度 98%',
-                              style: TextStyle(
+                              _template.slot.label,
+                              style: const TextStyle(
                                 fontFamily: AppFonts.jetBrainsMono,
                                 fontSize: 10,
                                 color: AppColors.textMuted,
@@ -222,7 +222,7 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
                           children: [
                             Icon(Icons.auto_awesome, size: 16),
                             SizedBox(width: 6),
-                            Text('AI 饮食建议', style: TextStyle(fontSize: 14)),
+                            Text('目录饮食建议', style: TextStyle(fontSize: 14)),
                           ],
                         ),
                         const SizedBox(height: 8),
@@ -491,7 +491,7 @@ class _SuccessSheet extends StatelessWidget {
                     Icon(Icons.lightbulb_outline, size: 18),
                     SizedBox(width: 6),
                     Text(
-                      'AI 饮食助手建议',
+                      '目录饮食建议',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,

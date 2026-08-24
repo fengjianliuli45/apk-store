@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../models/workout_log.dart';
 import '../planner/models.dart';
 import '../planner/plan_adapter.dart';
+import 'workout_log_controller.dart';
 
 /// Session phases. Idle/Ready/Active/Rest mirror the Compose
 /// `WorkoutSessionViewModel` state machine from archive/android-compose —
@@ -37,6 +39,14 @@ class WorkoutSessionController extends ChangeNotifier {
   List<SetPlan> plans = List<SetPlan>.of(_fallbackPlans);
   bool isRestDay = false;
   String sessionTitle = '';
+  WorkoutLogController? log;
+  double bodyWeightKg = 70;
+
+  /// True after the last set of a session is completed (not after abort).
+  bool justFinished = false;
+
+  int _workoutElapsedMs = 0;
+  int _setsFinished = 0;
 
   int get totalSets => plans.length;
 
@@ -64,9 +74,14 @@ class WorkoutSessionController extends ChangeNotifier {
       ? restDefaultMs
       : plans[currentSet - 1].restMs.clamp(5000, 180000);
 
+  void attachLog(WorkoutLogController workoutLog) {
+    log = workoutLog;
+  }
+
   /// Binds the live session queue to today's generated workout. Rest days
   /// leave [isRestDay] true and refuse to start a dummy set list.
   void applyToday(GeneratedPlan? plan) {
+    bodyWeightKg = plan?.profile.weightKg ?? 70;
     if (plan == null || plan.sessions.isEmpty) {
       plans = List<SetPlan>.of(_fallbackPlans);
       isRestDay = false;
@@ -150,6 +165,9 @@ class WorkoutSessionController extends ChangeNotifier {
 
   void startSession() {
     if (plans.isEmpty) return;
+    justFinished = false;
+    _workoutElapsedMs = 0;
+    _setsFinished = 0;
     _applySet(1, WorkoutPhase.ready);
   }
 
@@ -170,8 +188,9 @@ class WorkoutSessionController extends ChangeNotifier {
 
   void completeSet() {
     if (phase != WorkoutPhase.active) return;
+    _setsFinished += 1;
     if (currentSet >= totalSets) {
-      _reset();
+      _finishWorkout();
     } else {
       _beginRest();
     }
@@ -198,8 +217,37 @@ class WorkoutSessionController extends ChangeNotifier {
     _advance(autoStart: true);
   }
 
-  /// Long-press-to-end from the Compose original.
-  void abortWorkout() => _reset();
+  /// Long-press-to-end from the Compose original. Abandoned sessions are
+  /// not written to the workout log.
+  void abortWorkout() {
+    justFinished = false;
+    _reset();
+  }
+
+  void _finishWorkout() {
+    final durationMs = _workoutElapsedMs.clamp(1000, 6 * 3600 * 1000);
+    final hours = durationMs / 3600000;
+    final kcal = (bodyWeightKg * 5.0 * hours).round().clamp(1, 2000);
+    final title = sessionTitle.isEmpty ? exerciseName : sessionTitle;
+    final workoutLog = log;
+    if (workoutLog != null) {
+      unawaited(
+        workoutLog.record(
+          WorkoutLogEntry(
+            id: '${DateTime.now().millisecondsSinceEpoch}',
+            title: title,
+            timestampMs: DateTime.now().millisecondsSinceEpoch,
+            durationMs: durationMs,
+            completedSets: _setsFinished,
+            totalSets: totalSets,
+            estimatedKcal: kcal,
+          ),
+        ),
+      );
+    }
+    justFinished = true;
+    _reset();
+  }
 
   void _beginRest() {
     phase = WorkoutPhase.rest;
@@ -251,6 +299,8 @@ class WorkoutSessionController extends ChangeNotifier {
     restRemainingMs = restDefaultMs;
     restDurationMs = restDefaultMs;
     isLastFiveSeconds = false;
+    _workoutElapsedMs = 0;
+    _setsFinished = 0;
     if (notify) notifyListeners();
   }
 
@@ -271,10 +321,12 @@ class WorkoutSessionController extends ChangeNotifier {
     if (phase == WorkoutPhase.active) {
       if (isPaused) return;
       setElapsedMs += dt;
+      _workoutElapsedMs += dt;
       final autoReps = (setElapsedMs ~/ _repIntervalMs).clamp(0, targetReps);
       if (autoReps > completedReps) completedReps = autoReps;
       notifyListeners();
     } else if (phase == WorkoutPhase.rest) {
+      _workoutElapsedMs += dt;
       final remaining = (restRemainingMs - dt).clamp(0, 1 << 31);
       restRemainingMs = remaining;
       isLastFiveSeconds = remaining <= _lastFiveMs;

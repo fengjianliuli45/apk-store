@@ -107,6 +107,6 @@ class _AppGateState extends State<_AppGate> {
         onDone: () => setState(() => _welcomeShown = true),
       );
     }
-    return RootShell(onLogout: _auth.logout, plan: _plan);
+    return RootShell(onLogout: _auth.logout, plan: _plan, goal: _goal, auth: _auth);
   }
 }

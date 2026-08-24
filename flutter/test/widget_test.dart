@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:rest_pod_hud/main.dart';
+import 'package:rest_pod_hud/widgets/exercise_glyph.dart';
 
 Future<void> _skipLogin(WidgetTester tester) async {
   // Default test surface (800x600, landscape-ish) is shorter than any real
@@ -67,6 +68,7 @@ void main() {
     await _skipLogin(tester);
 
     expect(find.text('STOPWATCH'), findsOneWidget);
+    expect(find.text('填写规划数据'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) =>
@@ -77,14 +79,31 @@ void main() {
     );
   });
 
+  testWidgets('profile shows plan data entry', (tester) async {
+    await _skipLogin(tester);
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('规划数据'), findsOneWidget);
+    expect(find.text('源雅女'), findsNothing);
+    expect(find.text('72次'), findsNothing);
+    expect(find.text('完成一组训练后会出现在这里'), findsOneWidget);
+    expect(find.text('计划要点'), findsOneWidget);
+
+    await tester.tap(find.text('填写'));
+    await tester.pumpAndSettle();
+    expect(find.text('你的健身目标是？'), findsOneWidget);
+  });
+
   testWidgets('social tab shows seeded posts', (tester) async {
     await _skipLogin(tester);
     await tester.tap(find.text('我的'));
     await tester.pumpAndSettle();
 
-    expect(find.text('ME'), findsOneWidget);
+    expect(find.text('增肌'), findsWidgets);
     expect(find.text('体能维度雷达图'), findsOneWidget);
     expect(find.text('最近训练记录'), findsOneWidget);
+    expect(find.text('源雅女'), findsNothing);
 
     await tester.tap(find.text('社交'));
     await tester.pumpAndSettle();
@@ -99,5 +118,27 @@ void main() {
 
     expect(find.text('消息'), findsOneWidget);
     expect(find.text('林晨'), findsOneWidget);
+  });
+
+  testWidgets('training tab uses a pose glyph per move, not one dumbbell', (
+    tester,
+  ) async {
+    await _skipLogin(tester);
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('训练'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('动作库'), findsOneWidget);
+    expect(find.byType(ExerciseGlyphAvatar), findsWidgets);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Icon &&
+            widget.icon == Icons.fitness_center &&
+            widget.size == 16,
+      ),
+      findsNothing,
+    );
   });
 }
