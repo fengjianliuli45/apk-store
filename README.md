@@ -11,6 +11,8 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 - `docs/Stopwatch-Full-App-Figma-Make-design-spec.md`：完整 App 全模块 UI 的 Figma Make 分阶段生成与验收规范
 - `docs/Stopwatch-Unity-P0-Figma-Make-design-spec.md`：仅 Unity 两动作训练闭环的 Figma Make UI 规范
 - `docs/fitness-planner-data/`：动作 + GIF 映射数据
+- `docs/inspirations/`：产品灵感源文件（`2026-06-29-ai-fitness-coach.md`）
+- `docs/specs/`：各版本设计 / 实现 / 模块方案文档（v1 设计、实现计划、3D 教练、饮食模块、宠物选型）
 
 ## Flutter（当前主线）
 
