@@ -1,5 +1,9 @@
 # Rest Pod HUD 未实现功能规划（优先改造 GitHub 现成项目）
 
+> 状态：L4 历史实施计划（不再作为当前排期或架构依据）
+> 快照日期：2026-08-19
+> 现行入口：[`INDEX.md`](INDEX.md)；首发冻结决策：[`PRODUCT_BASELINE_2026-08-25.md`](PRODUCT_BASELINE_2026-08-25.md)。本文中已完成、失效或冲突的内容不再持续修订。
+
 主线：`apk-store/flutter/`（Flutter 3.47，`com.restpod.hud`）。Unity 舱页由用户本机工程出，Flutter 只负责跳转/嵌入。饮食识别不接未提供的付费云 API。以下仓库均用 `gh search repos` 核过（2026-08-19）。
 
 ## 总路线

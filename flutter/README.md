@@ -1,17 +1,40 @@
-# rest_pod_hud
+# Stopwatch Flutter 客户端
 
-A new Flutter project.
+> 状态：L2 现行实施说明
+> 产品与架构依据：[`../docs/INDEX.md`](../docs/INDEX.md) 与 [`../docs/PRODUCT_BASELINE_2026-08-25.md`](../docs/PRODUCT_BASELINE_2026-08-25.md)。
 
-## Getting Started
+`flutter/` 是当前正式客户端主线，应用 ID / Bundle ID 为 `com.restpod.hud`。客户端负责登录、问卷、训练计划、训练状态、饮食、社区、数据与本地持久化；Unity 负责教练呈现和结构化输入，不能自行判定训练或阶段完成。
 
-This project is a starting point for a Flutter application.
+## 启动
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+flutter pub get
+flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 验证
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```powershell
+flutter test
+flutter analyze
+```
+
+阶段目标与达成逻辑可单独验证：
+
+```powershell
+flutter test test/stage_goal_test.dart
+```
+
+## 关键目录
+
+- `lib/planner/`：Python `fitness-planner/` 的 Dart 同步实现与 UI 网关。
+- `lib/`：应用页面、训练状态与业务逻辑。
+- `assets/`：客户端内置资源。
+- `test/`：Flutter 测试。
+- `android/`、`ios/`：双平台工程配置。
+
+## 交接注意
+
+- 首页和底部导航当前处于“阶段视觉基调已确定、细节讨论暂停”状态，不要把网页原型直接覆盖进正式客户端。
+- Unity 教练资产尚未完成首发可用性核查。
+- Python/Dart 规划逻辑修改必须保持字段和测试同步。

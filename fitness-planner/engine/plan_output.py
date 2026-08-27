@@ -16,6 +16,7 @@ from .session_builder import SessionResult
 from .progression_planner import ProgressionResult
 from .meal_distributor import MealPlan
 from .supplement_advisor import SupplementResult
+from .stage_goal_planner import plan_stage_goal
 
 
 # 全链路用到的论文 PMID
@@ -51,7 +52,7 @@ def generate_json(
 
     return {
         "meta": {
-            "version": "1.0",
+            "version": "1.1",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -84,6 +85,7 @@ def generate_json(
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,
         },
+        "stage_goal": plan_stage_goal(profile, progression, sessions).to_dict(),
     }
 
 

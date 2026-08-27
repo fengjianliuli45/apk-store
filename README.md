@@ -7,9 +7,11 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 - `fitness-planner/`：Python 健身规划引擎权威源（与 `flutter/lib/planner/` Dart 移植同步）
 - `archive/android-compose/`：旧版 Kotlin + Jetpack Compose 原生工程，仅作参考保留，不再维护
 - `docs/figma-ref/`：Figma 设计稿截图对照
-- `docs/Stopwatch-app-design-blueprint-v2.md`：现行产品 / 交互 / 架构规范（视觉以 Figma 为准）
-- `docs/Stopwatch-Full-App-Figma-Make-design-spec.md`：完整 App 全模块 UI 的 Figma Make 分阶段生成与验收规范
-- `docs/Stopwatch-Unity-P0-Figma-Make-design-spec.md`：仅 Unity 两动作训练闭环的 Figma Make UI 规范
+- `docs/INDEX.md`：唯一文档入口与现行/归档层级
+- `docs/PRODUCT_BASELINE_2026-08-25.md`：首发冻结决策基线
+- `docs/Stopwatch-app-design-blueprint-v2.md`：历史产品 / 交互 / 架构蓝图，仅作参考
+- `docs/Stopwatch-Full-App-Figma-Make-design-spec.md`：完整 App 全模块 UI 的 Figma Make 分阶段生成与验收资料
+- `docs/Stopwatch-Unity-P0-Figma-Make-design-spec.md`：Unity 两动作训练闭环的 Figma Make UI 资料
 - `docs/fitness-planner-data/`：动作 + GIF 映射数据
 - `docs/inspirations/`：产品灵感源文件（`2026-06-29-ai-fitness-coach.md`）
 - `docs/specs/`：各版本设计 / 实现 / 模块方案文档（v1 设计、实现计划、3D 教练、饮食模块、宠物选型）

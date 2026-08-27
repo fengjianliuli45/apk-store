@@ -1,5 +1,8 @@
 # Fitness Planner — 代码质量与架构审查报告
 
+> 状态：L4 历史审查快照，不代表当前测试数量或实现状态
+> 现行说明：[`README.md`](README.md)；产品冻结决策：[`../docs/PRODUCT_BASELINE_2026-08-25.md`](../docs/PRODUCT_BASELINE_2026-08-25.md)。
+
 > 审查日期: 2026-08-02  
 > 审查范围: `engine/` 10 个模块 + `tests/` 11 个测试文件 + `data/exercises.json` (108 动作)  
 > 测试状态: 77 passed, 0 failed  

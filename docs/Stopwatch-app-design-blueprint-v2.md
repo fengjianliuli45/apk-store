@@ -1,12 +1,13 @@
 # Stopwatch App 产品设计方案 v2
 
 > 2026-08-19 · Product / UX / Architecture  
-> 状态：现行产品规范  
+> 状态：历史归档（不再作为现行技术或版本范围依据）
+> 取代者：`PRODUCT_BASELINE_2026-08-25.md`
 > 取代：`Stopwatch-app-design-blueprint.md`（2026-08-03，含已废弃的休息舱视觉语汇）  
 > 视觉母版：[Stopwatch App - Mobile UI Interactive](https://www.figma.com/design/AGgbqoUdX7FaKbTCIugsF7?node-id=17-35)  
 > 教练 HUD：[Unity Coach v1 Ready / Active / Rest / Rest Last 5s](https://www.figma.com/design/AGgbqoUdX7FaKbTCIugsF7?node-id=162-28)（`162:28`–`162:31`）
 
-本文只定义产品意图、信息架构、交互规则、内容语气和技术边界。  
+本文保留 2026-08-19 时点的产品讨论，用于追溯历史决策；其中 KMP、Compose、SwiftUI、商城、男女教练切换及旧版本边界均已被后续决策取代。
 **颜色、字体、材质、圆角、动效外观、3D 光照与组件造型一律以现行 Figma 稿为准，不在本文规定。**
 
 ---

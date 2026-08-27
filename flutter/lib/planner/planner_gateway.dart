@@ -8,6 +8,7 @@ import 'session_builder.dart';
 import 'split_selector.dart';
 import 'supplement_advisor.dart';
 import 'tdee_calculator.dart';
+import 'stage_goal_planner.dart';
 
 /// Single entry point into the ported fitness-planner engine — this is the
 /// `PlannerGateway` referenced by docs/Stopwatch-app-design-blueprint-v2.md
@@ -39,6 +40,7 @@ class PlannerGateway {
     final mealPlan = distributeMeals(profile, macros);
     final supplements = adviseSupplements(profile, macros);
     final volume = weeklyVolume[profile.level] ?? weeklyVolume['beginner']!;
+    final stageGoal = planStageGoal(profile, progression, sessions);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -51,6 +53,7 @@ class PlannerGateway {
       mealPlan: mealPlan,
       supplements: supplements,
       weeklyVolumePerGroup: volume,
+      stageGoal: stageGoal,
     );
   }
 }

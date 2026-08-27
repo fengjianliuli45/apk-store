@@ -13,6 +13,11 @@ local.properties
 *.dex
 *.class
 
+# Local Codex working copies and render caches (never part of handoff)
+/.codex-apk-store-today/
+/.codex-docx-render/
+/.handoff/
+
 # Flutter
 .dart_tool/
 .flutter-plugins
