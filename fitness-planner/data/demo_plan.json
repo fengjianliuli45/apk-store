@@ -1,7 +1,7 @@
 {
   "meta": {
-    "version": "1.0",
-    "generated_at": "2026-08-03T02:04:49.854271+00:00",
+    "version": "1.5",
+    "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
       "20847704",
@@ -25,7 +25,7 @@
     "level": "intermediate",
     "goal": "hypertrophy",
     "days_per_week": 4,
-    "minutes_per_session": 60,
+    "minutes_per_session": 75,
     "equipment": [
       "barbell",
       "dumbbell",
@@ -34,7 +34,10 @@
     ],
     "injuries": [],
     "warnings": [],
-    "notes": []
+    "notes": [
+      "未指定训练天数，将按每次时长/目标/水平自动安排",
+      "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
+    ]
   },
   "nutrition": {
     "tdee": {
@@ -122,7 +125,18 @@
   },
   "training": {
     "split": "upper_lower",
-    "weekly_volume_per_group": {
+    "weekly_volume_target": {
+      "chest": 14,
+      "back": 16,
+      "quads": 14,
+      "hamstrings": 8,
+      "shoulders": 12,
+      "biceps": 6,
+      "triceps": 6,
+      "calves": 6,
+      "core": 4
+    },
+    "weekly_volume_optimal": {
       "chest": 14,
       "back": 16,
       "quads": 14,
@@ -133,11 +147,82 @@
       "calves": 6,
       "core": 6
     },
+    "weekly_volume_delivered": {
+      "chest": 14,
+      "back": 16,
+      "quads": 14,
+      "hamstrings": 8,
+      "shoulders": 12,
+      "biceps": 4,
+      "triceps": 0,
+      "calves": 6,
+      "core": 0
+    },
+    "weekly_volume_per_group": {
+      "chest": 14,
+      "back": 16,
+      "quads": 14,
+      "hamstrings": 8,
+      "shoulders": 12,
+      "biceps": 6,
+      "triceps": 6,
+      "calves": 6,
+      "core": 4
+    },
+    "volume_coverage_pct": 100,
+    "vs_optimal_pct": 100,
+    "volume_notes": [
+      "二头/三头/核心：当前分肢不单独安排，靠复合动作间接带到；想直接练需加训练日或换分肢。"
+    ],
+    "capacity_recommendation": {},
+    "frequency_plan": {
+      "days_per_week": 4,
+      "minutes_per_session": 75,
+      "min_session_minutes": 60,
+      "coverage_pct": 100,
+      "vs_optimal_pct": 100,
+      "minutes_raised": false,
+      "note": "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
+    },
+    "recovery_days": [
+      {
+        "day": "周三",
+        "kind": "mobility",
+        "duration_min": 12,
+        "title": "主动恢复",
+        "focus": "拉伸 + 走路，保持每天的训练习惯",
+        "items": [
+          "动态拉伸 / 关节活动 8 分钟",
+          "6000 步，或散步 15 分钟",
+          "泡沫轴放松 5 分钟"
+        ]
+      },
+      {
+        "day": "周六",
+        "kind": "mobility",
+        "duration_min": 12,
+        "title": "主动恢复",
+        "focus": "拉伸 + 走路，保持每天的训练习惯",
+        "items": [
+          "动态拉伸 / 关节活动 8 分钟",
+          "6000 步，或散步 15 分钟",
+          "泡沫轴放松 5 分钟"
+        ]
+      },
+      {
+        "day": "周日",
+        "kind": "rest",
+        "duration_min": 0,
+        "title": "完全休息",
+        "focus": "睡够，让肌肉和神经系统恢复",
+        "items": []
+      }
+    ],
     "schedule": [
       {
         "day": "周一",
         "type": "upper",
-        "duration_min": 60,
+        "duration_min": 74,
         "exercises": [
           {
             "name": "杠铃卧推",
@@ -160,29 +245,8 @@
               "触胸轻触即起",
               "离心3秒",
               "双脚踩稳"
-            ]
-          },
-          {
-            "name": "哑铃卧推",
-            "name_en": "Dumbbell Bench Press",
-            "exercise_id": "dumbbell_bench_press",
-            "sets": 3,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 2,
-            "primary_muscles": [
-              "chest"
             ],
-            "compound": true,
-            "form_cues": [
-              "掌心相对或朝前",
-              "下降至胸齐",
-              "离心控制"
-            ]
+            "target_muscle": "chest"
           },
           {
             "name": "单臂哑铃划船",
@@ -195,7 +259,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 3,
+            "order": 2,
             "primary_muscles": [
               "back"
             ],
@@ -204,29 +268,8 @@
               "单手撑凳",
               "拉至腰侧",
               "肩胛后缩"
-            ]
-          },
-          {
-            "name": "坐姿绳索划船",
-            "name_en": "Seated Cable Row",
-            "exercise_id": "seated_cable_row",
-            "sets": 4,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 4,
-            "primary_muscles": [
-              "back"
             ],
-            "compound": true,
-            "form_cues": [
-              "微屈膝",
-              "拉至腹部",
-              "肩胛后缩"
-            ]
+            "target_muscle": "back"
           },
           {
             "name": "哑铃推举",
@@ -239,7 +282,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 5,
+            "order": 3,
             "primary_muscles": [
               "shoulders"
             ],
@@ -248,13 +291,60 @@
               "掌心朝前",
               "下降至肩齐",
               "核心收紧"
-            ]
+            ],
+            "target_muscle": "shoulders"
+          },
+          {
+            "name": "哑铃卧推",
+            "name_en": "Dumbbell Bench Press",
+            "exercise_id": "dumbbell_bench_press",
+            "sets": 3,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 4,
+            "primary_muscles": [
+              "chest"
+            ],
+            "compound": true,
+            "form_cues": [
+              "掌心相对或朝前",
+              "下降至胸齐",
+              "离心控制"
+            ],
+            "target_muscle": "chest"
+          },
+          {
+            "name": "坐姿绳索划船",
+            "name_en": "Seated Cable Row",
+            "exercise_id": "seated_cable_row",
+            "sets": 4,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 5,
+            "primary_muscles": [
+              "back"
+            ],
+            "compound": true,
+            "form_cues": [
+              "微屈膝",
+              "拉至腹部",
+              "肩胛后缩"
+            ],
+            "target_muscle": "back"
           },
           {
             "name": "坐姿哑铃推举",
             "name_en": "Seated Dumbbell Press",
             "exercise_id": "seated_dumbbell_press",
-            "sets": 3,
+            "sets": 2,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -270,13 +360,14 @@
               "靠背支撑",
               "下降至肩齐",
               "推过头顶"
-            ]
+            ],
+            "target_muscle": "shoulders"
           },
           {
             "name": "反握引体向上",
             "name_en": "Chin-Up",
             "exercise_id": "chin_up",
-            "sets": 4,
+            "sets": 2,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -293,38 +384,16 @@
               "反握肩宽",
               "拉至下巴过杠",
               "肩胛下沉"
-            ]
-          },
-          {
-            "name": "辅助双杠臂屈伸",
-            "name_en": "Assisted Dips",
-            "exercise_id": "assisted_dips",
-            "sets": 4,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 8,
-            "primary_muscles": [
-              "lower_chest",
-              "triceps"
             ],
-            "compound": true,
-            "form_cues": [
-              "辅助平台或弹力带",
-              "下降至上臂平行",
-              "肩胛下沉"
-            ]
+            "target_muscle": "biceps"
           }
         ],
-        "total_sets": 30
+        "total_sets": 23
       },
       {
         "day": "周二",
         "type": "lower",
-        "duration_min": 60,
+        "duration_min": 51,
         "exercises": [
           {
             "name": "高脚杯深蹲",
@@ -346,29 +415,8 @@
               "哑铃持胸前",
               "蹲至平行",
               "背挺直"
-            ]
-          },
-          {
-            "name": "徒手深蹲",
-            "name_en": "Bodyweight Squat",
-            "exercise_id": "bodyweight_squat",
-            "sets": 3,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 2,
-            "primary_muscles": [
-              "quads"
             ],
-            "compound": true,
-            "form_cues": [
-              "脚与肩宽",
-              "蹲至平行",
-              "膝盖跟脚尖"
-            ]
+            "target_muscle": "quads"
           },
           {
             "name": "哑铃罗马尼亚硬拉",
@@ -381,7 +429,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 3,
+            "order": 2,
             "primary_muscles": [
               "hamstrings",
               "glutes"
@@ -391,7 +439,8 @@
               "微屈膝",
               "髋后推",
               "背平直"
-            ]
+            ],
+            "target_muscle": "hamstrings"
           },
           {
             "name": "行走箭步蹲",
@@ -404,7 +453,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 4,
+            "order": 3,
             "primary_muscles": [
               "quads",
               "glutes"
@@ -414,7 +463,8 @@
               "持哑铃",
               "交替迈步",
               "前膝90度"
-            ]
+            ],
+            "target_muscle": "glutes"
           },
           {
             "name": "站姿提踵",
@@ -427,7 +477,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 5,
+            "order": 4,
             "primary_muscles": [
               "calves"
             ],
@@ -436,7 +486,31 @@
               "前脚掌站台",
               "提踵至最高",
               "控制下降"
-            ]
+            ],
+            "target_muscle": "calves"
+          },
+          {
+            "name": "徒手深蹲",
+            "name_en": "Bodyweight Squat",
+            "exercise_id": "bodyweight_squat",
+            "sets": 3,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 5,
+            "primary_muscles": [
+              "quads"
+            ],
+            "compound": true,
+            "form_cues": [
+              "脚与肩宽",
+              "蹲至平行",
+              "膝盖跟脚尖"
+            ],
+            "target_muscle": "quads"
           }
         ],
         "total_sets": 17
@@ -451,7 +525,7 @@
       {
         "day": "周四",
         "type": "upper",
-        "duration_min": 60,
+        "duration_min": 74,
         "exercises": [
           {
             "name": "杠铃卧推",
@@ -474,29 +548,8 @@
               "触胸轻触即起",
               "离心3秒",
               "双脚踩稳"
-            ]
-          },
-          {
-            "name": "哑铃卧推",
-            "name_en": "Dumbbell Bench Press",
-            "exercise_id": "dumbbell_bench_press",
-            "sets": 3,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 2,
-            "primary_muscles": [
-              "chest"
             ],
-            "compound": true,
-            "form_cues": [
-              "掌心相对或朝前",
-              "下降至胸齐",
-              "离心控制"
-            ]
+            "target_muscle": "chest"
           },
           {
             "name": "单臂哑铃划船",
@@ -509,7 +562,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 3,
+            "order": 2,
             "primary_muscles": [
               "back"
             ],
@@ -518,29 +571,8 @@
               "单手撑凳",
               "拉至腰侧",
               "肩胛后缩"
-            ]
-          },
-          {
-            "name": "坐姿绳索划船",
-            "name_en": "Seated Cable Row",
-            "exercise_id": "seated_cable_row",
-            "sets": 4,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 4,
-            "primary_muscles": [
-              "back"
             ],
-            "compound": true,
-            "form_cues": [
-              "微屈膝",
-              "拉至腹部",
-              "肩胛后缩"
-            ]
+            "target_muscle": "back"
           },
           {
             "name": "哑铃推举",
@@ -553,7 +585,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 5,
+            "order": 3,
             "primary_muscles": [
               "shoulders"
             ],
@@ -562,13 +594,60 @@
               "掌心朝前",
               "下降至肩齐",
               "核心收紧"
-            ]
+            ],
+            "target_muscle": "shoulders"
+          },
+          {
+            "name": "哑铃卧推",
+            "name_en": "Dumbbell Bench Press",
+            "exercise_id": "dumbbell_bench_press",
+            "sets": 3,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 4,
+            "primary_muscles": [
+              "chest"
+            ],
+            "compound": true,
+            "form_cues": [
+              "掌心相对或朝前",
+              "下降至胸齐",
+              "离心控制"
+            ],
+            "target_muscle": "chest"
+          },
+          {
+            "name": "坐姿绳索划船",
+            "name_en": "Seated Cable Row",
+            "exercise_id": "seated_cable_row",
+            "sets": 4,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 5,
+            "primary_muscles": [
+              "back"
+            ],
+            "compound": true,
+            "form_cues": [
+              "微屈膝",
+              "拉至腹部",
+              "肩胛后缩"
+            ],
+            "target_muscle": "back"
           },
           {
             "name": "坐姿哑铃推举",
             "name_en": "Seated Dumbbell Press",
             "exercise_id": "seated_dumbbell_press",
-            "sets": 3,
+            "sets": 2,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -584,13 +663,14 @@
               "靠背支撑",
               "下降至肩齐",
               "推过头顶"
-            ]
+            ],
+            "target_muscle": "shoulders"
           },
           {
             "name": "反握引体向上",
             "name_en": "Chin-Up",
             "exercise_id": "chin_up",
-            "sets": 4,
+            "sets": 2,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -607,38 +687,16 @@
               "反握肩宽",
               "拉至下巴过杠",
               "肩胛下沉"
-            ]
-          },
-          {
-            "name": "辅助双杠臂屈伸",
-            "name_en": "Assisted Dips",
-            "exercise_id": "assisted_dips",
-            "sets": 4,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 8,
-            "primary_muscles": [
-              "lower_chest",
-              "triceps"
             ],
-            "compound": true,
-            "form_cues": [
-              "辅助平台或弹力带",
-              "下降至上臂平行",
-              "肩胛下沉"
-            ]
+            "target_muscle": "biceps"
           }
         ],
-        "total_sets": 30
+        "total_sets": 23
       },
       {
         "day": "周五",
         "type": "lower",
-        "duration_min": 60,
+        "duration_min": 51,
         "exercises": [
           {
             "name": "高脚杯深蹲",
@@ -660,29 +718,8 @@
               "哑铃持胸前",
               "蹲至平行",
               "背挺直"
-            ]
-          },
-          {
-            "name": "徒手深蹲",
-            "name_en": "Bodyweight Squat",
-            "exercise_id": "bodyweight_squat",
-            "sets": 3,
-            "reps": "8-12",
-            "load": "65-80% 1RM",
-            "rest_sec": 90,
-            "rpe": 7.5,
-            "tempo": "3-1-2-0",
-            "notes": "RIR 1-3",
-            "order": 2,
-            "primary_muscles": [
-              "quads"
             ],
-            "compound": true,
-            "form_cues": [
-              "脚与肩宽",
-              "蹲至平行",
-              "膝盖跟脚尖"
-            ]
+            "target_muscle": "quads"
           },
           {
             "name": "哑铃罗马尼亚硬拉",
@@ -695,7 +732,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 3,
+            "order": 2,
             "primary_muscles": [
               "hamstrings",
               "glutes"
@@ -705,7 +742,8 @@
               "微屈膝",
               "髋后推",
               "背平直"
-            ]
+            ],
+            "target_muscle": "hamstrings"
           },
           {
             "name": "行走箭步蹲",
@@ -718,7 +756,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 4,
+            "order": 3,
             "primary_muscles": [
               "quads",
               "glutes"
@@ -728,7 +766,8 @@
               "持哑铃",
               "交替迈步",
               "前膝90度"
-            ]
+            ],
+            "target_muscle": "glutes"
           },
           {
             "name": "站姿提踵",
@@ -741,7 +780,7 @@
             "rpe": 7.5,
             "tempo": "3-1-2-0",
             "notes": "RIR 1-3",
-            "order": 5,
+            "order": 4,
             "primary_muscles": [
               "calves"
             ],
@@ -750,7 +789,31 @@
               "前脚掌站台",
               "提踵至最高",
               "控制下降"
-            ]
+            ],
+            "target_muscle": "calves"
+          },
+          {
+            "name": "徒手深蹲",
+            "name_en": "Bodyweight Squat",
+            "exercise_id": "bodyweight_squat",
+            "sets": 3,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 5,
+            "primary_muscles": [
+              "quads"
+            ],
+            "compound": true,
+            "form_cues": [
+              "脚与肩宽",
+              "蹲至平行",
+              "膝盖跟脚尖"
+            ],
+            "target_muscle": "quads"
           }
         ],
         "total_sets": 17
@@ -777,6 +840,9 @@
       "progression_freq": "每2周",
       "double_progression": "双进阶：当无法再加重量时：先+1次→达到上限次数后降次加重循环",
       "next_check_week": 4,
+      "deload_every_weeks": 4,
+      "deload_volume_pct": 60,
+      "deload_note": "第 4、8、12… 周为减载周：组数×0.6，保动作模式、不加重量",
       "reassessment_triggers": [
         {
           "condition": "体重变化 >2kg",
@@ -786,6 +852,11 @@
         {
           "condition": "训练满 4 周",
           "action": "全动作组数+1 或试加重",
+          "week": 4
+        },
+        {
+          "condition": "每 4 周减载周",
+          "action": "组数降至平时的 60%，负荷可略降或不加重量",
           "week": 4
         },
         {
@@ -811,5 +882,40 @@
       ]
     },
     "split_warnings": []
+  },
+  "stage_goal": {
+    "stage_type": "adaptation",
+    "goal_type": "hypertrophy",
+    "cycle_weeks": 4,
+    "planned_sessions": 16,
+    "required_sessions": 13,
+    "adherence_target_pct": 80,
+    "minimum_active_weeks": 3,
+    "minimum_comparable_measurements": 2,
+    "outcome_targets": [
+      {
+        "metric": "same_load_rep_gain",
+        "threshold": 2,
+        "unit": "reps",
+        "description": "同一标准化动作在相同负荷下增加至少 2 次规范重复",
+        "required": false
+      },
+      {
+        "metric": "performance_improvement_pct",
+        "threshold": 2.5,
+        "unit": "percent",
+        "description": "标准化动作表现相对基线提高至少 2.5%，并由两次可比较训练确认",
+        "required": false
+      },
+      {
+        "metric": "body_trend_target_met",
+        "threshold": 1,
+        "unit": "boolean",
+        "description": "围度、体重或可选体成分趋势支持正向适应",
+        "required": false
+      }
+    ],
+    "completion_rule": "完成执行与数据质量门槛，并满足至少一个能力或身体趋势结果；百分比表现提升必须由两次可比较训练确认；存在未处理安全问题时不得自动达成",
+    "unlock_reward": "pet_hatchling"
   }
 }

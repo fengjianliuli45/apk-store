@@ -28,9 +28,9 @@ class UserProfile {
     required this.weightKg,
     required this.level,
     required this.goal,
-    required this.daysPerWeek,
     required this.minutesPerSession,
     required this.equipment,
+    this.daysPerWeek,
     this.bodyFatPct,
     this.mealsPerDay = 4,
     List<String>? supplements,
@@ -52,7 +52,7 @@ class UserProfile {
   final double weightKg;
   final String level;
   final String goal;
-  final int daysPerWeek;
+  final int? daysPerWeek;   // null → 由 frequencyPlanner 推导
   final int minutesPerSession;
   final List<String> equipment;
   final double? bodyFatPct;
@@ -253,6 +253,7 @@ class ExerciseEntry {
     this.primaryMuscles = const [],
     this.compound = false,
     this.formCues = const [],
+    this.targetMuscle = '',
   });
 
   final String name;
@@ -267,6 +268,7 @@ class ExerciseEntry {
   final String notes;
   final int order;
   final List<String> primaryMuscles;
+  final String targetMuscle;
   final bool compound;
   final List<String> formCues;
 
@@ -285,6 +287,7 @@ class ExerciseEntry {
     'primary_muscles': primaryMuscles,
     'compound': compound,
     'form_cues': formCues,
+    'target_muscle': targetMuscle,
   };
 }
 
@@ -312,6 +315,44 @@ class SessionResult {
     'exercises': exercises.map((e) => e.toJson()).toList(),
     'total_sets': totalSets,
   };
+}
+
+// ── recovery_planner ───────────────────────────────────────────────
+
+class RecoveryDay {
+  RecoveryDay({
+    required this.day,
+    required this.kind,
+    required this.durationMin,
+    required this.title,
+    required this.focus,
+    this.items = const [],
+  });
+
+  final String day;
+  final String kind; // rest | mobility | cardio | pump
+  final int durationMin;
+  final String title;
+  final String focus;
+  final List<String> items;
+
+  Map<String, dynamic> toJson() => {
+    'day': day,
+    'kind': kind,
+    'duration_min': durationMin,
+    'title': title,
+    'focus': focus,
+    'items': items,
+  };
+
+  factory RecoveryDay.fromJson(Map<String, dynamic> m) => RecoveryDay(
+    day: m['day'] as String,
+    kind: m['kind'] as String,
+    durationMin: (m['duration_min'] as num).toInt(),
+    title: m['title'] as String,
+    focus: m['focus'] as String,
+    items: List<String>.from(m['items'] as List? ?? const []),
+  );
 }
 
 // ── progression_planner ────────────────────────────────────────────
@@ -571,6 +612,14 @@ class GeneratedPlan {
     required this.supplements,
     required this.weeklyVolumePerGroup,
     this.stageGoal,
+    this.weeklyVolumeDelivered = const {},
+    this.volumeCoveragePct = 100,
+    this.vsOptimalPct = 100,
+    this.weeklyVolumeOptimal = const {},
+    this.volumeNotes = const [],
+    this.capacityRecommendation = const {},
+    this.frequencyPlan = const {},
+    this.recoveryDays = const [],
   });
 
   final DateTime generatedAt;
@@ -585,8 +634,24 @@ class GeneratedPlan {
   final Map<String, num> weeklyVolumePerGroup;
   final StageGoal? stageGoal;
 
+  /// 训练量对账。`weeklyVolumePerGroup` = 自适应目标（本计划承诺的量）；
+  /// `weeklyVolumeOptimal` = 最优训练量 MAV；`volumeCoveragePct` 对自适应目标
+  /// 通常 100；`vsOptimalPct` = 相当于最优的百分比。
+  final Map<String, num> weeklyVolumeDelivered;
+  final Map<String, num> weeklyVolumeOptimal;
+  final int volumeCoveragePct;
+  final int vsOptimalPct;
+  final List<String> volumeNotes;
+  final Map<String, dynamic> capacityRecommendation;
+
+  /// 引擎定频率的结果（任务 ①.5）：天数、（可能上调的）时长、最低时长、说明。
+  final Map<String, dynamic> frequencyPlan;
+
+  /// 休息日的轻日安排（交付 2）：mobility / cardio / pump / rest。
+  final List<RecoveryDay> recoveryDays;
+
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.1', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.5', 'generated_at': generatedAt.toIso8601String()},
     'profile': profile.toJson(),
     'nutrition': {
       'tdee': tdee.toJson(),
@@ -596,7 +661,16 @@ class GeneratedPlan {
     },
     'training': {
       'split': split.splitName,
+      'weekly_volume_target': weeklyVolumePerGroup,
+      'weekly_volume_optimal': weeklyVolumeOptimal,
       'weekly_volume_per_group': weeklyVolumePerGroup,
+      'weekly_volume_delivered': weeklyVolumeDelivered,
+      'volume_coverage_pct': volumeCoveragePct,
+      'vs_optimal_pct': vsOptimalPct,
+      'volume_notes': volumeNotes,
+      'capacity_recommendation': capacityRecommendation,
+      'frequency_plan': frequencyPlan.isEmpty ? null : frequencyPlan,
+      'recovery_days': recoveryDays.map((r) => r.toJson()).toList(),
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
@@ -624,7 +698,7 @@ class GeneratedPlan {
         weightKg: (profileJson['weight_kg'] as num).toDouble(),
         level: profileJson['level'] as String,
         goal: profileJson['goal'] as String,
-        daysPerWeek: profileJson['days_per_week'] as int,
+        daysPerWeek: (profileJson['days_per_week'] as num?)?.toInt(),
         minutesPerSession: profileJson['minutes_per_session'] as int,
         equipment: List<String>.from(profileJson['equipment'] as List),
         bodyFatPct: (profileJson['body_fat_pct'] as num?)?.toDouble(),
@@ -691,6 +765,7 @@ class GeneratedPlan {
               ),
               compound: (ex['compound'] as bool?) ?? false,
               formCues: List<String>.from(ex['form_cues'] as List? ?? const []),
+              targetMuscle: (ex['target_muscle'] as String?) ?? '',
             );
           }).toList(),
         );
@@ -754,6 +829,27 @@ class GeneratedPlan {
       weeklyVolumePerGroup: Map<String, num>.from(
         training['weekly_volume_per_group'] as Map,
       ),
+      weeklyVolumeOptimal: Map<String, num>.from(
+        training['weekly_volume_optimal'] as Map? ?? const {},
+      ),
+      weeklyVolumeDelivered: Map<String, num>.from(
+        training['weekly_volume_delivered'] as Map? ?? const {},
+      ),
+      volumeCoveragePct: (training['volume_coverage_pct'] as num?)?.toInt() ?? 100,
+      vsOptimalPct: (training['vs_optimal_pct'] as num?)?.toInt() ?? 100,
+      volumeNotes: List<String>.from(
+        training['volume_notes'] as List? ?? const [],
+      ),
+      capacityRecommendation: Map<String, dynamic>.from(
+        training['capacity_recommendation'] as Map? ?? const {},
+      ),
+      frequencyPlan: Map<String, dynamic>.from(
+        training['frequency_plan'] as Map? ?? const {},
+      ),
+      recoveryDays: [
+        for (final r in (training['recovery_days'] as List? ?? const []))
+          RecoveryDay.fromJson(r as Map<String, dynamic>),
+      ],
       stageGoal: json['stage_goal'] == null
           ? null
           : StageGoal.fromJson(json['stage_goal'] as Map<String, dynamic>),

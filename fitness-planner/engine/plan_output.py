@@ -43,16 +43,18 @@ def generate_json(
     progression: ProgressionResult,
     meal_plan: MealPlan,
     supplements: SupplementResult,
+    frequency_plan=None,
+    recovery_days=None,
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
-    # 每肌群每周总组数
-    from .session_builder import WEEKLY_VOLUME
-    weekly_volume = WEEKLY_VOLUME.get(profile.level, WEEKLY_VOLUME["beginner"])
+    # 训练量对账（自适应目标 + 相当于最优的百分比）
+    from .session_builder import analyze_volume
+    volume_report = analyze_volume(profile, split, sessions)
 
     return {
         "meta": {
-            "version": "1.1",
+            "version": "1.5",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -80,7 +82,16 @@ def generate_json(
         },
         "training": {
             "split": split.split_name,
-            "weekly_volume_per_group": weekly_volume,
+            "weekly_volume_target": volume_report["target"],       # 自适应目标（本计划承诺的量）
+            "weekly_volume_optimal": volume_report["optimal"],     # 最优训练量 MAV（上限）
+            "weekly_volume_delivered": volume_report["delivered"],
+            "weekly_volume_per_group": volume_report["target"],    # 兼容旧字段 = 自适应目标
+            "volume_coverage_pct": volume_report["coverage_pct"],  # 对自适应目标，通常 100
+            "vs_optimal_pct": volume_report["vs_optimal_pct"],     # 相当于最优的百分比
+            "volume_notes": volume_report["notes"],
+            "capacity_recommendation": volume_report["recommendation"],
+            "frequency_plan": frequency_plan.to_dict() if frequency_plan is not None else None,
+            "recovery_days": [rd.to_dict() for rd in (recovery_days or [])],
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,

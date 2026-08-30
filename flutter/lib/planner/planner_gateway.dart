@@ -1,9 +1,12 @@
 import 'exercise_library.dart';
+import 'frequency_planner.dart';
 import 'macro_allocator.dart';
 import 'meal_distributor.dart';
 import 'models.dart';
 import 'profile_validator.dart';
 import 'progression_planner.dart';
+import 'recovery_planner.dart';
+import 'schedule_planner.dart';
 import 'session_builder.dart';
 import 'split_selector.dart';
 import 'supplement_advisor.dart';
@@ -27,20 +30,31 @@ class PlannerGateway {
     return _instance ??= PlannerGateway._(await ExerciseLibrary.load());
   }
 
-  /// Runs the full pipeline: validate → TDEE → macros → split → sessions →
-  /// progression → meals → supplements → assembled plan. Throws
+  /// onboarding: 用户选完 目标/水平/器械 后，用这个拿「每次最少练多少分钟」，
+  /// 把时长选项的下限设成它——不要给更短的选项再事后上调。
+  int minSessionMinutes({
+    required String level,
+    required String goal,
+    required List<String> equipment,
+  }) =>
+      minSessionMinutesFor(level, goal, equipment, _library);
+
+  /// Runs the full pipeline: validate → frequency → TDEE → macros → split →
+  /// sessions → progression → meals → supplements → assembled plan. Throws
   /// [ValidationError] if `raw` is missing/out-of-range required fields.
   GeneratedPlan generate(Map<String, dynamic> raw) {
-    final profile = validateProfile(raw);
+    final validated = validateProfile(raw);
+    final (profile, freqPlan) = resolveFrequency(validated, _library);
     final tdee = calculateTdee(profile);
     final macros = allocateMacros(profile, tdee);
-    final split = selectSplit(profile);
+    final split = reschedule(profile, selectSplit(profile));
     final sessions = buildSessions(profile, split, _library);
     final progression = planProgression(profile);
     final mealPlan = distributeMeals(profile, macros);
     final supplements = adviseSupplements(profile, macros);
-    final volume = weeklyVolume[profile.level] ?? weeklyVolume['beginner']!;
     final stageGoal = planStageGoal(profile, progression, sessions);
+    final volumeReport = analyzeVolume(profile, split, sessions);
+    final recoveryDays = planRecovery(profile, split, volumeReport);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -52,8 +66,20 @@ class PlannerGateway {
       progression: progression,
       mealPlan: mealPlan,
       supplements: supplements,
-      weeklyVolumePerGroup: volume,
+      weeklyVolumePerGroup:
+          Map<String, num>.from(volumeReport['target'] as Map),
       stageGoal: stageGoal,
+      weeklyVolumeOptimal:
+          Map<String, num>.from(volumeReport['optimal'] as Map),
+      weeklyVolumeDelivered:
+          Map<String, num>.from(volumeReport['delivered'] as Map),
+      volumeCoveragePct: volumeReport['coverage_pct'] as int,
+      vsOptimalPct: volumeReport['vs_optimal_pct'] as int,
+      volumeNotes: List<String>.from(volumeReport['notes'] as List),
+      capacityRecommendation:
+          Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
+      frequencyPlan: freqPlan.toJson(),
+      recoveryDays: recoveryDays,
     );
   }
 }

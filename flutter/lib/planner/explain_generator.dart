@@ -35,7 +35,7 @@ String explainPlan({
     lines.add('  体脂率: 未提供 → 使用 Mifflin-St Jeor 公式');
   }
   lines.add('  训练水平: ${profile.level} | 目标: ${profile.goal}');
-  lines.add('  每周训练: ${profile.daysPerWeek} 天 × ${profile.minutesPerSession} 分钟');
+  lines.add('  每周训练: ${profile.daysPerWeek ?? "待定"} 天 × ${profile.minutesPerSession} 分钟');
   lines.add('');
 
   lines.add('🔥 每日热量');

@@ -123,8 +123,92 @@ class TestSessionBuilder(unittest.TestCase):
         for s in sessions:
             if s.type == "rest":
                 continue
-            # 粗估：每组 ≤ 45+90=135s；45min×0.85 ≈ 38min ≈ 17 组上限量级
             self.assertLessEqual(s.total_sets, 22)
+
+    # ── 任务 ①：容量↔课时一致性 ──────────────────────────────
+
+    def test_duration_never_exceeds_and_is_honest(self):
+        """duration_min ≤ 用户设定；且与真实做组耗时同量级（不再被填充数掩盖）。"""
+        from engine.session_builder import _set_seconds, TRAINING_VARS
+        p = self._profile(level="intermediate", days_per_week=4, minutes_per_session=60)
+        split = select(p)
+        sessions = build_sessions(p, split, self.lib)
+        rest = TRAINING_VARS[p.goal]["rest_sec"]
+        for s in sessions:
+            if s.type == "rest":
+                continue
+            self.assertLessEqual(s.duration_min, p.minutes_per_session)
+            work_sec = sum(e.sets * _set_seconds(rest, e.compound) for e in s.exercises)
+            # duration 至少覆盖真实做组时间（含热身余量，故 >=）
+            self.assertGreaterEqual(s.duration_min * 60 + 60, work_sec)
+
+    def test_training_days_balanced(self):
+        """混合分肢的各训练日组数不应严重失衡（旧问题：上肢日≈其他日 2 倍）。"""
+        p = self._profile(level="intermediate", days_per_week=5, minutes_per_session=75)
+        split = select(p)
+        sessions = build_sessions(p, split, self.lib)
+        totals = [s.total_sets for s in sessions if s.type != "rest"]
+        self.assertGreater(min(totals), 0)
+        self.assertLessEqual(max(totals) / min(totals), 1.8)
+
+    def test_every_exercise_has_target_muscle(self):
+        p = self._profile()
+        split = select(p)
+        sessions = build_sessions(p, split, self.lib)
+        for s in sessions:
+            for e in s.exercises:
+                self.assertTrue(e.target_muscle)
+
+    def test_analyze_volume_no_phantom_overcount(self):
+        """按 target_muscle 计数，delivered 不应因多肌群标签远超 target。"""
+        from engine.session_builder import analyze_volume
+        p = self._profile(level="advanced", days_per_week=6, minutes_per_session=90)
+        split = select(p)
+        sessions = build_sessions(p, split, self.lib)
+        rep = analyze_volume(p, split, sessions)
+        for m, target in rep["target"].items():
+            self.assertLessEqual(rep["delivered"][m], target + 2)
+
+    def test_analyze_volume_coverage_scales_with_time(self):
+        from engine.session_builder import analyze_volume
+        short = self._profile(level="intermediate", days_per_week=4, minutes_per_session=45)
+        long = self._profile(level="intermediate", days_per_week=4, minutes_per_session=90)
+        cov_short = analyze_volume(short, select(short), build_sessions(short, select(short), self.lib))["coverage_pct"]
+        cov_long = analyze_volume(long, select(long), build_sessions(long, select(long), self.lib))["coverage_pct"]
+        self.assertLessEqual(cov_short, cov_long)
+        self.assertLessEqual(cov_long, 100)
+
+    def test_adaptive_target_coverage_100_but_below_optimal(self):
+        """自适应目标：短课时下 coverage ~100（≥MEV），但 vs_optimal < 100，并给「加时间」提示。"""
+        from engine.session_builder import analyze_volume
+        p = self._profile(level="intermediate", days_per_week=3, minutes_per_session=60)
+        split = select(p)
+        rep = analyze_volume(p, split, build_sessions(p, split, self.lib))
+        self.assertGreaterEqual(rep["coverage_pct"], 95)
+        self.assertLess(rep["vs_optimal_pct"], rep["coverage_pct"] + 1)
+        # 每个肌群的自适应目标不超过最优
+        for m, t in rep["target"].items():
+            self.assertLessEqual(t, rep["optimal"][m])
+
+    def test_secondary_muscle_only_exposure_is_indirect(self):
+        """5 天 PPL+上下：三头只在 push 日为主肌群、upper 日为次要 →
+        upper 日不为它硬排量，欠量归『间接带到』而非『加时间』。"""
+        from engine.session_builder import analyze_volume
+        p = self._profile(level="intermediate", days_per_week=5, minutes_per_session=75)
+        split = select(p)
+        rep = analyze_volume(p, split, build_sessions(p, split, self.lib))
+        # 不应出现"三头...每节 +10 分钟"这类时间型提示
+        self.assertFalse(any("三头" in n and "分钟" in n for n in rep["notes"]))
+
+    def test_vs_optimal_rises_with_time(self):
+        """时间越多，相当于最优的百分比越高（覆盖率则一直是 ~100）。"""
+        from engine.session_builder import analyze_volume
+        short = self._profile(level="intermediate", days_per_week=4, minutes_per_session=45)
+        long = self._profile(level="intermediate", days_per_week=4, minutes_per_session=90)
+        r_s = analyze_volume(short, select(short), build_sessions(short, select(short), self.lib))
+        r_l = analyze_volume(long, select(long), build_sessions(long, select(long), self.lib))
+        self.assertLessEqual(r_s["vs_optimal_pct"], r_l["vs_optimal_pct"])
+        self.assertLessEqual(r_l["vs_optimal_pct"], 100)
 
 
 if __name__ == "__main__":
