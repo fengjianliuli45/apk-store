@@ -20,7 +20,12 @@ SplitResult selectSplit(UserProfile profile) {
   if (d == 2) {
     splitName = 'full_body';
   } else if (d == 3) {
-    splitName = level == 'beginner' ? 'full_body' : 'push_pull_legs';
+    // 全身 3 次/周：给定训练量下频率更高，比 3 天 PPL（每肌群 1 次/周）
+    // 显著更能兑现周容量。各水平统一全身。
+    splitName = 'full_body';
+    if (level != 'beginner') {
+      warnings.add('3 天训练用全身分肢（每肌群 2–3 次/周）比 PPL 更高效；想练 PPL 建议加到 6 天');
+    }
   } else if (d == 4) {
     splitName = 'upper_lower';
   } else if (d == 5) {

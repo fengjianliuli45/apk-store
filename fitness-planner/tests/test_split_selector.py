@@ -28,10 +28,11 @@ class TestSplitSelector(unittest.TestCase):
         s = select(p)
         self.assertEqual(s.split_name, "full_body")
 
-    def test_3_days_intermediate_ppl(self):
+    def test_3_days_intermediate_full_body(self):
         p = self._profile(days_per_week=3, level="intermediate")
         s = select(p)
-        self.assertEqual(s.split_name, "push_pull_legs")
+        self.assertEqual(s.split_name, "full_body")
+        self.assertTrue(any("全身" in w for w in s.warnings))
 
     def test_4_days_upper_lower(self):
         p = self._profile(days_per_week=4)

@@ -41,6 +41,7 @@ class PlannerGateway {
     final supplements = adviseSupplements(profile, macros);
     final volume = weeklyVolume[profile.level] ?? weeklyVolume['beginner']!;
     final stageGoal = planStageGoal(profile, progression, sessions);
+    final volumeReport = analyzeVolume(profile, split, sessions);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -54,6 +55,12 @@ class PlannerGateway {
       supplements: supplements,
       weeklyVolumePerGroup: volume,
       stageGoal: stageGoal,
+      weeklyVolumeDelivered:
+          Map<String, num>.from(volumeReport['delivered'] as Map),
+      volumeCoveragePct: volumeReport['coverage_pct'] as int,
+      volumeNotes: List<String>.from(volumeReport['notes'] as List),
+      capacityRecommendation:
+          Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
     );
   }
 }

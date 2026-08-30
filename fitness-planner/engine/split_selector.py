@@ -44,7 +44,11 @@ def select(profile: UserProfile) -> SplitResult:
     if d == 2:
         split_name = "full_body"
     elif d == 3:
-        split_name = "full_body" if level == "beginner" else "push_pull_legs"
+        # 全身 3 次/周：给定训练量下频率更高，比 3 天 PPL（每肌群 1 次/周）
+        # 显著更能兑现周容量。各水平统一全身。
+        split_name = "full_body"
+        if level != "beginner":
+            warnings.append("3 天训练用全身分肢（每肌群 2–3 次/周）比 PPL 更高效；想练 PPL 建议加到 6 天")
     elif d == 4:
         split_name = "upper_lower"
     elif d == 5:

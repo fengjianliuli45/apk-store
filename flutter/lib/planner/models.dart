@@ -253,6 +253,7 @@ class ExerciseEntry {
     this.primaryMuscles = const [],
     this.compound = false,
     this.formCues = const [],
+    this.targetMuscle = '',
   });
 
   final String name;
@@ -267,6 +268,7 @@ class ExerciseEntry {
   final String notes;
   final int order;
   final List<String> primaryMuscles;
+  final String targetMuscle;
   final bool compound;
   final List<String> formCues;
 
@@ -285,6 +287,7 @@ class ExerciseEntry {
     'primary_muscles': primaryMuscles,
     'compound': compound,
     'form_cues': formCues,
+    'target_muscle': targetMuscle,
   };
 }
 
@@ -571,6 +574,10 @@ class GeneratedPlan {
     required this.supplements,
     required this.weeklyVolumePerGroup,
     this.stageGoal,
+    this.weeklyVolumeDelivered = const {},
+    this.volumeCoveragePct = 100,
+    this.volumeNotes = const [],
+    this.capacityRecommendation = const {},
   });
 
   final DateTime generatedAt;
@@ -585,8 +592,14 @@ class GeneratedPlan {
   final Map<String, num> weeklyVolumePerGroup;
   final StageGoal? stageGoal;
 
+  /// 诚实层（任务 ①）：实际排出的周容量 / 覆盖率 / 提示 / 软建议。
+  final Map<String, num> weeklyVolumeDelivered;
+  final int volumeCoveragePct;
+  final List<String> volumeNotes;
+  final Map<String, dynamic> capacityRecommendation;
+
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.1', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.2', 'generated_at': generatedAt.toIso8601String()},
     'profile': profile.toJson(),
     'nutrition': {
       'tdee': tdee.toJson(),
@@ -597,6 +610,10 @@ class GeneratedPlan {
     'training': {
       'split': split.splitName,
       'weekly_volume_per_group': weeklyVolumePerGroup,
+      'weekly_volume_delivered': weeklyVolumeDelivered,
+      'volume_coverage_pct': volumeCoveragePct,
+      'volume_notes': volumeNotes,
+      'capacity_recommendation': capacityRecommendation,
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
@@ -691,6 +708,7 @@ class GeneratedPlan {
               ),
               compound: (ex['compound'] as bool?) ?? false,
               formCues: List<String>.from(ex['form_cues'] as List? ?? const []),
+              targetMuscle: (ex['target_muscle'] as String?) ?? '',
             );
           }).toList(),
         );
@@ -753,6 +771,16 @@ class GeneratedPlan {
       ),
       weeklyVolumePerGroup: Map<String, num>.from(
         training['weekly_volume_per_group'] as Map,
+      ),
+      weeklyVolumeDelivered: Map<String, num>.from(
+        training['weekly_volume_delivered'] as Map? ?? const {},
+      ),
+      volumeCoveragePct: (training['volume_coverage_pct'] as num?)?.toInt() ?? 100,
+      volumeNotes: List<String>.from(
+        training['volume_notes'] as List? ?? const [],
+      ),
+      capacityRecommendation: Map<String, dynamic>.from(
+        training['capacity_recommendation'] as Map? ?? const {},
       ),
       stageGoal: json['stage_goal'] == null
           ? null

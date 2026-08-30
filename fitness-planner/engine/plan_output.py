@@ -46,13 +46,14 @@ def generate_json(
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
-    # 每肌群每周总组数
-    from .session_builder import WEEKLY_VOLUME
+    # 每肌群每周总组数（目标）+ 实际排出容量的诚实对账
+    from .session_builder import WEEKLY_VOLUME, analyze_volume
     weekly_volume = WEEKLY_VOLUME.get(profile.level, WEEKLY_VOLUME["beginner"])
+    volume_report = analyze_volume(profile, split, sessions)
 
     return {
         "meta": {
-            "version": "1.1",
+            "version": "1.2",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -81,6 +82,10 @@ def generate_json(
         "training": {
             "split": split.split_name,
             "weekly_volume_per_group": weekly_volume,
+            "weekly_volume_delivered": volume_report["delivered"],
+            "volume_coverage_pct": volume_report["coverage_pct"],
+            "volume_notes": volume_report["notes"],
+            "capacity_recommendation": volume_report["recommendation"],
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,

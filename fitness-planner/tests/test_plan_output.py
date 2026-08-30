@@ -41,7 +41,7 @@ class TestPlanOutput(unittest.TestCase):
     def test_has_meta(self):
         plan_json = self._generate()
         self.assertIn("meta", plan_json)
-        self.assertEqual(plan_json["meta"]["version"], "1.1")
+        self.assertEqual(plan_json["meta"]["version"], "1.2")
         self.assertIn("generated_at", plan_json["meta"])
         self.assertGreater(len(plan_json["meta"]["evidence_basis"]), 0)
 
@@ -73,7 +73,7 @@ class TestPlanOutput(unittest.TestCase):
         plan_json = self._generate()
         s = to_json_string(plan_json)
         parsed = json.loads(s)
-        self.assertEqual(parsed["meta"]["version"], "1.1")
+        self.assertEqual(parsed["meta"]["version"], "1.2")
 
     def test_has_first_stage_goal(self):
         plan_json = self._generate()
@@ -82,6 +82,16 @@ class TestPlanOutput(unittest.TestCase):
         self.assertEqual(stage["cycle_weeks"], 4)
         self.assertEqual(stage["adherence_target_pct"], 80)
         self.assertEqual(stage["unlock_reward"], "pet_hatchling")
+
+    def test_has_volume_report(self):
+        plan_json = self._generate()
+        training = plan_json["training"]
+        self.assertIn("weekly_volume_delivered", training)
+        self.assertIn("volume_coverage_pct", training)
+        self.assertIn("volume_notes", training)
+        self.assertIn("capacity_recommendation", training)
+        self.assertIsInstance(training["volume_coverage_pct"], int)
+        self.assertLessEqual(training["volume_coverage_pct"], 100)
 
     def test_evidence_basis_contains_pmids(self):
         plan_json = self._generate()

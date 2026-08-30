@@ -1,10 +1,12 @@
 import 'exercise_library.dart';
 import 'models.dart';
 
-/// Port of fitness-planner's `session_builder.py`.
+/// Port of fitness-planner's `session_builder.py` (2026-08-30 容量↔课时重构).
 ///
-/// Volume = weekly target ÷ **actual** schedule frequency, capped per session,
-/// and clipped by session time budget.
+/// - 周目标按「实际训练频率」整除铺到每次暴露，前重后轻，各次封顶到单次上限。
+/// - 课时预算：先扣显式热身时间，再按「按动作类型区分的单组真实耗时」两遍填充
+///   （先每个主肌群保底 1 个动作，再补深度，最后补次要肌群）。
+/// - 时间/频率不够兑现周目标时不静默截断——由 [analyzeVolume] 产出诚实对账。
 const weeklyVolume = {
   'beginner': {
     'chest': 10, 'back': 12, 'quads': 10, 'hamstrings': 6, 'shoulders': 8,
@@ -20,10 +22,11 @@ const weeklyVolume = {
   },
 };
 
+/// 单次训练单肌群组数上限（证据：每肌群每次 6–8 组最优，>10–12 收益骤降）。
 const maxSetsPerMuscleSession = {
   'beginner': 6,
-  'intermediate': 10,
-  'advanced': 12,
+  'intermediate': 9,
+  'advanced': 10,
 };
 
 const _trainingVars = {
@@ -32,6 +35,14 @@ const _trainingVars = {
   'fat_loss': {'load_pct': '60-75% 1RM', 'reps': '10-15', 'sets_range': [3, 4], 'rest_sec': 45, 'rpe': 7.0, 'tempo': '3-1-2-0', 'rir': '2-3'},
   'recomposition': {'load_pct': '65-80% 1RM', 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
 };
+
+// 时间估算常量（只用于估时，不改动作的处方参数）。
+const _workSecCompound = 55;
+const _workSecIsolation = 35;
+const _restMultCompound = 1.4;
+const _warmupSecPerBigMuscle = 90;
+const _warmupCapSec = 8 * 60;
+const _bigMuscles = {'chest', 'back', 'quads', 'hamstrings', 'shoulders'};
 
 const _sessionMuscles = {
   'push': ['chest', 'shoulders', 'triceps'],
@@ -52,47 +63,77 @@ const splitFrequency = {
   'ppl_ppl': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2.5, 'biceps': 2, 'triceps': 2, 'calves': 2, 'core': 1},
 };
 
-Map<String, int> _actualMuscleFrequency(List<ScheduleDay> schedule) {
+const _accessorySets = {'glutes': 3, 'rear_delt': 3};
+
+/// 某些分肢日里把小肌群当「次要」：主肌群吃饱后才用余量补，封顶更低。
+const _secondaryMusclesByType = {
+  'upper': {'biceps', 'triceps'},
+};
+const _secondarySessionCap = 3;
+
+const _muscleCn = {
+  'chest': '胸', 'back': '背', 'quads': '股四头', 'hamstrings': '腘绳',
+  'shoulders': '肩', 'biceps': '二头', 'triceps': '三头', 'calves': '小腿', 'core': '核心',
+};
+
+Map<String, int> _actualMuscleFrequency(
+  List<ScheduleDay> schedule, {
+  bool primaryOnly = false,
+}) {
   final freq = <String, int>{};
   for (final dayInfo in schedule) {
     if (dayInfo.type == 'rest') continue;
+    final secondary = primaryOnly
+        ? (_secondaryMusclesByType[dayInfo.type] ?? const <String>{})
+        : const <String>{};
     for (final muscle in _sessionMuscles[dayInfo.type] ?? const <String>[]) {
+      if (secondary.contains(muscle)) continue;
       freq[muscle] = (freq[muscle] ?? 0) + 1;
     }
   }
   return freq;
 }
 
-Map<String, int> _setsPerSessionMap(
-  Map<String, int> volume,
-  Map<String, int> frequency,
-  String level,
-) {
-  final cap = maxSetsPerMuscleSession[level] ?? 8;
-  final out = <String, int>{};
-  volume.forEach((muscle, totalSets) {
-    final freq = frequency[muscle] ?? 0;
-    final f = freq < 1 ? 1 : freq;
-    final per = (totalSets / f).round();
-    final clamped = per < 2 ? 2 : per;
-    out[muscle] = clamped > cap ? cap : clamped;
-  });
-  return out;
+int _setSeconds(int prescribedRest, bool compound) {
+  if (compound) {
+    return _workSecCompound + (prescribedRest * _restMultCompound).round();
+  }
+  return _workSecIsolation + prescribedRest;
 }
 
-int _estimateSetSeconds(int restSec) => 45 + restSec;
+/// 周目标铺成每次暴露的组数序列，前重后轻，各次封顶到 cap。
+/// 14/2/9 → [7,7]；10/3/6 → [4,3,3]；14/1/9 → [9]。
+List<int> _distributeWeekly(int weeklyTarget, int frequency, int cap) {
+  final freq = frequency < 1 ? 1 : frequency;
+  final base = weeklyTarget ~/ freq;
+  final rem = weeklyTarget % freq;
+  return [
+    for (var i = 0; i < freq; i++) (base + (i < rem ? 1 : 0)).clamp(0, cap).toInt(),
+  ];
+}
 
-List<SessionResult> buildSessions(UserProfile profile, SplitResult split, ExerciseLibrary library) {
+List<SessionResult> buildSessions(
+  UserProfile profile,
+  SplitResult split,
+  ExerciseLibrary library,
+) {
   final level = profile.level;
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
-  final volume = Map<String, int>.from(weeklyVolume[level] ?? weeklyVolume['beginner']!);
+  final volume = weeklyVolume[level] ?? weeklyVolume['beginner']!;
+  final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
-  final muscleSetsPerSession = _setsPerSessionMap(volume, frequency, level);
-
-  final budgetSec = (profile.minutesPerSession * 60 * 0.85).round().clamp(15 * 60, 24 * 60 * 60);
-  final setCost = _estimateSetSeconds(vars_['rest_sec'] as int);
+  final prescribedRest = vars_['rest_sec'] as int;
   final setsRange = (vars_['sets_range'] as List).cast<int>();
+
+  final totalBudgetSec =
+      (profile.minutesPerSession * 60).clamp(15 * 60, 1 << 30).toInt();
+
+  final distribution = <String, List<int>>{
+    for (final e in volume.entries)
+      e.key: _distributeWeekly(e.value, frequency[e.key] ?? 0, cap),
+  };
+  final exposure = <String, int>{};
 
   final sessions = <SessionResult>[];
   for (final dayInfo in split.weeklySchedule) {
@@ -100,11 +141,43 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
     final sessionType = dayInfo.type;
 
     if (sessionType == 'rest') {
-      sessions.add(SessionResult(day: dayName, type: 'rest', durationMin: 0, exercises: const [], totalSets: 0));
+      sessions.add(SessionResult(
+        day: dayName, type: 'rest', durationMin: 0,
+        exercises: const [], totalSets: 0,
+      ));
       continue;
     }
 
-    final targetMuscles = _sessionMuscles[sessionType] ?? const [];
+    final targetMuscles = _sessionMuscles[sessionType] ?? const <String>[];
+    final secondary =
+        _secondaryMusclesByType[sessionType] ?? const <String>{};
+    final primaryMusclesToday =
+        targetMuscles.where((m) => !secondary.contains(m)).toList();
+    final secondaryMusclesToday =
+        targetMuscles.where((m) => secondary.contains(m)).toList();
+
+    final sessionTargets = <String, int>{};
+    for (final muscle in targetMuscles) {
+      if (!volume.containsKey(muscle)) {
+        sessionTargets[muscle] = _accessorySets[muscle] ?? 0;
+        continue;
+      }
+      final k = exposure[muscle] ?? 0;
+      final seq = distribution[muscle] ?? const <int>[];
+      var tgt = k < seq.length ? seq[k] : 0;
+      if (secondary.contains(muscle) && tgt > _secondarySessionCap) {
+        tgt = _secondarySessionCap;
+      }
+      sessionTargets[muscle] = tgt;
+      exposure[muscle] = k + 1;
+    }
+
+    final nBig = targetMuscles.where(_bigMuscles.contains).length;
+    final warmupSec =
+        (_warmupSecPerBigMuscle * (nBig > 4 ? 4 : nBig)).clamp(0, _warmupCapSec).toInt();
+    final workBudgetSec = (totalBudgetSec - warmupSec) < 8 * 60
+        ? 8 * 60
+        : totalBudgetSec - warmupSec;
 
     var exercises = library.query(
       exerciseType: sessionType,
@@ -112,9 +185,8 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
       injuries: profile.injuries,
       level: level,
     );
-    // Stable sort (matches Python's list.sort() guarantee — Dart's
-    // List.sort is not stable, so ties are broken by original index to
-    // keep results deterministic and identical to the Python engine).
+    // Stable sort (Dart's List.sort is not stable — break ties by original
+    // index to stay identical to Python's list.sort()).
     final indexed = exercises.indexed.toList()
       ..sort((a, b) {
         final aKey = (a.$2.compound ? 0 : 1, a.$2.skillLevel != 'beginner' ? 1 : 0);
@@ -128,100 +200,210 @@ List<SessionResult> buildSessions(UserProfile profile, SplitResult split, Exerci
     exercises = indexed.map((e) => e.$2).toList();
 
     final sessionExercises = <ExerciseEntry>[];
-    var order = 1;
     final usedIds = <String>{};
+    var order = 1;
     var usedSec = 0;
+    final deliveredSession = <String, int>{};
 
-    for (final muscle in targetMuscles) {
-      var setsNeeded = muscleSetsPerSession[muscle];
-      if (setsNeeded == null) {
-        if (muscle == 'glutes' || muscle == 'rear_delt') {
-          setsNeeded = 3;
-        } else {
-          continue;
-        }
+    List<Exercise> pool(String muscle) {
+      var p = exercises
+          .where((e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id))
+          .toList();
+      if (p.isEmpty) {
+        p = exercises
+            .where((e) => e.secondaryMuscles.contains(muscle) && !usedIds.contains(e.id))
+            .toList();
       }
-      if (setsNeeded <= 0) continue;
+      return p;
+    }
 
-      var remainingBudgetSets = ((budgetSec - usedSec) / setCost).floor();
-      if (remainingBudgetSets < 2) break;
-      if (setsNeeded > remainingBudgetSets) setsNeeded = remainingBudgetSets;
+    int tryAdd(String muscle, int want) {
+      if (want < 2) return 0;
+      final p = pool(muscle);
+      if (p.isEmpty) return 0;
+      final ex = p.first;
+      final cost = _setSeconds(prescribedRest, ex.compound);
+      final fitSets = (workBudgetSec - usedSec) ~/ cost;
+      if (fitSets < 2) return 0;
+      var sets = want;
+      if (sets > setsRange[1]) sets = setsRange[1];
+      if (sets > fitSets) sets = fitSets;
+      if (sets < 2) return 0;
+      sessionExercises.add(ExerciseEntry(
+        name: ex.name,
+        nameEn: ex.nameEn,
+        exerciseId: ex.id,
+        sets: sets,
+        reps: vars_['reps'] as String,
+        load: vars_['load_pct'] as String,
+        restSec: vars_['rest_sec'] as int,
+        rpe: vars_['rpe'] as double,
+        tempo: vars_['tempo'] as String,
+        notes: 'RIR ${vars_['rir']}',
+        order: order,
+        primaryMuscles: ex.primaryMuscles,
+        compound: ex.compound,
+        formCues: ex.formCues,
+        targetMuscle: muscle,
+      ));
+      usedIds.add(ex.id);
+      order++;
+      usedSec += sets * cost;
+      deliveredSession[muscle] = (deliveredSession[muscle] ?? 0) + sets;
+      return sets;
+    }
 
-      var muscleExercises = exercises.where((e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id)).toList();
-      if (muscleExercises.isEmpty) {
-        muscleExercises = exercises.where((e) => e.secondaryMuscles.contains(muscle) && !usedIds.contains(e.id)).toList();
-      }
-      if (muscleExercises.isEmpty) continue;
-
-      var remainingSets = setsNeeded;
-      final candidates = muscleExercises.take(3).toList();
-      final nEx = candidates.length;
-      for (var i = 0; i < nEx; i++) {
-        if (remainingSets <= 0) break;
-        remainingBudgetSets = ((budgetSec - usedSec) / setCost).floor();
-        if (remainingBudgetSets < 2) break;
-
-        final ex = candidates[i];
-        int sets;
-        if (i == nEx - 1) {
-          sets = remainingSets < remainingBudgetSets ? remainingSets : remainingBudgetSets;
-        } else {
-          sets = remainingSets;
-          if (sets > setsRange[1]) sets = setsRange[1];
-          if (sets > remainingBudgetSets) sets = remainingBudgetSets;
-        }
-
-        if (sets < setsRange[0]) {
-          if (remainingSets >= 2 && i == nEx - 1) {
-            sets = remainingSets < remainingBudgetSets ? remainingSets : remainingBudgetSets;
-          } else if (remainingSets >= setsRange[0]) {
-            sets = setsRange[0];
-          } else {
-            break;
-          }
-        }
-        if (sets < 2) break;
-
-        sessionExercises.add(ExerciseEntry(
-          name: ex.name,
-          nameEn: ex.nameEn,
-          exerciseId: ex.id,
-          sets: sets,
-          reps: vars_['reps'] as String,
-          load: vars_['load_pct'] as String,
-          restSec: vars_['rest_sec'] as int,
-          rpe: vars_['rpe'] as double,
-          tempo: vars_['tempo'] as String,
-          notes: 'RIR ${vars_['rir']}',
-          order: order,
-          primaryMuscles: ex.primaryMuscles,
-          compound: ex.compound,
-          formCues: ex.formCues,
-        ));
-        usedIds.add(ex.id);
-        order++;
-        remainingSets -= sets;
-        usedSec += sets * setCost;
+    // 第 1 遍（广度）：主肌群各上 1 个动作
+    for (final muscle in primaryMusclesToday) {
+      final tgt = sessionTargets[muscle] ?? 0;
+      if (tgt >= 2) {
+        tryAdd(muscle, tgt < setsRange[1] ? tgt : setsRange[1]);
       }
     }
 
-    final totalSets = sessionExercises.fold<int>(0, (sum, e) => sum + e.sets);
+    // 第 2 遍（深度）：主肌群补足到 session 目标，单肌群最多 3 个动作
+    for (var round = 0; round < 2; round++) {
+      var progressed = false;
+      for (final muscle in primaryMusclesToday) {
+        final tgt = sessionTargets[muscle] ?? 0;
+        final got = deliveredSession[muscle] ?? 0;
+        if (got == 0 || got >= tgt) continue;
+        final n = sessionExercises.where((e) => e.targetMuscle == muscle).length;
+        if (n >= 3) continue;
+        if (tryAdd(muscle, tgt - got) > 0) progressed = true;
+      }
+      if (!progressed) break;
+    }
+
+    // 第 3 遍：次要肌群只用余量补
+    for (final muscle in secondaryMusclesToday) {
+      final tgt = sessionTargets[muscle] ?? 0;
+      if (tgt >= 2) tryAdd(muscle, tgt);
+    }
+
+    sessionExercises.sort((a, b) => a.order.compareTo(b.order));
+    final totalSets = sessionExercises.fold<int>(0, (s, e) => s + e.sets);
     var estMin = profile.minutesPerSession;
     if (totalSets > 0) {
-      final warmupPad = (profile.minutesPerSession * 0.15).round();
-      final pad = warmupPad < 5 ? 5 : warmupPad;
-      estMin = ((usedSec / 60).round() + pad);
+      estMin = ((warmupSec + usedSec) / 60).round();
+      if (estMin < 1) estMin = 1;
       if (estMin > profile.minutesPerSession) estMin = profile.minutesPerSession;
-      if (estMin < 0) estMin = 0;
     }
     sessions.add(SessionResult(
       day: dayName,
       type: sessionType,
-      durationMin: totalSets == 0 ? profile.minutesPerSession : (estMin == 0 ? profile.minutesPerSession : estMin),
+      durationMin: estMin,
       exercises: sessionExercises,
       totalSets: totalSets,
     ));
   }
 
   return sessions;
+}
+
+/// B 方案软提示：容量为锚，反推完整兑现目标训练量需要的时间/频率（可选、不拦截）。
+Map<String, dynamic> _recommendCapacity(UserProfile profile, int coveragePct) {
+  if (coveragePct >= 90) return const {};
+  final ratio = 100 / (coveragePct < 1 ? 1 : coveragePct);
+  var recMinutes = ((profile.minutesPerSession * ratio) / 5).round() * 5;
+  if (recMinutes > 120) recMinutes = 120;
+  final recDays = profile.daysPerWeek + 1 > 6 ? 6 : profile.daysPerWeek + 1;
+  final options = <String>[];
+  if (recMinutes > profile.minutesPerSession) {
+    options.add('每节练到约 $recMinutes 分钟');
+  }
+  if (recDays > profile.daysPerWeek) {
+    options.add('训练日加到 $recDays 天');
+  }
+  if (options.isEmpty) return const {};
+  return {
+    'coverage_pct': coveragePct,
+    'suggestion': options.join('，或'),
+    'text': '按你选的目标训练量，当前时间/频率约能兑现 $coveragePct%。'
+        '想完整拿到：${options.join('，或')}。（可选，不影响现在开练）',
+  };
+}
+
+/// 诚实层：周目标 vs 实际排出容量的对账。
+/// 返回 {target, delivered, frequency, coverage_pct, notes, recommendation}。
+Map<String, dynamic> analyzeVolume(
+  UserProfile profile,
+  SplitResult split,
+  List<SessionResult> sessions,
+) {
+  final level = profile.level;
+  final weeklyTarget = Map<String, int>.from(
+    weeklyVolume[level] ?? weeklyVolume['beginner']!,
+  );
+  final frequency = _actualMuscleFrequency(split.weeklySchedule);
+  final primaryFrequency =
+      _actualMuscleFrequency(split.weeklySchedule, primaryOnly: true);
+
+  final delivered = <String, int>{for (final m in weeklyTarget.keys) m: 0};
+  for (final s in sessions) {
+    for (final ex in s.exercises) {
+      if (delivered.containsKey(ex.targetMuscle)) {
+        delivered[ex.targetMuscle] = delivered[ex.targetMuscle]! + ex.sets;
+      }
+    }
+  }
+
+  final indirect = <String>[];
+  final lowFreqShort = <String>[];
+  final timeShort = <String>[];
+  var coveredTarget = 0;
+  var coveredDelivered = 0;
+  weeklyTarget.forEach((muscle, target) {
+    final got = delivered[muscle] ?? 0;
+    final freq = frequency[muscle] ?? 0;
+    final pfreq = primaryFrequency[muscle] ?? 0;
+    final cn = _muscleCn[muscle] ?? muscle;
+    if (freq == 0 || pfreq == 0) {
+      indirect.add(cn);
+      return;
+    }
+    coveredTarget += target;
+    coveredDelivered += got < target ? got : target;
+    if (target - got >= 3) {
+      (pfreq <= 1 ? lowFreqShort : timeShort).add(cn);
+    }
+  });
+
+  final coveragePct = coveredTarget == 0
+      ? 100
+      : (100 * coveredDelivered / coveredTarget).round();
+
+  final notes = <String>[];
+  if (lowFreqShort.isNotEmpty) {
+    notes.add('${lowFreqShort.join('/')}：当前分肢这些肌群每周只练到 1 次，'
+        '周训练量只能到目标的约 $coveragePct%。想显著提升：换 4+ 天分肢，或全身 3 天。');
+  }
+  if (timeShort.isNotEmpty) {
+    if (timeShort.length >= 3) {
+      notes.add('课时不足以塞下目标训练量：${timeShort.join('/')} 等每周偏少'
+          '（整体约 $coveragePct%）。每节 +10 分钟 或 +1 训练日可补齐。');
+    } else {
+      for (final cn in timeShort) {
+        notes.add('$cn：本周训练量略欠，每节 +10 分钟 或 +1 训练日可补。');
+      }
+    }
+  }
+  if (indirect.isNotEmpty) {
+    notes.add('${indirect.join('/')}：当前分肢不单独安排，靠复合动作间接带到；'
+        '想直接练需加训练日或换分肢。');
+  }
+
+  final recommendation = _recommendCapacity(profile, coveragePct);
+  if (recommendation['text'] != null) {
+    notes.add(recommendation['text'] as String);
+  }
+
+  return {
+    'target': weeklyTarget,
+    'delivered': delivered,
+    'frequency': frequency,
+    'coverage_pct': coveragePct,
+    'notes': notes,
+    'recommendation': recommendation,
+  };
 }
