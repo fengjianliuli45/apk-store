@@ -1,0 +1,68 @@
+# Stopwatch 后端本地 / 单机开发栈。对齐架构文档 §3 拓扑的精简版。
+#   docker compose -f backend/deploy/compose/dev.compose.yaml --env-file backend/deploy/compose/.env up -d
+name: stopwatch-dev
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine   # 关系数据 + 「附近的人」预留 PostGIS
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-stopwatch}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?set in .env}
+      POSTGRES_DB: ${DATABASE_NAME:-stopwatch}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-stopwatch}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  # NestJS 主 API（backend/apps/api）
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: relational.e2e.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - ../../apps/api/.env
+    environment:
+      DATABASE_HOST: postgres
+      REDIS_URL: redis://redis:6379/0
+      WORKER_HOST: redis://redis:6379/1
+    ports:
+      - "${APP_PORT:-3001}:${APP_PORT:-3001}"
+
+  # Python 计划引擎 / 同类对标（backend/services/planner）
+  planner:
+    build:
+      context: ../../services/planner
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PLANNER_DATABASE_URL: postgresql+psycopg://${DATABASE_USERNAME:-stopwatch}:${DATABASE_PASSWORD}@postgres:5432/${DATABASE_NAME:-stopwatch}
+      PLANNER_DEVICE_SALT: ${PLANNER_DEVICE_SALT:?set a long random salt in .env}
+    ports:
+      - "${PLANNER_PORT:-8080}:8080"
+
+volumes:
+  pgdata:
+  redisdata:
