@@ -1,3 +1,4 @@
+import 'exercise_library.dart';
 import 'load_planner.dart' show baselineLifts;
 import 'models.dart';
 import 'progress_tracker.dart';
@@ -86,7 +87,8 @@ class CycleReview {
     required this.nextRaw,
     this.kcalChange = 0,
     this.dietNote = '',
-  });
+    Map<String, int>? bodyweightChanges,
+  }) : bodyweightChanges = bodyweightChanges ?? const {};
 
   final String verdict;
   final String summary;
@@ -98,6 +100,7 @@ class CycleReview {
   final String? unlockReward;
   final int kcalChange; // 下一周期热量增量（相对上一周期），0 = 不变
   final String dietNote;
+  final Map<String, int> bodyweightChanges; // {movement_pattern: 本次进阶档数变化}
   final Map<String, dynamic> nextRaw;
 
   Map<String, dynamic> toJson() => {
@@ -111,6 +114,7 @@ class CycleReview {
         'unlock_reward': unlockReward,
         'kcal_change': kcalChange,
         'diet_note': dietNote,
+        'bodyweight_changes': bodyweightChanges,
         'next_raw': nextRaw,
       };
 }
@@ -144,8 +148,32 @@ List<LoadChange> _loadChanges(
   return changes;
 }
 
+/// 徒手基准动作的进阶信号 → {movement_pattern: 档数变化}。
+Map<String, int> _bodyweightChanges(
+    Map plan, Map<String, Map<String, dynamic>> perEx, ExerciseLibrary library) {
+  final lifts = <String, Map>{
+    for (final b in ((plan['stage_goal'] as Map?)?['baseline_lifts'] as List? ?? const []))
+      b['exercise_id'] as String: b as Map,
+  };
+  final deltas = <String, int>{};
+  perEx.forEach((eid, sig) {
+    final lift = lifts[eid];
+    if (lift == null || lift['start_load_kg'] != null) return; // 只处理徒手
+    final ex = library.getById(eid);
+    if (ex == null || ex.progressionRank == null) return;
+    final mp = ex.movementPattern;
+    final rir = (sig['avg_rir'] as num?)?.toDouble() ?? 3;
+    if (sig['last_all_top_range'] == true && rir <= 1) {
+      deltas[mp] = (deltas[mp] ?? 0) + 1;
+    } else if ((sig['consecutive_below_bottom'] as int? ?? 0) >= 2) {
+      deltas[mp] = (deltas[mp] ?? 0) - 1;
+    }
+  });
+  return deltas;
+}
+
 Map<String, dynamic> _nextRaw(Map plan, List<LoadChange> loadChanges,
-    String volumeChange, int kcalDelta) {
+    String volumeChange, int kcalDelta, Map<String, int> bwDeltas) {
   final prof = plan['profile'] as Map;
   final oneRm = (prof['one_rm_estimates'] as Map?) ?? const {};
   final raw = <String, dynamic>{
@@ -199,6 +227,15 @@ Map<String, dynamic> _nextRaw(Map plan, List<LoadChange> loadChanges,
   final prevEx = (prof['exercise_cycle_offset'] as num?)?.toInt() ?? 0;
   raw['exercise_cycle_offset'] =
       volumeChange == 'up_one_step' ? (prevEx + 1 > 12 ? 12 : prevEx + 1) : prevEx;
+  // 徒手进阶：把本次信号累加到上一周期的档位（钳 -3..6）
+  final bw = <String, int>{
+    for (final e in (prof['bodyweight_progress'] as Map? ?? const {}).entries)
+      e.key as String: (e.value as num).toInt(),
+  };
+  bwDeltas.forEach((mp, d) {
+    bw[mp] = ((bw[mp] ?? 0) + d).clamp(-3, 6);
+  });
+  raw['bodyweight_progress'] = bw;
   raw.removeWhere((k, v) => v == null);
   return raw;
 }
@@ -208,6 +245,7 @@ CycleReview reviewCycle(
   List<Map<String, dynamic>> workoutLog, {
   List<Map<String, dynamic>> bodyLog = const [],
   int completedCycles = 0,
+  required ExerciseLibrary library,
 }) {
   final sg = (planJson['stage_goal'] as Map).cast<String, dynamic>();
   final goal = StageGoal(
@@ -287,6 +325,11 @@ CycleReview reviewCycle(
     dietNote = r.$2;
   }
 
+  // 徒手进阶：安全问题优先时不动；其余按次数信号换更难 / 更易变式
+  final bwDeltas = verdict == 'address_safety'
+      ? <String, int>{}
+      : _bodyweightChanges(planJson, perEx, library);
+
   return CycleReview(
     verdict: verdict,
     summary: summary,
@@ -298,6 +341,7 @@ CycleReview reviewCycle(
     unlockReward: verdict == 'advance' ? goal.unlockReward : null,
     kcalChange: kcalDelta,
     dietNote: dietNote,
-    nextRaw: _nextRaw(planJson, loadChanges, vol, kcalDelta),
+    bodyweightChanges: bwDeltas,
+    nextRaw: _nextRaw(planJson, loadChanges, vol, kcalDelta, bwDeltas),
   );
 }

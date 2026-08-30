@@ -125,4 +125,55 @@ void main() {
       expect((review['next_raw'] as Map)['exercise_cycle_offset'], 0);
     }
   });
+
+  test('bodyweight progression: reps maxed → next plan uses a harder variation', () async {
+    final gw = await PlannerGateway.instance();
+    const home = {
+      'gender': 'M', 'age': 25, 'height_cm': 175.0, 'weight_kg': 70.0,
+      'level': 'beginner', 'goal': 'hypertrophy', 'minutes_per_session': 60,
+      'equipment': ['bodyweight', 'band', 'pull_up_bar'],
+    };
+    final plan = gw.generate(home).toJson();
+    final sched = [
+      for (final s in ((plan['training'] as Map)['schedule'] as List).cast<Map>())
+        if (s['type'] != 'rest') s,
+    ];
+    final log = <Map<String, dynamic>>[];
+    var d = DateTime(2026, 9, 1);
+    for (var w = 0; w < 4; w++) {
+      for (final s in sched) {
+        log.add({
+          'date': '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+          'plan_day': 1, 'session_type': s['type'], 'planned_sets': 12,
+          'exercises': [
+            for (final e in s['exercises'] as List)
+              {
+                'exercise_id': (e as Map)['exercise_id'],
+                'planned_sets': e['sets'],
+                'sets': [
+                  for (var i = 0; i < (e['sets'] as int); i++)
+                    {'reps': 12, 'rir': 1},
+                ],
+              },
+          ],
+          'aborted': false,
+        });
+        d = d.add(const Duration(days: 2));
+      }
+    }
+    final res = gw.runCheckIn(plan, log);
+    final review = Map<String, dynamic>.from(res['review'] as Map);
+    expect((review['bodyweight_changes'] as Map).isNotEmpty, isTrue);
+    // 下一份计划的自重锚定动作应比原来难（progression_rank 更高或换了动作）
+    final oldFirst = (sched.first['exercises'] as List).first as Map;
+    final np = res['next_plan'] as Map;
+    (np['meta'] as Map)['generated_at'] = 'X';
+    final newFirst = (((np['training'] as Map)['schedule'] as List)
+            .cast<Map>()
+            .firstWhere((s) => s['type'] != 'rest')['exercises'] as List)
+        .first as Map;
+    expect(newFirst['exercise_id'], isNot(oldFirst['exercise_id']));
+    File('${Directory.systemTemp.path}/dart_bwprog_review.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(review));
+  });
 }

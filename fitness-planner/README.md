@@ -4,6 +4,27 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 徒手进阶模型（任务 P0 #2）
+
+自重动作不再只写「按次数 / 难度递进」，而是走明确的变式阶梯，由闭环驱动。
+
+- `Exercise.progression_rank`：同 movement_pattern 内自重变式的难度序号（俯卧撑：
+  上斜1 → 标准2 → 窄距/宽距3 → 钻石4 → 脚高5 → 弓箭手6）。
+- `session_builder._bw_pick`：挑到自重动作时，按用户已挣得的 `bodyweight_progress
+  [movement_pattern]` 档数，换成对应难度的变式（取阶梯里 rank 最接近 base+step 的一档，
+  受 level 过滤——新手轮不到 advanced 变式）。`load` 文案改成「自重 · 做满次数上限×
+  全组有余力 → 进阶「下一级动作」」。
+- `check_in_engine._bodyweight_changes`：徒手基准动作做满次数上限×全组 & RIR≤1
+  → 该 pattern +1 档；连续 2 次未达下限 → -1 档。`CycleReview.bodyweight_changes`；
+  `next_raw.bodyweight_progress` 在上一周期基础上累加（钳 -3..6）。
+  `review_cycle` / `run_check_in` 现在收 `library` 参数。
+- `profile_validator` + `plan_output`：新增 `bodyweight_progress`（只收合法 movement_pattern）。
+- `load_planner`：弹力带动作文案「弹力带 · 选阻力做到目标次数、末组留 1-2 次；
+  变强了换更粗的带或缩短带长」。
+- Python 178 / Flutter 80；demo / 轮换 / 居家用户 / 徒手进阶 check-in 计划 Python↔Dart 逐字一致。
+- 已知：徒手用户在 `assess_stage` 里因无 e1RM 常被判 `deload_then_retry`（少 10% 容量），
+  变式进阶仍照常——后续让阶段评估看得到"次数进步"。
+
 ## 2026-08-30 动作库扩充：居家 / 弹力带（任务 P0 #1）
 
 证据：Kassiano 2022 系统综述 + 自重/弹力带接近力竭肥大等效（Nunes 2019, ISJC 2024）。

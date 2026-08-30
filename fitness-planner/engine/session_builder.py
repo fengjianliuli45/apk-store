@@ -248,6 +248,7 @@ def build_sessions(
     vars_ = TRAINING_VARS.get(goal, TRAINING_VARS["hypertrophy"])
     weekly_volume = weekly_volume_for(level, goal, getattr(profile, "volume_cycle_offset", 0))
     exercise_offset = max(0, int(getattr(profile, "exercise_cycle_offset", 0) or 0))
+    bw_progress = getattr(profile, "bodyweight_progress", {}) or {}
     cap = MAX_SETS_PER_MUSCLE_SESSION.get(level, 8)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
@@ -321,6 +322,31 @@ def build_sessions(
         exercises.sort(key=lambda e: (
             _bodyweight_demoted(e), not e.compound, e.skill_level != "beginner"))
 
+        # 徒手进阶：同 movement_pattern 的自重变式按 progression_rank 排成阶梯
+        def _bw_ladder(pattern: str) -> list:
+            rungs = [e for e in exercises
+                     if e.equipment_required == ["bodyweight"]
+                     and e.movement_pattern == pattern
+                     and e.progression_rank is not None]
+            rungs.sort(key=lambda e: e.progression_rank)
+            return rungs
+
+        def _bw_pick(ex, used: set):
+            """按 bodyweight_progress 把该自重动作换到对应难度的变式。"""
+            if ex.equipment_required != ["bodyweight"] or ex.progression_rank is None:
+                return ex, ""
+            step = int(bw_progress.get(ex.movement_pattern, 0))
+            ladder = _bw_ladder(ex.movement_pattern)
+            if not ladder:
+                return ex, ""
+            target = ex.progression_rank + step
+            avail = [e for e in ladder if e.id not in used or e.id == ex.id]
+            chosen = min(avail or ladder, key=lambda e: (abs(e.progression_rank - target), e.progression_rank))
+            harder = [e for e in ladder if e.progression_rank > chosen.progression_rank]
+            hint = (f"做满次数上限×全组且有余力 → 进阶「{harder[0].name}」"
+                    if harder else "已是最难变式，加次数 / 放慢离心")
+            return chosen, hint
+
         session_exercises: list[ExerciseEntry] = []
         used_ids: set[str] = set()
         state = {"order": 1, "used_sec": 0}
@@ -345,6 +371,8 @@ def build_sessions(
                 ex = pool[rot % len(pool)]
             else:
                 ex = pool[0]
+            # 徒手动作：按已挣得的进阶档换成对应难度的变式
+            ex, bw_hint = _bw_pick(ex, used_ids)
             cost = _set_seconds(prescribed_rest, ex.compound)
             fit_sets = (work_budget_sec - state["used_sec"]) // cost
             if fit_sets < 2:
@@ -353,6 +381,8 @@ def build_sessions(
             if sets < 2:
                 return 0
             load_text, load_kg = suggest_load(ex, one_rm_map, load_mid, load_label)
+            if bw_hint and ex.equipment_required == ["bodyweight"]:
+                load_text = f"自重 · {bw_hint}"
             session_exercises.append(ExerciseEntry(
                 name=ex.name,
                 name_en=ex.name_en,

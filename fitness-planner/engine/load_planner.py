@@ -104,9 +104,13 @@ def suggest_load(
 
     没有对应基准 1RM，或该动作本就徒手/自重 → 文本为「首周按 RPE 找重量」。
     """
-    # 纯自重动作：不给 kg，按次数 / 难度阶梯递进
+    # 纯自重动作：不给 kg，按次数 / 难度阶梯递进（进阶提示由 session_builder 覆盖）
     if list(ex.equipment_required) == ["bodyweight"]:
         return "自重（按次数 / 难度递进）", None
+
+    # 弹力带：选能做到目标次数、末组留 1-2 次的阻力（换更粗的带 / 缩短带长进阶）
+    if list(ex.equipment_required) == ["band"]:
+        return "弹力带 · 选阻力做到目标次数、末组留 1-2 次；变强了换更粗的带或缩短带长", None
 
     basis, coef = _basis_and_coef(ex)
     if basis is None or coef <= 0:

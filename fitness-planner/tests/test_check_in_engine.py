@@ -138,6 +138,50 @@ class TestClosedLoop(unittest.TestCase):
         raw = _next_raw(plan, [], "hold", kcal_delta=-150)
         self.assertEqual(raw["kcal_adjust"], -500)  # 钳在 -500
 
+    def test_bodyweight_progression_in_check_in(self):
+        """居家用户做满徒手动作次数 → check-in 产出 bodyweight_progress，下一份计划变难。"""
+        import datetime
+        p = generate_plan({
+            "gender": "M", "age": 25, "height_cm": 175.0, "weight_kg": 70.0,
+            "level": "beginner", "goal": "hypertrophy", "minutes_per_session": 60,
+            "equipment": ["bodyweight", "band", "pull_up_bar"],
+        })
+        sched = [s for s in p["training"]["schedule"] if s["type"] != "rest"]
+        log = []
+        d = datetime.date(2026, 9, 1)
+        for _ in range(4):
+            for s in sched:
+                log.append({
+                    "date": str(d), "plan_day": 1, "session_type": s["type"],
+                    "planned_sets": 12, "aborted": False,
+                    "exercises": [
+                        {"exercise_id": e["exercise_id"], "planned_sets": e["sets"],
+                         "sets": [{"reps": 12, "rir": 1} for _ in range(e["sets"])]}
+                        for e in s["exercises"]
+                    ],
+                })
+                d += datetime.timedelta(days=2)
+        out = run_check_in(p, log, [], 0)
+        bc = out["review"]["bodyweight_changes"]
+        self.assertTrue(bc)  # 至少一个 movement_pattern +1
+        self.assertTrue(all(v >= 1 for v in bc.values()))
+        np_prof = out["next_plan"]["profile"]["bodyweight_progress"]
+        self.assertTrue(np_prof)
+        # 下一份计划里对应的自重锚定动作确实换难了
+        old_first = sched[0]["exercises"][0]["exercise_id"]
+        new_first = [s for s in out["next_plan"]["training"]["schedule"]
+                     if s["type"] != "rest"][0]["exercises"][0]["exercise_id"]
+        self.assertNotEqual(old_first, new_first)
+
+    def test_bodyweight_regress_below_bottom(self):
+        from engine.check_in_engine import _bodyweight_changes
+        from engine.exercise_library import ExerciseLibrary
+        plan = {"stage_goal": {"baseline_lifts": [
+            {"exercise_id": "push_up", "start_load_kg": None}]}}
+        per_ex = {"push_up": {"consecutive_below_bottom": 2, "last_all_top_range": False}}
+        d = _bodyweight_changes(plan, per_ex, ExerciseLibrary())
+        self.assertEqual(d.get("horizontal_push"), -1)
+
     def test_fatloss_mesocycle_has_diet_break(self):
         p = self._fatloss_plan()
         deload = p["training"]["mesocycle"]["weeks"][-1]

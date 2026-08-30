@@ -66,7 +66,8 @@ def run_check_in(
     next_plan 是喂 next_raw 跑出来的新计划 JSON（address_safety 时为 None）。
     """
     from .check_in_engine import review_cycle
-    review = review_cycle(plan_json, workout_log, body_log or [], completed_cycles)
+    library = library or ExerciseLibrary()
+    review = review_cycle(plan_json, workout_log, body_log or [], completed_cycles, library)
     next_plan = None
     if review.verdict != "address_safety" and review.next_raw:
         next_plan = generate_plan(review.next_raw, library)

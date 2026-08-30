@@ -40,6 +40,7 @@
     "volume_cycle_offset": 0,
     "kcal_adjust": 0,
     "exercise_cycle_offset": 0,
+    "bodyweight_progress": {},
     "strength_baseline": {
       "squat": {
         "weight_kg": 100.0,
