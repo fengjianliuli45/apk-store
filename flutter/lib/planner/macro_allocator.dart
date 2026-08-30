@@ -1,6 +1,10 @@
+import 'food_db.dart';
 import 'models.dart';
 
 /// Port of fitness-planner's `macro_allocator.py`.
+
+/// 植物蛋白消化率 / 亮氨酸偏低 → 上调 g/kg（PMC11281145, MDPI 16(8)1122）
+const dietProteinBump = {'vegan': 0.3, 'vegetarian': 0.2};
 const goalSurplus = {
   'hypertrophy': 350,
   'fat_loss': -400,
@@ -29,11 +33,22 @@ const carbKcalPerG = 4;
 MacroResult allocateMacros(UserProfile profile, TDEEResult tdee) {
   final goal = profile.goal;
   final w = profile.weightKg;
+  final notes = <String>[];
 
   final surplus = goalSurplus[goal] ?? 0;
   var dailyKcal = tdee.tdee + surplus;
 
-  final proteinG = double.parse((proteinPerKg[goal]! * w).toStringAsFixed(1));
+  var proteinPerKgVal = proteinPerKg[goal]!;
+  final restrictions = normalizeRestrictions(profile.dietaryRestrictions);
+  if (restrictions.contains('vegan')) {
+    proteinPerKgVal += dietProteinBump['vegan']!;
+    notes.add('纯素：蛋白已上调 +0.3 g/kg，优先豆制品/大豆蛋白粉（亮氨酸足）');
+  } else if (restrictions.contains('vegetarian')) {
+    proteinPerKgVal += dietProteinBump['vegetarian']!;
+    notes.add('蛋奶素：蛋白已上调 +0.2 g/kg，多用乳清/蛋/豆制品');
+  }
+
+  final proteinG = double.parse((proteinPerKgVal * w).toStringAsFixed(1));
   final fatG = double.parse((fatPerKg[goal]! * w).toStringAsFixed(1));
 
   final proteinKcal = proteinG * proteinKcalPerG;
@@ -60,5 +75,6 @@ MacroResult allocateMacros(UserProfile profile, TDEEResult tdee) {
     },
     surplusKcal: surplus,
     goal: goal,
+    notes: notes,
   );
 }

@@ -4,6 +4,22 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 深饮食：具体吃法 + 饮食限制真正生效（任务 E1–E3）
+
+- 新增 `engine/food_db.py`：~45 项中式食物库（kind + 过敏原两属性推导限制），
+  外加两套业界做法——
+  · 食物交换份法（ADA / 美国营养学会 1950 起）：`suggest_meal()` 按每餐目标克数
+    组「蛋白 + 主食 + 蔬菜 + 脂肪」，2 个备选，按餐次 `rotate` 错开选材。
+  · 手掌法（Precision Nutrition，PMC4976119）：`hand_portion_text()` 给不称重 / 在外吃。
+- `macro_allocator`：`dietary_restrictions` 含 vegan → 蛋白 +0.3 g/kg，vegetarian → +0.2 g/kg
+  （植物蛋白消化率 / 亮氨酸偏低，PMC11281145）；`MacroResult.notes` 带说明。
+- `meal_distributor`：每餐带 `options`（精确吃法）+ `hand_portions`；`MealPlan` 新增
+  `fiber_g`（14g/1000kcal）、`water_ml_rest` / `water_ml_training`（33ml/kg，训练日 +500）、
+  `diet_notes`（每餐蛋白 ≥0.3g/kg 检查、蛋白定时、纤维、饮水、纯素微量营养素）。
+  移除静态 `FOOD_EXAMPLES`。
+- `supplement_advisor`：纯素追加 B12（必补）+ 铁（按化验）；限制词归一走 `food_db`。
+- JSON 版本仍 1.7（`nutrition.meals` 字段扩展，非破坏）。Python↔Dart 营养块逐字对齐。
+
 ## 2026-08-23 容量修复
 
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算

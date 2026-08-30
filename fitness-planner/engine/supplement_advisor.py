@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from .profile_validator import UserProfile
 from .macro_allocator import MacroResult
+from .food_db import normalize_restrictions
 
 
 @dataclass
@@ -81,16 +82,32 @@ def advise(profile: UserProfile, macros: MacroResult) -> SupplementResult:
             pmid=None,
         ))
 
-    # 鱼油：素食且无鱼摄入
-    restrictions = [r.lower() for r in profile.dietary_restrictions]
-    is_vegetarian = any("veg" in r or "素" in r for r in restrictions)
-    if is_vegetarian:
+    # 素食相关：Omega-3；纯素再加 B12（必补）+ 铁
+    restrictions = normalize_restrictions(profile.dietary_restrictions)
+    if "vegetarian" in restrictions:
         results.append(Supplement(
             name="鱼油 / 藻油",
             name_en="Fish Oil / Algae Oil",
             dose="1-2g EPA+DHA/日",
             condition="素食且无鱼摄入",
-            note="补充 Omega-3 脂肪酸，藻油为素食替代。",
+            note="补充 Omega-3 脂肪酸，藻油为纯素替代。",
+            pmid=None,
+        ))
+    if "vegan" in restrictions:
+        results.append(Supplement(
+            name="维生素 B12",
+            name_en="Vitamin B12 (cyanocobalamin)",
+            dose="约 250 µg/日 或 2000 µg/周",
+            condition="纯素（膳食几乎无 B12 来源，必补）",
+            note="缺乏会致贫血与不可逆神经损伤，纯素人群务必规律补充。",
+            pmid=None,
+        ))
+        results.append(Supplement(
+            name="铁（按需）",
+            name_en="Iron",
+            dose="按血清铁蛋白结果补，不盲补",
+            condition="纯素 + 化验提示缺铁",
+            note="植物性非血红素铁吸收率低；搭配维C食物、避开浓茶咖啡。",
             pmid=None,
         ))
 

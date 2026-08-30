@@ -1,12 +1,21 @@
-"""MealDistributor — 餐次分配。
+"""MealDistributor — 餐次分配 + 具体吃法。
 
-将单日三大营养素目标拆分为每餐的克数分布。
+单日三大营养素目标 → 每餐克数 → 每餐「怎么吃」：
+  - 精确版：食物交换份法（食物库按宏量换算份量），2 个备选
+  - 手掌版：手掌=蛋白、一捧=碳水、拳头=蔬菜、拇指=脂肪（不称重 / 在外吃）
+另附每日膳食纤维、饮水目标。
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field
 from .profile_validator import UserProfile
 from .macro_allocator import MacroResult
+from . import food_db
+
+
+def _round(x: float) -> int:
+    return int(math.floor(x + 0.5))
 
 
 @dataclass
@@ -16,6 +25,9 @@ class Meal:
     protein_g: float
     fat_g: float
     carbs_g: float
+    options: list = field(default_factory=list)   # 精确吃法（食物库）
+    hand_portions: str = ""                        # 手掌法等价
+    is_post_workout: bool = False
 
     def to_dict(self) -> dict:
         return {
@@ -24,17 +36,23 @@ class Meal:
             "protein_g": round(self.protein_g, 1),
             "fat_g": round(self.fat_g, 1),
             "carbs_g": round(self.carbs_g, 1),
+            "options": self.options,
+            "hand_portions": self.hand_portions,
+            "is_post_workout": self.is_post_workout,
         }
 
 
 @dataclass
 class MealPlan:
-    meals: list[Meal]
+    meals: list
     total_kcal: float
     total_protein_g: float
     total_fat_g: float
     total_carbs_g: float
-    food_examples: dict  # protein examples per gram
+    fiber_g: int
+    water_ml_rest: int
+    water_ml_training: int
+    diet_notes: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -43,7 +61,10 @@ class MealPlan:
             "total_protein_g": round(self.total_protein_g, 1),
             "total_fat_g": round(self.total_fat_g, 1),
             "total_carbs_g": round(self.total_carbs_g, 1),
-            "food_examples": self.food_examples,
+            "fiber_g": self.fiber_g,
+            "water_ml_rest": self.water_ml_rest,
+            "water_ml_training": self.water_ml_training,
+            "diet_notes": self.diet_notes,
         }
 
 
@@ -52,20 +73,17 @@ MEAL_NAMES_5 = ["早餐", "午餐", "练后加餐", "晚餐", "晚加餐"]
 MEAL_NAMES_3 = ["早餐", "午餐", "晚餐"]
 MEAL_NAMES_6 = ["早餐", "早加餐", "午餐", "练后加餐", "晚餐", "晚加餐"]
 
-# 食物替换举例
-FOOD_EXAMPLES = {
-    "35g_protein": "鸡胸肉 150g ≈ 鸡蛋 5个 ≈ 蛋白粉 1.5勺 ≈ 豆腐 400g",
-    "40g_protein": "鸡胸肉 170g ≈ 鸡蛋 6个 ≈ 蛋白粉 1.7勺 ≈ 豆腐 450g",
-    "30g_protein": "鸡胸肉 130g ≈ 鸡蛋 4个 ≈ 蛋白粉 1.3勺 ≈ 豆腐 350g",
-    "20g_protein": "鸡胸肉 85g ≈ 鸡蛋 3个 ≈ 蛋白粉 0.9勺 ≈ 豆腐 230g",
-}
+# 膳食纤维 14g / 1000 kcal（Academy of Nutrition and Dietetics）
+FIBER_PER_1000KCAL = 14
+# 饮水 33 ml/kg 基线，训练日额外 +500 ml
+WATER_ML_PER_KG = 33
+WATER_ML_TRAINING_BONUS = 500
 
 
 def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
-    """将每日营养素分配到每餐。"""
+    """将每日营养素分配到每餐，并给出具体吃法。"""
     n = profile.meals_per_day
 
-    # 每餐蛋白按日目标均分；不因 MPS 上限裁切日总量（餐次少时单餐可 >0.4g/kg）
     daily_protein = macros.daily_targets["protein_g"]
     daily_fat = macros.daily_targets["fat_g"]
     daily_carbs = macros.daily_targets["carbs_g"]
@@ -74,7 +92,6 @@ def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
     per_meal_fat = daily_fat / n
     per_meal_carbs = daily_carbs / n
 
-    # 餐次名称
     if n <= 3:
         names = MEAL_NAMES_3[:n]
     elif n == 4:
@@ -84,26 +101,19 @@ def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
     else:
         names = MEAL_NAMES_6[:n]
 
-    meals = []
-    for i, name in enumerate(names):
+    meals: list[Meal] = []
+    for name in names:
         protein = per_meal_protein
         fat = per_meal_fat
         carbs = per_meal_carbs
-        kcal = protein * 4 + fat * 9 + carbs * 4
-
-        # 练后餐（最近一餐）蛋白×1.2，碳水×1.2
         is_post_workout = (name == "练后加餐")
         if is_post_workout:
             protein *= 1.2
             carbs *= 1.2
-            kcal = protein * 4 + fat * 9 + carbs * 4
-
+        kcal = protein * 4 + fat * 9 + carbs * 4
         meals.append(Meal(
-            name=name,
-            kcal=kcal,
-            protein_g=protein,
-            fat_g=fat,
-            carbs_g=carbs,
+            name=name, kcal=kcal, protein_g=protein, fat_g=fat, carbs_g=carbs,
+            is_post_workout=is_post_workout,
         ))
 
     # 练后餐倾斜后，按比例缩放使蛋白/碳水总量贴近每日目标
@@ -120,10 +130,39 @@ def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
     for m in meals:
         m.kcal = m.protein_g * 4 + m.fat_g * 9 + m.carbs_g * 4
 
+    # 具体吃法
+    restrictions = food_db.normalize_restrictions(getattr(profile, "dietary_restrictions", []))
+    cooking = getattr(profile, "cooking_access", "home")
+    for idx, m in enumerate(meals):
+        target = {"protein_g": m.protein_g, "carbs_g": m.carbs_g, "fat_g": m.fat_g}
+        m.options = food_db.suggest_meal(
+            target, restrictions, cooking, m.is_post_workout, rotate=idx)
+        m.hand_portions = food_db.hand_portion_text(target)
+
     total_p = sum(m.protein_g for m in meals)
     total_f = sum(m.fat_g for m in meals)
     total_c = sum(m.carbs_g for m in meals)
     total_k = sum(m.kcal for m in meals)
+
+    # 每日纤维 / 饮水
+    fiber_g = _round(total_k / 1000 * FIBER_PER_1000KCAL)
+    water_rest = _round(profile.weight_kg * WATER_ML_PER_KG)
+    water_training = water_rest + WATER_ML_TRAINING_BONUS
+
+    # 膳食提示
+    diet_notes: list[str] = list(macros.notes)
+    protein_floor = round(0.3 * profile.weight_kg, 1)
+    low_meals = [m.name for m in meals if m.protein_g + 1e-6 < protein_floor]
+    if low_meals:
+        diet_notes.append(
+            f"每餐蛋白建议 ≥{protein_floor}g（0.3 g/kg）以充分刺激肌肉合成；"
+            f"偏低的餐：{'、'.join(low_meals)}——可把蛋白挪一些过去或加一份"
+        )
+    diet_notes.append("蛋白尽量均分到各餐，相邻 3–4 小时一次")
+    diet_notes.append(f"膳食纤维 ≥{fiber_g}g/天：每餐一拳蔬菜 + 主食尽量选糙米/燕麦/薯类")
+    diet_notes.append(f"饮水：非训练日约 {water_rest}ml，训练日约 {water_training}ml")
+    if "vegan" in restrictions:
+        diet_notes.append("纯素需额外关注：维生素 B12（必补）、铁、Omega-3（藻油）——见补剂建议")
 
     return MealPlan(
         meals=meals,
@@ -131,5 +170,8 @@ def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
         total_protein_g=total_p,
         total_fat_g=total_f,
         total_carbs_g=total_c,
-        food_examples=FOOD_EXAMPLES,
+        fiber_g=fiber_g,
+        water_ml_rest=water_rest,
+        water_ml_training=water_training,
+        diet_notes=diet_notes,
     )

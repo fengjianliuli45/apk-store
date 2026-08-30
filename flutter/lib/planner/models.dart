@@ -136,18 +136,21 @@ class MacroResult {
     required this.perKg,
     required this.surplusKcal,
     required this.goal,
-  });
+    List<String>? notes,
+  }) : notes = notes ?? const [];
 
   final Map<String, num> dailyTargets; // kcal, protein_g, fat_g, carbs_g
   final Map<String, num> perKg; // protein, fat, carbs
   final int surplusKcal;
   final String goal;
+  final List<String> notes;
 
   Map<String, dynamic> toJson() => {
     'daily_targets': dailyTargets,
     'per_kg': perKg,
     'surplus_kcal': surplusKcal,
     'goal': goal,
+    'notes': notes,
   };
 }
 
@@ -607,13 +610,19 @@ class Meal {
     required this.proteinG,
     required this.fatG,
     required this.carbsG,
-  });
+    List<Map<String, dynamic>>? options,
+    this.handPortions = '',
+    this.isPostWorkout = false,
+  }) : options = options ?? const [];
 
   final String name;
   double kcal;
   double proteinG;
   double fatG;
   double carbsG;
+  List<Map<String, dynamic>> options; // 精确吃法（食物库）
+  String handPortions; // 手掌法等价
+  bool isPostWorkout;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -621,6 +630,9 @@ class Meal {
     'protein_g': double.parse(proteinG.toStringAsFixed(1)),
     'fat_g': double.parse(fatG.toStringAsFixed(1)),
     'carbs_g': double.parse(carbsG.toStringAsFixed(1)),
+    'options': options,
+    'hand_portions': handPortions,
+    'is_post_workout': isPostWorkout,
   };
 }
 
@@ -631,15 +643,21 @@ class MealPlan {
     required this.totalProteinG,
     required this.totalFatG,
     required this.totalCarbsG,
-    required this.foodExamples,
-  });
+    this.fiberG = 0,
+    this.waterMlRest = 0,
+    this.waterMlTraining = 0,
+    List<String>? dietNotes,
+  }) : dietNotes = dietNotes ?? const [];
 
   final List<Meal> meals;
   final double totalKcal;
   final double totalProteinG;
   final double totalFatG;
   final double totalCarbsG;
-  final Map<String, String> foodExamples;
+  final int fiberG;
+  final int waterMlRest;
+  final int waterMlTraining;
+  final List<String> dietNotes;
 
   Map<String, dynamic> toJson() => {
     'meals': meals.map((m) => m.toJson()).toList(),
@@ -647,7 +665,10 @@ class MealPlan {
     'total_protein_g': double.parse(totalProteinG.toStringAsFixed(1)),
     'total_fat_g': double.parse(totalFatG.toStringAsFixed(1)),
     'total_carbs_g': double.parse(totalCarbsG.toStringAsFixed(1)),
-    'food_examples': foodExamples,
+    'fiber_g': fiberG,
+    'water_ml_rest': waterMlRest,
+    'water_ml_training': waterMlTraining,
+    'diet_notes': dietNotes,
   };
 }
 
@@ -751,7 +772,7 @@ class GeneratedPlan {
   final Map<String, dynamic> oneRmEstimates;
 
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.7', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.8', 'generated_at': generatedAt.toIso8601String()},
     'profile': {
       ...profile.toJson(),
       'one_rm_estimates': oneRmEstimates,
@@ -832,6 +853,7 @@ class GeneratedPlan {
         perKg: Map<String, num>.from(macrosJson['per_kg'] as Map),
         surplusKcal: macrosJson['surplus_kcal'] as int,
         goal: macrosJson['goal'] as String,
+        notes: List<String>.from(macrosJson['notes'] as List? ?? const []),
       ),
       split: SplitResult(
         splitName: training['split'] as String,
@@ -910,6 +932,11 @@ class GeneratedPlan {
                 proteinG: (m['protein_g'] as num).toDouble(),
                 fatG: (m['fat_g'] as num).toDouble(),
                 carbsG: (m['carbs_g'] as num).toDouble(),
+                options: (m['options'] as List? ?? const [])
+                    .map((o) => Map<String, dynamic>.from(o as Map))
+                    .toList(),
+                handPortions: (m['hand_portions'] as String?) ?? '',
+                isPostWorkout: (m['is_post_workout'] as bool?) ?? false,
               ),
             )
             .toList(),
@@ -917,9 +944,10 @@ class GeneratedPlan {
         totalProteinG: (mealsJson['total_protein_g'] as num).toDouble(),
         totalFatG: (mealsJson['total_fat_g'] as num).toDouble(),
         totalCarbsG: (mealsJson['total_carbs_g'] as num).toDouble(),
-        foodExamples: Map<String, String>.from(
-          mealsJson['food_examples'] as Map? ?? const {},
-        ),
+        fiberG: (mealsJson['fiber_g'] as int?) ?? 0,
+        waterMlRest: (mealsJson['water_ml_rest'] as int?) ?? 0,
+        waterMlTraining: (mealsJson['water_ml_training'] as int?) ?? 0,
+        dietNotes: List<String>.from(mealsJson['diet_notes'] as List? ?? const []),
       ),
       supplements: SupplementResult(
         (nutrition['supplements'] as List)

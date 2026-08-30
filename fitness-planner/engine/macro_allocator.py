@@ -4,9 +4,10 @@
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from .profile_validator import UserProfile
 from .tdee_calculator import TDEEResult
+from .food_db import normalize_restrictions
 
 
 @dataclass
@@ -15,6 +16,7 @@ class MacroResult:
     per_kg: dict              # protein, fat, carbs
     surplus_kcal: int         # 正=盈余, 负=缺口, 0=维持
     goal: str
+    notes: list = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -22,7 +24,15 @@ class MacroResult:
             "per_kg": self.per_kg,
             "surplus_kcal": self.surplus_kcal,
             "goal": self.goal,
+            "notes": self.notes,
         }
+
+
+# 植物蛋白消化率 / 亮氨酸偏低 → 上调 g/kg（PMC11281145, MDPI 16(8)1122）
+DIET_PROTEIN_BUMP = {
+    "vegan": 0.3,
+    "vegetarian": 0.2,
+}
 
 
 # ── 热量方向 ──────────────────────────────────────────────
@@ -61,11 +71,21 @@ def allocate(profile: UserProfile, tdee: TDEEResult) -> MacroResult:
     """计算三大营养素目标。"""
     goal = profile.goal
     w = profile.weight_kg
+    notes: list[str] = []
 
     surplus = GOAL_SURPLUS.get(goal, 0)
     daily_kcal = tdee.tdee + surplus
 
-    protein_g = round(PROTEIN_PER_KG[goal] * w, 1)
+    protein_per_kg = PROTEIN_PER_KG[goal]
+    restrictions = normalize_restrictions(getattr(profile, "dietary_restrictions", []))
+    if "vegan" in restrictions:
+        protein_per_kg += DIET_PROTEIN_BUMP["vegan"]
+        notes.append("纯素：蛋白已上调 +0.3 g/kg，优先豆制品/大豆蛋白粉（亮氨酸足）")
+    elif "vegetarian" in restrictions:
+        protein_per_kg += DIET_PROTEIN_BUMP["vegetarian"]
+        notes.append("蛋奶素：蛋白已上调 +0.2 g/kg，多用乳清/蛋/豆制品")
+
+    protein_g = round(protein_per_kg * w, 1)
     fat_g = round(FAT_PER_KG[goal] * w, 1)
 
     protein_kcal = protein_g * PROTEIN_KCAL_PER_G
@@ -93,4 +113,5 @@ def allocate(profile: UserProfile, tdee: TDEEResult) -> MacroResult:
         },
         surplus_kcal=surplus,
         goal=goal,
+        notes=notes,
     )

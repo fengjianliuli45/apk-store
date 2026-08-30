@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.7",
+    "version": "1.8",
     "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
@@ -72,8 +72,7 @@
     },
     "warnings": [],
     "notes": [
-      "未指定训练天数，将按每次时长/目标/水平自动安排",
-      "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
+      "按你指定的每周 4 天安排。"
     ]
   },
   "nutrition": {
@@ -97,7 +96,8 @@
         "carbs": 6.0
       },
       "surplus_kcal": 350,
-      "goal": "hypertrophy"
+      "goal": "hypertrophy",
+      "notes": []
     },
     "meals": {
       "meals": [
@@ -106,40 +106,126 @@
           "kcal": 710,
           "protein_g": 34.3,
           "fat_g": 18.0,
-          "carbs_g": 102.6
+          "carbs_g": 102.6,
+          "options": [
+            {
+              "items": [
+                "鸡胸肉 110g",
+                "米饭 365g",
+                "西兰花 150g",
+                "橄榄油 / 菜籽油 15g"
+              ],
+              "note": ""
+            },
+            {
+              "items": [
+                "鸡腿肉（去皮） 145g",
+                "糙米饭 410g",
+                "青菜 / 菠菜 150g"
+              ],
+              "note": ""
+            }
+          ],
+          "hand_portions": "2 手掌蛋白 + 5 捧碳水 + 2 拳蔬菜 + 2 拇指脂肪",
+          "is_post_workout": false
         },
         {
           "name": "午餐",
           "kcal": 710,
           "protein_g": 34.3,
           "fat_g": 18.0,
-          "carbs_g": 102.6
+          "carbs_g": 102.6,
+          "options": [
+            {
+              "items": [
+                "鸡腿肉（去皮） 145g",
+                "糙米饭 410g",
+                "青菜 / 菠菜 150g"
+              ],
+              "note": ""
+            },
+            {
+              "items": [
+                "瘦牛肉 130g",
+                "燕麦 170g",
+                "彩椒 150g"
+              ],
+              "note": ""
+            }
+          ],
+          "hand_portions": "2 手掌蛋白 + 5 捧碳水 + 2 拳蔬菜 + 2 拇指脂肪",
+          "is_post_workout": false
         },
         {
           "name": "练后加餐",
           "kcal": 819,
           "protein_g": 41.1,
           "fat_g": 18.0,
-          "carbs_g": 123.2
+          "carbs_g": 123.2,
+          "options": [
+            {
+              "items": [
+                "瘦牛肉 160g",
+                "燕麦 205g",
+                "彩椒 150g"
+              ],
+              "note": "练后：先补蛋白 + 快碳"
+            },
+            {
+              "items": [
+                "猪里脊 185g",
+                "红薯 615g",
+                "黄瓜 / 番茄 150g",
+                "杏仁 / 混合坚果 10g"
+              ],
+              "note": "练后：先补蛋白 + 快碳"
+            }
+          ],
+          "hand_portions": "2 手掌蛋白 + 6 捧碳水 + 2 拳蔬菜 + 2 拇指脂肪",
+          "is_post_workout": true
         },
         {
           "name": "晚餐",
           "kcal": 710,
           "protein_g": 34.3,
           "fat_g": 18.0,
-          "carbs_g": 102.6
+          "carbs_g": 102.6,
+          "options": [
+            {
+              "items": [
+                "猪里脊 155g",
+                "红薯 515g",
+                "黄瓜 / 番茄 150g",
+                "杏仁 / 混合坚果 15g"
+              ],
+              "note": ""
+            },
+            {
+              "items": [
+                "龙利鱼 / 巴沙鱼 170g",
+                "土豆 605g",
+                "菌菇 150g",
+                "花生酱 30g"
+              ],
+              "note": ""
+            }
+          ],
+          "hand_portions": "2 手掌蛋白 + 5 捧碳水 + 2 拳蔬菜 + 2 拇指脂肪",
+          "is_post_workout": false
         }
       ],
       "total_kcal": 2948,
       "total_protein_g": 144.0,
       "total_fat_g": 72.0,
       "total_carbs_g": 431.1,
-      "food_examples": {
-        "35g_protein": "鸡胸肉 150g ≈ 鸡蛋 5个 ≈ 蛋白粉 1.5勺 ≈ 豆腐 400g",
-        "40g_protein": "鸡胸肉 170g ≈ 鸡蛋 6个 ≈ 蛋白粉 1.7勺 ≈ 豆腐 450g",
-        "30g_protein": "鸡胸肉 130g ≈ 鸡蛋 4个 ≈ 蛋白粉 1.3勺 ≈ 豆腐 350g",
-        "20g_protein": "鸡胸肉 85g ≈ 鸡蛋 3个 ≈ 蛋白粉 0.9勺 ≈ 豆腐 230g"
-      }
+      "fiber_g": 41,
+      "water_ml_rest": 2376,
+      "water_ml_training": 2876,
+      "diet_notes": [
+        "蛋白尽量均分到各餐，相邻 3–4 小时一次",
+        "膳食纤维 ≥41g/天：每餐一拳蔬菜 + 主食尽量选糙米/燕麦/薯类",
+        "饮水：非训练日约 2376ml，训练日约 2876ml"
+      ]
     },
     "supplements": [
       {
@@ -219,7 +305,7 @@
       "coverage_pct": 100,
       "vs_optimal_pct": 100,
       "minutes_raised": false,
-      "note": "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
+      "note": "按你指定的每周 4 天安排。"
     },
     "recovery_days": [
       {

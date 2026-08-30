@@ -8,7 +8,6 @@ GeneratedPlan _stubPlan({
   required String goal,
   required List<SessionResult> sessions,
   List<Meal> meals = const [],
-  Map<String, String> foodExamples = const {},
   Map<String, num>? dailyTargets,
 }) {
   return GeneratedPlan(
@@ -55,7 +54,6 @@ GeneratedPlan _stubPlan({
       totalProteinG: 160,
       totalFatG: 60,
       totalCarbsG: 250,
-      foodExamples: foodExamples,
     ),
     supplements: SupplementResult(const []),
     weeklyVolumePerGroup: const {},
@@ -149,22 +147,35 @@ void main() {
     expect(goals.kcalForSlot(MealSlot.breakfast), 480);
   });
 
-  test('foodExampleFor picks the closest protein example', () {
+  test('foodExampleFor returns the first food-library option, else hand portions', () {
     final goals = DietGoals(
       kcal: 1800,
       proteinG: 140,
       carbG: 180,
       fatG: 50,
       recipeGoal: RecipeGoal.cut,
-      meals: [Meal(name: '早餐', kcal: 400, proteinG: 33, fatG: 10, carbsG: 40)],
-      foodExamples: const {
-        '20g_protein': '鸡蛋 3个',
-        '35g_protein': '鸡胸肉 150g',
-        '40g_protein': '鸡胸肉 170g',
-      },
+      meals: [
+        Meal(
+          name: '早餐',
+          kcal: 400,
+          proteinG: 33,
+          fatG: 10,
+          carbsG: 40,
+          options: const [
+            {
+              'items': ['鸡胸肉 110g', '燕麦 60g', '西兰花 150g'],
+              'note': '',
+            },
+          ],
+          handPortions: '1 手掌蛋白 + 2 捧碳水 + 1 拳蔬菜',
+        ),
+        Meal(name: '午餐', kcal: 500, proteinG: 40, fatG: 12, carbsG: 55,
+            handPortions: '2 手掌蛋白 + 2 捧碳水 + 1 拳蔬菜'),
+      ],
     );
 
-    expect(goals.foodExampleFor(MealSlot.breakfast), '鸡胸肉 150g');
+    expect(goals.foodExampleFor(MealSlot.breakfast), '鸡胸肉 110g + 燕麦 60g + 西兰花 150g');
+    expect(goals.foodExampleFor(MealSlot.lunch), '2 手掌蛋白 + 2 捧碳水 + 1 拳蔬菜');
     expect(goals.foodExampleFor(MealSlot.dinner), isNull);
   });
 

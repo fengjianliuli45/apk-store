@@ -58,7 +58,7 @@ def generate_json(
 
     return {
         "meta": {
-            "version": "1.7",
+            "version": "1.8",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },

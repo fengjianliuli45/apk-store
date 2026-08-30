@@ -12,7 +12,6 @@ class DietGoals {
     required this.fatG,
     required this.recipeGoal,
     required this.meals,
-    this.foodExamples = const {},
   });
 
   final int kcal;
@@ -21,7 +20,6 @@ class DietGoals {
   final int fatG;
   final RecipeGoal recipeGoal;
   final List<Meal> meals;
-  final Map<String, String> foodExamples;
 
   static const fallback = DietGoals(
     kcal: DietCatalog.goalKcal,
@@ -46,7 +44,6 @@ class DietGoals {
         _ => RecipeGoal.maintain,
       },
       meals: plan.mealPlan.meals,
-      foodExamples: plan.mealPlan.foodExamples,
     );
   }
 
@@ -67,23 +64,17 @@ class DietGoals {
 
   int kcalForSlot(MealSlot slot) => mealForSlot(slot)?.kcal.round() ?? (kcal / 4).round();
 
-  /// Closest engine food-example string for this slot's protein target.
+  /// Concrete "how to eat this" line for a slot: first engine food-library
+  /// option, falling back to the hand-portion equivalent.
   String? foodExampleFor(MealSlot slot) {
     final meal = mealForSlot(slot);
-    if (meal == null || foodExamples.isEmpty) return null;
-    final target = meal.proteinG.round();
-    MapEntry<String, String>? best;
-    var bestDiff = 1 << 30;
-    for (final entry in foodExamples.entries) {
-      final grams = int.tryParse(RegExp(r'\d+').firstMatch(entry.key)?.group(0) ?? '');
-      if (grams == null) continue;
-      final diff = (grams - target).abs();
-      if (diff < bestDiff) {
-        bestDiff = diff;
-        best = entry;
-      }
+    if (meal == null) return null;
+    if (meal.options.isNotEmpty) {
+      final items =
+          (meal.options.first['items'] as List?)?.cast<String>() ?? const [];
+      if (items.isNotEmpty) return items.join(' + ');
     }
-    return best?.value;
+    return meal.handPortions.isNotEmpty ? meal.handPortions : null;
   }
 
   List<RecipeItem> recommendedRecipes() {
