@@ -56,6 +56,27 @@ void main() {
     }
   });
 
+  test('home user (bodyweight+band+pull_up_bar) plan — parity dump', () async {
+    final gw = await PlannerGateway.instance();
+    final plan = gw.generate({
+      'gender': 'M', 'age': 25, 'height_cm': 175.0, 'weight_kg': 70.0,
+      'level': 'beginner', 'goal': 'hypertrophy', 'minutes_per_session': 45,
+      'equipment': const ['bodyweight', 'band', 'pull_up_bar'],
+    }).toJson();
+    (plan['meta'] as Map)['generated_at'] = 'X';
+    File('${Directory.systemTemp.path}/dart_home_plan.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(plan));
+    // 每个大肌群都被安排到
+    final trained = {
+      for (final s in (plan['training'] as Map)['schedule'] as List)
+        if ((s as Map)['type'] != 'rest')
+          for (final e in s['exercises'] as List) (e as Map)['target_muscle']
+    };
+    for (final m in const ['chest', 'back', 'quads', 'hamstrings', 'shoulders']) {
+      expect(trained.contains(m), isTrue, reason: '$m 未安排');
+    }
+  });
+
   test('advance check-in bumps exercise_cycle_offset; extend does not', () async {
     final gw = await PlannerGateway.instance();
     final plan = gw.generate(raw).toJson();

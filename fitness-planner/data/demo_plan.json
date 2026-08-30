@@ -282,7 +282,7 @@
       "quads": 14,
       "hamstrings": 8,
       "shoulders": 12,
-      "biceps": 4,
+      "biceps": 5,
       "triceps": 0,
       "calves": 6,
       "core": 0
@@ -307,7 +307,7 @@
     "frequency_plan": {
       "days_per_week": 4,
       "minutes_per_session": 75,
-      "min_session_minutes": 60,
+      "min_session_minutes": 55,
       "coverage_pct": 100,
       "vs_optimal_pct": 100,
       "minutes_raised": false,
@@ -372,13 +372,13 @@
               "dumbbell_rdl": 3,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "bodyweight_squat": 2
+              "leg_press": 2
             },
             "周四": {
               "barbell_bench_press": 3,
               "dumbbell_row": 3,
               "dumbbell_shoulder_press": 3,
-              "push_up": 2,
+              "cable_fly": 2,
               "chest_supported_row": 3,
               "overhead_press": 2,
               "chin_up": 2
@@ -388,7 +388,7 @@
               "dumbbell_rdl": 3,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "leg_press": 2
+              "barbell_back_squat": 2
             }
           },
           "week_total_sets": 60,
@@ -417,13 +417,13 @@
               "dumbbell_rdl": 3,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "bodyweight_squat": 2
+              "leg_press": 2
             },
             "周四": {
               "barbell_bench_press": 3,
               "dumbbell_row": 3,
               "dumbbell_shoulder_press": 3,
-              "push_up": 2,
+              "cable_fly": 2,
               "chest_supported_row": 3,
               "overhead_press": 2,
               "chin_up": 2
@@ -433,7 +433,7 @@
               "dumbbell_rdl": 3,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "leg_press": 2
+              "barbell_back_squat": 2
             }
           },
           "week_total_sets": 60,
@@ -462,26 +462,26 @@
               "dumbbell_rdl": 4,
               "walking_lunges": 3,
               "standing_calf_raise": 3,
-              "bodyweight_squat": 3
+              "leg_press": 3
             },
             "周四": {
               "barbell_bench_press": 4,
               "dumbbell_row": 4,
               "dumbbell_shoulder_press": 4,
-              "push_up": 3,
+              "cable_fly": 3,
               "chest_supported_row": 4,
               "overhead_press": 2,
-              "chin_up": 2
+              "chin_up": 3
             },
             "周五": {
               "goblet_squat": 4,
               "dumbbell_rdl": 4,
               "walking_lunges": 3,
               "standing_calf_raise": 3,
-              "leg_press": 3
+              "barbell_back_squat": 3
             }
           },
-          "week_total_sets": 80,
+          "week_total_sets": 81,
           "diet_break": false,
           "diet_kcal_delta": 0,
           "note": ""
@@ -507,26 +507,26 @@
               "dumbbell_rdl": 4,
               "walking_lunges": 3,
               "standing_calf_raise": 3,
-              "bodyweight_squat": 3
+              "leg_press": 3
             },
             "周四": {
               "barbell_bench_press": 4,
               "dumbbell_row": 4,
               "dumbbell_shoulder_press": 4,
-              "push_up": 3,
+              "cable_fly": 3,
               "chest_supported_row": 4,
               "overhead_press": 2,
-              "chin_up": 2
+              "chin_up": 3
             },
             "周五": {
               "goblet_squat": 4,
               "dumbbell_rdl": 4,
               "walking_lunges": 3,
               "standing_calf_raise": 3,
-              "leg_press": 3
+              "barbell_back_squat": 3
             }
           },
-          "week_total_sets": 80,
+          "week_total_sets": 81,
           "diet_break": false,
           "diet_kcal_delta": 0,
           "note": ""
@@ -552,13 +552,13 @@
               "dumbbell_rdl": 2,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "bodyweight_squat": 2
+              "leg_press": 2
             },
             "周四": {
               "barbell_bench_press": 2,
               "dumbbell_row": 2,
               "dumbbell_shoulder_press": 2,
-              "push_up": 2,
+              "cable_fly": 2,
               "chest_supported_row": 2,
               "overhead_press": 2,
               "chin_up": 2
@@ -568,7 +568,7 @@
               "dumbbell_rdl": 2,
               "walking_lunges": 2,
               "standing_calf_raise": 2,
-              "leg_press": 2
+              "barbell_back_squat": 2
             }
           },
           "week_total_sets": 48,
@@ -735,8 +735,8 @@
             "exercise_id": "chin_up",
             "sets": 2,
             "reps": "8-12",
-            "load": "自重（按次数 / 难度递进）",
-            "load_kg": null,
+            "load": "50 kg（65-80% 1RM）",
+            "load_kg": 50.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -861,13 +861,13 @@
             "target_muscle": "calves"
           },
           {
-            "name": "徒手深蹲",
-            "name_en": "Bodyweight Squat",
-            "exercise_id": "bodyweight_squat",
+            "name": "腿举",
+            "name_en": "Leg Press",
+            "exercise_id": "leg_press",
             "sets": 3,
             "reps": "8-12",
-            "load": "自重（按次数 / 难度递进）",
-            "load_kg": null,
+            "load": "167.5 kg（65-80% 1RM）",
+            "load_kg": 167.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -879,8 +879,8 @@
             "compound": true,
             "form_cues": [
               "脚与肩宽",
-              "蹲至平行",
-              "膝盖跟脚尖"
+              "下降至90度",
+              "膝盖不锁死"
             ],
             "target_muscle": "quads"
           }
@@ -973,13 +973,13 @@
             "target_muscle": "shoulders"
           },
           {
-            "name": "俯卧撑",
-            "name_en": "Push-Up",
-            "exercise_id": "push_up",
+            "name": "绳索飞鸟",
+            "name_en": "Cable Fly",
+            "exercise_id": "cable_fly",
             "sets": 3,
             "reps": "8-12",
-            "load": "自重（按次数 / 难度递进）",
-            "load_kg": null,
+            "load": "62.5 kg（65-80% 1RM）",
+            "load_kg": 62.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -988,11 +988,11 @@
             "primary_muscles": [
               "chest"
             ],
-            "compound": true,
+            "compound": false,
             "form_cues": [
-              "身体成一条线",
-              "肘部45度",
-              "核心收紧"
+              "微屈肘",
+              "胸肌发力合拢",
+              "离心控制"
             ],
             "target_muscle": "chest"
           },
@@ -1048,10 +1048,10 @@
             "name": "反握引体向上",
             "name_en": "Chin-Up",
             "exercise_id": "chin_up",
-            "sets": 2,
+            "sets": 3,
             "reps": "8-12",
-            "load": "自重（按次数 / 难度递进）",
-            "load_kg": null,
+            "load": "50 kg（65-80% 1RM）",
+            "load_kg": 50.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -1070,7 +1070,7 @@
             "target_muscle": "biceps"
           }
         ],
-        "total_sets": 23
+        "total_sets": 24
       },
       {
         "day": "周五",
@@ -1176,13 +1176,13 @@
             "target_muscle": "calves"
           },
           {
-            "name": "腿举",
-            "name_en": "Leg Press",
-            "exercise_id": "leg_press",
+            "name": "杠铃深蹲",
+            "name_en": "Barbell Back Squat",
+            "exercise_id": "barbell_back_squat",
             "sets": 3,
             "reps": "8-12",
-            "load": "167.5 kg（65-80% 1RM）",
-            "load_kg": 167.5,
+            "load": "85 kg（65-80% 1RM）",
+            "load_kg": 85.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -1194,8 +1194,8 @@
             "compound": true,
             "form_cues": [
               "脚与肩宽",
-              "下降至90度",
-              "膝盖不锁死"
+              "蹲至大腿平行",
+              "膝盖跟脚尖方向"
             ],
             "target_muscle": "quads"
           }

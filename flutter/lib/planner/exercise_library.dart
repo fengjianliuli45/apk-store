@@ -46,6 +46,10 @@ class ExerciseLibrary {
     if (expanded.contains('dumbbell')) {
       expanded.add('bench');
     }
+    // 商业健身房 / 力量架自带单杠
+    if (expanded.contains('rack') || expanded.contains('machine')) {
+      expanded.add('pull_up_bar');
+    }
     expanded.add('bodyweight');
     return expanded;
   }

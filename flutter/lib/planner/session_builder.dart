@@ -73,6 +73,11 @@ const _warmupSecPerBigMuscle = 90;
 const _warmupCapSec = 8 * 60;
 const _bigMuscles = {'chest', 'back', 'quads', 'hamstrings', 'shoulders'};
 
+// 负重器械：拥有其一即视为"有器械"，纯自重动作在选池里降权
+const _loadedEquipment = {
+  'barbell', 'dumbbell', 'cable', 'machine', 'kettlebell', 'trap_bar'
+};
+
 const sessionMuscles = {
   'push': ['chest', 'shoulders', 'triceps'],
   'pull': ['back', 'biceps', 'rear_delt'],
@@ -225,15 +230,33 @@ List<SessionResult> buildSessions(
       injuries: profile.injuries,
       level: level,
     );
+    // 有负重器械的用户，纯自重动作排到后面（否则轮换会给他轮到俯卧撑）。
+    final hasLoadedGear =
+        profile.equipment.any(_loadedEquipment.contains);
+    int bwDemoted(Exercise e) => (hasLoadedGear &&
+            e.equipmentRequired.length == 1 &&
+            e.equipmentRequired.first == 'bodyweight')
+        ? 1
+        : 0;
     // Stable sort (Dart's List.sort is not stable — break ties by original
     // index to stay identical to Python's list.sort()).
     final indexed = exercises.indexed.toList()
       ..sort((a, b) {
-        final aKey = (a.$2.compound ? 0 : 1, a.$2.skillLevel != 'beginner' ? 1 : 0);
-        final bKey = (b.$2.compound ? 0 : 1, b.$2.skillLevel != 'beginner' ? 1 : 0);
-        final c1 = aKey.$1.compareTo(bKey.$1);
+        final aKey = (
+          bwDemoted(a.$2),
+          a.$2.compound ? 0 : 1,
+          a.$2.skillLevel != 'beginner' ? 1 : 0
+        );
+        final bKey = (
+          bwDemoted(b.$2),
+          b.$2.compound ? 0 : 1,
+          b.$2.skillLevel != 'beginner' ? 1 : 0
+        );
+        final c0 = aKey.$1.compareTo(bKey.$1);
+        if (c0 != 0) return c0;
+        final c1 = aKey.$2.compareTo(bKey.$2);
         if (c1 != 0) return c1;
-        final c2 = aKey.$2.compareTo(bKey.$2);
+        final c2 = aKey.$3.compareTo(bKey.$3);
         if (c2 != 0) return c2;
         return a.$1.compareTo(b.$1);
       });

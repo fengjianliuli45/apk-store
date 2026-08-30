@@ -12,6 +12,23 @@ from typing import Optional
 DEFAULT_DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "exercises.json"
 
 
+def _expand_equipment(equipment: list[str]) -> set:
+    """把用户器械扩成"实际可用"集合：
+    - barbell → 也有 rack / bench；dumbbell → 也有 bench
+    - rack / machine → 商业健身房/力量架自带单杠 → pull_up_bar
+    - bodyweight 永远可用
+    """
+    e = set(equipment)
+    if "barbell" in e:
+        e.update({"rack", "bench"})
+    if "dumbbell" in e:
+        e.add("bench")
+    if "rack" in e or "machine" in e:
+        e.add("pull_up_bar")
+    e.add("bodyweight")
+    return e
+
+
 @dataclass
 class Exercise:
     id: str
@@ -28,6 +45,7 @@ class Exercise:
     alternatives_if_injured: list[str]
     video_url: Optional[str]
     form_cues: list[str]
+    progression_rank: Optional[int] = None   # 徒手动作进阶序号（同 movement_pattern 内 1,2,3…）
 
     @classmethod
     def from_dict(cls, d: dict) -> "Exercise":
@@ -46,6 +64,7 @@ class Exercise:
             alternatives_if_injured=d.get("alternatives_if_injured", []),
             video_url=d.get("video_url"),
             form_cues=d.get("form_cues", []),
+            progression_rank=d.get("progression_rank"),
         )
 
     def to_dict(self) -> dict:
@@ -64,6 +83,7 @@ class Exercise:
             "alternatives_if_injured": self.alternatives_if_injured,
             "video_url": self.video_url,
             "form_cues": self.form_cues,
+            "progression_rank": self.progression_rank,
         }
 
 
@@ -128,14 +148,7 @@ class ExerciseLibrary:
         if not patterns:
             return []
 
-        # 扩展器械：如果有 barbell 就也匹配需要 rack 的
-        expanded_equip = set(equipment)
-        if "barbell" in expanded_equip:
-            expanded_equip.add("rack")
-            expanded_equip.add("bench")
-        if "dumbbell" in expanded_equip:
-            expanded_equip.add("bench")
-        expanded_equip.add("bodyweight")  # bodyweight 永远可用
+        expanded_equip = _expand_equipment(equipment)
 
         results = []
         for ex in self._exercises:
@@ -171,13 +184,7 @@ class ExerciseLibrary:
 
     def query_by_muscle(self, muscle: str, equipment: list[str], level: str = "beginner") -> list[Exercise]:
         """按主肌群筛选。"""
-        expanded_equip = set(equipment)
-        if "barbell" in expanded_equip:
-            expanded_equip.add("rack")
-            expanded_equip.add("bench")
-        if "dumbbell" in expanded_equip:
-            expanded_equip.add("bench")
-        expanded_equip.add("bodyweight")
+        expanded_equip = _expand_equipment(equipment)
 
         results = []
         for ex in self._exercises:

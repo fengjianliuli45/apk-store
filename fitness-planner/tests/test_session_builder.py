@@ -210,6 +210,34 @@ class TestSessionBuilder(unittest.TestCase):
         self.assertLessEqual(r_s["vs_optimal_pct"], r_l["vs_optimal_pct"])
         self.assertLessEqual(r_l["vs_optimal_pct"], 100)
 
+    def test_equipped_user_not_given_pure_bodyweight_when_avoidable(self):
+        """有杠铃/哑铃的用户，胸/腿这类有大量负重选项的肌群不该排到纯自重动作。"""
+        p = self._profile(level="intermediate", days_per_week=4,
+                          minutes_per_session=90,
+                          equipment=["barbell", "dumbbell", "cable", "machine"])
+        sessions = build_sessions(p, select(p), self.lib)
+        bw_only = set()
+        for s in sessions:
+            for e in s.exercises:
+                ex = self.lib.get_by_id(e.exercise_id)
+                if ex and ex.equipment_required == ["bodyweight"]:
+                    bw_only.add(e.exercise_id)
+        # 允许 0 个；至少不能是 push_up / bodyweight_squat 这种
+        self.assertNotIn("push_up", bw_only)
+        self.assertNotIn("bodyweight_squat", bw_only)
+
+    def test_home_user_gets_full_plan(self):
+        """纯自重 + 弹力带 + 单杠 的用户能拿到覆盖每个肌群的计划。"""
+        p = self._profile(level="beginner", days_per_week=None,
+                          minutes_per_session=60,
+                          equipment=["bodyweight", "band", "pull_up_bar"])
+        from engine.frequency_planner import resolve as resolve_freq
+        p2, _ = resolve_freq(p, self.lib)
+        sessions = build_sessions(p2, select(p2), self.lib)
+        trained = {e.target_muscle for s in sessions for e in s.exercises}
+        for m in ("chest", "back", "quads", "hamstrings", "shoulders"):
+            self.assertIn(m, trained, f"{m} 未被安排")
+
 
 if __name__ == "__main__":
     unittest.main()

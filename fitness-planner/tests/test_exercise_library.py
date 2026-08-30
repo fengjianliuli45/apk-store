@@ -85,6 +85,43 @@ class TestExerciseLibrary(unittest.TestCase):
         alts = self.lib.find_alternatives("barbell_bench_press", ["shoulder_impingement"])
         self.assertGreater(len(alts), 0)
 
+    # ── 居家动作库扩充（任务 P0 #1）──────────────────────────
+
+    def test_library_expanded(self):
+        self.assertGreaterEqual(self.lib.count(), 150)
+
+    def test_home_user_can_train_every_muscle(self):
+        """纯自重 + 弹力带 + 单杠 的用户，每个主要肌群都有可练动作。"""
+        equip = ["bodyweight", "band", "pull_up_bar"]
+        for muscle in ("chest", "back", "shoulders", "biceps", "triceps",
+                       "quads", "hamstrings", "glutes", "calves"):
+            res = self.lib.query_by_muscle(muscle, equip, "beginner")
+            self.assertGreaterEqual(
+                len(res), 1, f"{muscle}: 居家用户无可练动作")
+
+    def test_band_and_pull_up_bar_gated(self):
+        # 没有弹力带 → 不出现弹力带动作
+        res = self.lib.query(exercise_type="pull", equipment=["bodyweight"], level="beginner")
+        for ex in res:
+            self.assertNotIn("band", ex.equipment_required)
+            self.assertNotIn("pull_up_bar", ex.equipment_required)
+        # 有单杠 → 引体类回来
+        res2 = self.lib.query(exercise_type="pull",
+                              equipment=["bodyweight", "pull_up_bar"], level="beginner")
+        self.assertTrue(any(ex.id in ("pull_up", "chin_up", "inverted_row") for ex in res2))
+
+    def test_rack_and_machine_imply_pull_up_bar(self):
+        from engine.exercise_library import _expand_equipment
+        self.assertIn("pull_up_bar", _expand_equipment(["barbell"]))   # barbell→rack→bar
+        self.assertIn("pull_up_bar", _expand_equipment(["machine"]))
+        self.assertNotIn("pull_up_bar", _expand_equipment(["dumbbell"]))
+
+    def test_progression_rank_parsed(self):
+        push = self.lib.get_by_id("push_up")
+        archer = self.lib.get_by_id("archer_push_up")
+        self.assertIsNone(push.progression_rank)   # 老数据没这字段
+        self.assertEqual(archer.progression_rank, 6)
+
 
 if __name__ == "__main__":
     unittest.main()

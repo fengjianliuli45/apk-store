@@ -4,6 +4,23 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 动作库扩充：居家 / 弹力带（任务 P0 #1）
+
+证据：Kassiano 2022 系统综述 + 自重/弹力带接近力竭肥大等效（Nunes 2019, ISJC 2024）。
+
+- `data/exercises.json` 108 → 154：新增 46 个居家动作（21 自重 + 22 弹力带 + 3 单杠）。
+  合并后每个引擎会查的肌群（chest/back/shoulders/biceps/triceps/rear_delt/quads/
+  hamstrings/glutes/calves）纯自重都 ≥3 个可选。肩 0→3、腘绳肌居家 0→4、臀 2→8。
+- 新器械词：`band`（弹力带）、`pull_up_bar`（单杠）。
+  `pull_up` / `chin_up` / 悬垂类从误标的 `bodyweight` 改成 `pull_up_bar`。
+  `_expand_equipment()`：`rack` / `machine` → 也有 `pull_up_bar`（商业健身房自带）。
+- `session_builder`：有负重器械的用户，纯自重动作在选池里降权（`_LOADED_EQUIPMENT`），
+  避免轮换把俯卧撑 / 徒手深蹲轮给有杠铃的人。
+- `Exercise` 新增可选字段 `progression_rank`（同 movement_pattern 内 1,2,3…），
+  ~15 个自重动作已标，喂后续「徒手进阶模型」（P0 #2）。老数据为 None。
+- Python 174 / Flutter 79 测试；demo / 轮换 offset 0-2 / 居家用户 计划 Python↔Dart 逐字一致。
+- Unity 3D 教练按 15 个 `movement_pattern` 1:1 映射，引擎不加动画字段；GIF 只是降级素材。
+
 ## 2026-08-30 动作轮换（任务 D）
 
 证据：Kassiano 2022 系统综述（PMID 35438660）—— 有计划的轮换促进区域性增长 + 减关节劳损，
