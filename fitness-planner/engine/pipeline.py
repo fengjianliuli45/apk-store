@@ -21,6 +21,7 @@ from .progression_planner import plan as plan_progression
 from .meal_distributor import distribute
 from .supplement_advisor import advise
 from .recovery_planner import plan_recovery
+from .mesocycle_planner import plan_mesocycle
 from .session_builder import analyze_volume
 from .exercise_library import ExerciseLibrary
 from .plan_output import generate_json
@@ -41,9 +42,31 @@ def generate_plan(raw: dict, library: Optional[ExerciseLibrary] = None) -> dict:
     meals = distribute(profile, macros)
     supplements = advise(profile, macros)
     recovery_days = plan_recovery(profile, split, analyze_volume(profile, split, sessions))
+    mesocycle = plan_mesocycle(profile, sessions, progression)
 
     return generate_json(
         profile, tdee, macros, split, sessions, progression, meals, supplements,
         frequency_plan=freq_plan,
         recovery_days=recovery_days,
+        mesocycle=mesocycle,
     )
+
+
+def run_check_in(
+    plan_json: dict,
+    workout_log: list,
+    body_log: Optional[list] = None,
+    completed_cycles: int = 0,
+    library: Optional[ExerciseLibrary] = None,
+) -> dict:
+    """中周期边界：评估上一个周期 + 产出下一份计划。
+
+    返回 {review, next_plan}。review 见 check_in_engine.CycleReview；
+    next_plan 是喂 next_raw 跑出来的新计划 JSON（address_safety 时为 None）。
+    """
+    from .check_in_engine import review_cycle
+    review = review_cycle(plan_json, workout_log, body_log or [], completed_cycles)
+    next_plan = None
+    if review.verdict != "address_safety" and review.next_raw:
+        next_plan = generate_plan(review.next_raw, library)
+    return {"review": review.to_dict(), "next_plan": next_plan}

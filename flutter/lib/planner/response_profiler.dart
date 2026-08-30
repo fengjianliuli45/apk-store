@@ -32,6 +32,15 @@ class ResponseProfile {
   final String muscleGainResponse;
   final String fatLossResponse;
   final String confidence;
+
+  Map<String, dynamic> toJson() => {
+        'maturity': maturity,
+        'training_style': trainingStyle,
+        'metabolism_response': metabolismResponse,
+        'muscle_gain_response': muscleGainResponse,
+        'fat_loss_response': fatLossResponse,
+        'confidence': confidence,
+      };
 }
 
 ResponseProfile profileResponse(ResponseObservation observation) {

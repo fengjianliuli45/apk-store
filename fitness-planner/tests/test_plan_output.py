@@ -41,7 +41,7 @@ class TestPlanOutput(unittest.TestCase):
     def test_has_meta(self):
         plan_json = self._generate()
         self.assertIn("meta", plan_json)
-        self.assertEqual(plan_json["meta"]["version"], "1.6")
+        self.assertEqual(plan_json["meta"]["version"], "1.7")
         self.assertIn("generated_at", plan_json["meta"])
         self.assertGreater(len(plan_json["meta"]["evidence_basis"]), 0)
 
@@ -73,7 +73,7 @@ class TestPlanOutput(unittest.TestCase):
         plan_json = self._generate()
         s = to_json_string(plan_json)
         parsed = json.loads(s)
-        self.assertEqual(parsed["meta"]["version"], "1.6")
+        self.assertEqual(parsed["meta"]["version"], "1.7")
 
     def test_has_first_stage_goal(self):
         plan_json = self._generate()

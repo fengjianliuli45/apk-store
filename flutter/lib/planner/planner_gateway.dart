@@ -2,9 +2,11 @@ import 'exercise_library.dart';
 import 'frequency_planner.dart';
 import 'macro_allocator.dart';
 import 'meal_distributor.dart';
+import 'check_in_engine.dart';
 import 'models.dart';
 import 'profile_validator.dart';
 import 'load_planner.dart';
+import 'mesocycle_planner.dart';
 import 'progression_planner.dart';
 import 'recovery_planner.dart';
 import 'schedule_planner.dart';
@@ -43,6 +45,23 @@ class PlannerGateway {
   /// Runs the full pipeline: validate → frequency → TDEE → macros → split →
   /// sessions → progression → meals → supplements → assembled plan. Throws
   /// [ValidationError] if `raw` is missing/out-of-range required fields.
+  /// 中周期边界：评估上一个周期的训练日志 → 产出下一份计划。
+  /// 返回 {'review': {...}, 'next_plan': {...}|null}（address_safety 时 next_plan 为 null）。
+  Map<String, dynamic> runCheckIn(
+    Map<String, dynamic> planJson,
+    List<Map<String, dynamic>> workoutLog, {
+    List<Map<String, dynamic>> bodyLog = const [],
+    int completedCycles = 0,
+  }) {
+    final review = reviewCycle(planJson, workoutLog,
+        bodyLog: bodyLog, completedCycles: completedCycles);
+    Map<String, dynamic>? nextPlan;
+    if (review.verdict != 'address_safety' && review.nextRaw.isNotEmpty) {
+      nextPlan = generate(review.nextRaw).toJson();
+    }
+    return {'review': review.toJson(), 'next_plan': nextPlan};
+  }
+
   GeneratedPlan generate(Map<String, dynamic> raw) {
     final validated = validateProfile(raw);
     final (profile, freqPlan) = resolveFrequency(validated, _library);
@@ -56,6 +75,7 @@ class PlannerGateway {
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
     final recoveryDays = planRecovery(profile, split, volumeReport);
+    final mesocycle = planMesocycle(profile, sessions, progression);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -81,6 +101,7 @@ class PlannerGateway {
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
       frequencyPlan: freqPlan.toJson(),
       recoveryDays: recoveryDays,
+      mesocycle: mesocycle,
       oneRmEstimates: {
         for (final e in buildOneRmMap(profile.strengthBaseline).entries)
           e.key: {'kg': e.value, 'name': baselineCn[e.key] ?? e.key},

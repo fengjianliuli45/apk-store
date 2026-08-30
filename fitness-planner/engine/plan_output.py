@@ -45,6 +45,7 @@ def generate_json(
     supplements: SupplementResult,
     frequency_plan=None,
     recovery_days=None,
+    mesocycle=None,
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
@@ -57,7 +58,7 @@ def generate_json(
 
     return {
         "meta": {
-            "version": "1.6",
+            "version": "1.7",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -74,6 +75,7 @@ def generate_json(
             "minutes_per_session": profile.minutes_per_session,
             "equipment": profile.equipment,
             "injuries": profile.injuries,
+            "volume_cycle_offset": getattr(profile, "volume_cycle_offset", 0),
             "strength_baseline": getattr(profile, "strength_baseline", {}) or {},
             "one_rm_estimates": {b: {"kg": v, "name": BASELINE_CN.get(b, b)} for b, v in one_rm.items()},
             "warnings": profile.warnings,
@@ -97,6 +99,7 @@ def generate_json(
             "capacity_recommendation": volume_report["recommendation"],
             "frequency_plan": frequency_plan.to_dict() if frequency_plan is not None else None,
             "recovery_days": [rd.to_dict() for rd in (recovery_days or [])],
+            "mesocycle": mesocycle.to_dict() if mesocycle is not None else None,
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,

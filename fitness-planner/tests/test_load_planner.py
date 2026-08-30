@@ -67,7 +67,7 @@ class TestLoadPlanner(unittest.TestCase):
             },
         }
         plan = generate_plan(raw, self.lib)
-        self.assertEqual(plan["meta"]["version"], "1.6")
+        self.assertEqual(plan["meta"]["version"], "1.7")
         self.assertIn("one_rm_estimates", plan["profile"])
         self.assertEqual(plan["profile"]["one_rm_estimates"]["squat"]["kg"], 116.7)
         # 至少一个动作有具体 kg

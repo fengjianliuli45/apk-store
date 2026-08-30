@@ -55,11 +55,16 @@ MEV_WEEKLY = {
 }
 
 
-def weekly_volume_for(level: str, goal: str) -> dict[str, int]:
-    """按 level + goal 返回「最优训练量」(MAV) —— 每周每肌群组数的上限目标。"""
+def weekly_volume_for(level: str, goal: str, cycle_offset: int = 0) -> dict[str, int]:
+    """按 level + goal 返回「最优训练量」(MAV)。
+
+    cycle_offset：check-in 产出的中周期档位。+1 每档 ≈ +8% 往 MRV 推，
+    -1 下调；夹在 [0.8×, 1.25×MAV]（≈ MRV）。
+    """
     base = _BASE_WEEKLY_VOLUME.get(level, _BASE_WEEKLY_VOLUME["beginner"])
     scale = GOAL_VOLUME_SCALE.get(goal, 1.0)
-    return {m: max(2, _round(v * scale)) for m, v in base.items()}
+    off = max(0.8, min(1.25, 1.0 + 0.08 * cycle_offset))
+    return {m: max(2, _round(v * scale * off)) for m, v in base.items()}
 
 # 单次训练单肌群组数上限。证据：每肌群每次 6–8 个有效组最优，>10–12 组疲劳拖累、
 # 收益骤降（Schoenfeld 剂量反应 / 容量地标 MEV-MAV-MRV）。
@@ -236,7 +241,7 @@ def build_sessions(
     level = profile.level
     goal = profile.goal
     vars_ = TRAINING_VARS.get(goal, TRAINING_VARS["hypertrophy"])
-    weekly_volume = weekly_volume_for(level, goal)
+    weekly_volume = weekly_volume_for(level, goal, getattr(profile, "volume_cycle_offset", 0))
     cap = MAX_SETS_PER_MUSCLE_SESSION.get(level, 8)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
@@ -436,7 +441,7 @@ def analyze_volume(
           notes, recommendation}。
     """
     level = profile.level
-    optimal = weekly_volume_for(level, profile.goal)          # MAV 上限
+    optimal = weekly_volume_for(level, profile.goal, getattr(profile, "volume_cycle_offset", 0))  # MAV 上限
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     primary_frequency = _actual_muscle_frequency(split.weekly_schedule, primary_only=True)
 
