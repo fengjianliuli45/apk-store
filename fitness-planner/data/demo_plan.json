@@ -26,6 +26,7 @@
     "goal": "hypertrophy",
     "days_per_week": 4,
     "minutes_per_session": 75,
+    "meals_per_day": 4,
     "equipment": [
       "barbell",
       "dumbbell",
@@ -33,7 +34,11 @@
       "machine"
     ],
     "injuries": [],
+    "dietary_restrictions": [],
+    "cooking_access": "home",
+    "target_weight_kg": null,
     "volume_cycle_offset": 0,
+    "kcal_adjust": 0,
     "strength_baseline": {
       "squat": {
         "weight_kg": 100.0,
@@ -385,7 +390,10 @@
               "bodyweight_squat": 2
             }
           },
-          "week_total_sets": 60
+          "week_total_sets": 60,
+          "diet_break": false,
+          "diet_kcal_delta": 0,
+          "note": ""
         },
         {
           "week": 2,
@@ -427,7 +435,10 @@
               "bodyweight_squat": 2
             }
           },
-          "week_total_sets": 60
+          "week_total_sets": 60,
+          "diet_break": false,
+          "diet_kcal_delta": 0,
+          "note": ""
         },
         {
           "week": 3,
@@ -469,7 +480,10 @@
               "bodyweight_squat": 3
             }
           },
-          "week_total_sets": 80
+          "week_total_sets": 80,
+          "diet_break": false,
+          "diet_kcal_delta": 0,
+          "note": ""
         },
         {
           "week": 4,
@@ -511,7 +525,10 @@
               "bodyweight_squat": 3
             }
           },
-          "week_total_sets": 80
+          "week_total_sets": 80,
+          "diet_break": false,
+          "diet_kcal_delta": 0,
+          "note": ""
         },
         {
           "week": 5,
@@ -553,7 +570,10 @@
               "bodyweight_squat": 2
             }
           },
-          "week_total_sets": 48
+          "week_total_sets": 48,
+          "diet_break": false,
+          "diet_kcal_delta": 0,
+          "note": ""
         }
       ]
     },

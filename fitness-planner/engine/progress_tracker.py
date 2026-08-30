@@ -186,6 +186,29 @@ def _ordinal(d: str) -> int:
     return date(y, m, dd).toordinal()
 
 
+def weekly_weight_pct(body: list[dict]) -> float | None:
+    """体重周变化率（%/周），用回归斜率算，抗单点波动。
+
+    需 ≥3 次称重、跨度 ≥14 天，否则 None（数据不够不调整）。
+    """
+    b = sorted(
+        [e for e in body if e.get("weight_kg") and e.get("date")],
+        key=lambda e: e["date"],
+    )
+    if len(b) < 3:
+        return None
+    d0 = _ordinal(b[0]["date"])
+    span = _ordinal(b[-1]["date"]) - d0
+    if span < 14:
+        return None
+    pairs = [(_ordinal(e["date"]) - d0, e["weight_kg"]) for e in b]
+    slope_per_day = _fit_slope(pairs)  # kg/天
+    mean_w = sum(p[1] for p in pairs) / len(pairs)
+    if mean_w <= 0:
+        return None
+    return round(slope_per_day * 7 / mean_w * 100, 3)
+
+
 def _pain_unresolved(sessions: list[dict]) -> bool:
     if not sessions:
         return False

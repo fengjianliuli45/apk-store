@@ -42,7 +42,8 @@ def generate_plan(raw: dict, library: Optional[ExerciseLibrary] = None) -> dict:
     meals = distribute(profile, macros)
     supplements = advise(profile, macros)
     recovery_days = plan_recovery(profile, split, analyze_volume(profile, split, sessions))
-    mesocycle = plan_mesocycle(profile, sessions, progression)
+    mesocycle = plan_mesocycle(profile, sessions, progression,
+                               surplus_kcal=macros.surplus_kcal)
 
     return generate_json(
         profile, tdee, macros, split, sessions, progression, meals, supplements,

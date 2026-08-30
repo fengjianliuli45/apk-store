@@ -26,6 +26,7 @@ OPTIONAL_WITH_DEFAULT = {
     "cooking_access": "home",
     "strength_baseline": {},     # {basis: {weight_kg, reps} 或 {one_rm_kg}}；缺 → 首周找重量
     "volume_cycle_offset": 0,    # check-in 产出：+1 往 MRV 推一档，-1 下调
+    "kcal_adjust": 0,            # check-in 产出：按体重趋势累计微调热量（钳在 ±500）
 }
 
 TRACKING_ONLY = (
@@ -60,6 +61,7 @@ class UserProfile:
     cooking_access: str = "home"
     strength_baseline: dict = field(default_factory=dict)
     volume_cycle_offset: int = 0
+    kcal_adjust: int = 0
     # 校验时生成的元信息
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -252,6 +254,7 @@ def validate(raw: dict) -> UserProfile:
         cooking_access=cooking_access,
         strength_baseline=strength_baseline,
         volume_cycle_offset=int(raw.get("volume_cycle_offset", 0) or 0),
+        kcal_adjust=max(-500, min(500, int(raw.get("kcal_adjust", 0) or 0))),
         warnings=warnings,
         notes=notes,
     )

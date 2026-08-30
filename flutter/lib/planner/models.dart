@@ -6,6 +6,20 @@ library;
 
 // ── profile_validator ──────────────────────────────────────────────
 
+/// 全链路用到的论文 PMID（对齐 plan_output.EVIDENCE_BASIS）
+const evidenceBasis = [
+  '41843416', // ACSM 2026
+  '20847704', // Schoenfeld 2010 增肌三机制
+  '28834797', // Schoenfeld 2017 低vs高负荷
+  '27102172', // Schoenfeld 2016 频率
+  '27433992', // Schoenfeld 2017 剂量反应
+  '36334240', // Refalo 2023 接近力竭
+  '28698222', // Morton 2018 蛋白质 meta
+  '29414855', // Stokes 2018 MPS
+  '37432300', // Burke 2023 肌酸
+  '26817506', // Longland 2016 缺口期高蛋白
+];
+
 const validGenders = ['M', 'F'];
 const validLevels = ['beginner', 'intermediate', 'advanced'];
 const validGoals = ['hypertrophy', 'fat_loss', 'strength', 'recomposition'];
@@ -40,6 +54,7 @@ class UserProfile {
     this.cookingAccess = 'home',
     Map<String, dynamic>? strengthBaseline,
     this.volumeCycleOffset = 0,
+    this.kcalAdjust = 0,
     List<String>? warnings,
     List<String>? notes,
   }) : supplements = supplements ?? ['creatine'],
@@ -67,6 +82,7 @@ class UserProfile {
   final String cookingAccess;
   final Map<String, dynamic> strengthBaseline; // {basis: {weight_kg,reps} | {one_rm_kg}}
   final int volumeCycleOffset; // check-in 产出：+1 往 MRV 推一档，-1 下调
+  final int kcalAdjust; // check-in 产出：按体重趋势累计微调热量（钳在 ±500）
   final List<String> warnings;
   final List<String> notes;
 
@@ -91,12 +107,15 @@ class UserProfile {
     'goal': goal,
     'days_per_week': daysPerWeek,
     'minutes_per_session': minutesPerSession,
-    'equipment': equipment,
     'meals_per_day': mealsPerDay,
+    'equipment': equipment,
+    'injuries': injuries,
+    'dietary_restrictions': dietaryRestrictions,
+    'cooking_access': cookingAccess,
     'target_weight_kg': targetWeightKg,
     'strength_baseline': strengthBaseline,
     'volume_cycle_offset': volumeCycleOffset,
-    'injuries': injuries,
+    'kcal_adjust': kcalAdjust,
     'warnings': warnings,
     'notes': notes,
   };
@@ -379,6 +398,9 @@ class WeekPlan {
     required this.volumeMult,
     required this.setOverrides,
     required this.weekTotalSets,
+    this.dietBreak = false,
+    this.dietKcalDelta = 0,
+    this.note = '',
   });
 
   final int week;
@@ -388,6 +410,9 @@ class WeekPlan {
   final double volumeMult;
   final Map<String, Map<String, int>> setOverrides;
   final int weekTotalSets;
+  final bool dietBreak; // 该周热量回到维持量（配合减载清疲劳 + 缓解代谢适应）
+  final int dietKcalDelta; // 相对常规日的热量增量
+  final String note;
 
   Map<String, dynamic> toJson() => {
     'week': week,
@@ -397,6 +422,9 @@ class WeekPlan {
     'volume_mult': double.parse(volumeMult.toStringAsFixed(2)),
     'set_overrides': setOverrides,
     'week_total_sets': weekTotalSets,
+    'diet_break': dietBreak,
+    'diet_kcal_delta': dietKcalDelta,
+    'note': note,
   };
 
   factory WeekPlan.fromJson(Map<String, dynamic> m) => WeekPlan(
@@ -413,6 +441,9 @@ class WeekPlan {
         },
     },
     weekTotalSets: m['week_total_sets'] as int,
+    dietBreak: (m['diet_break'] as bool?) ?? false,
+    dietKcalDelta: (m['diet_kcal_delta'] as num?)?.toInt() ?? 0,
+    note: (m['note'] as String?) ?? '',
   );
 }
 
@@ -772,7 +803,11 @@ class GeneratedPlan {
   final Map<String, dynamic> oneRmEstimates;
 
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.8', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {
+      'version': '1.8',
+      'generated_at': generatedAt.toIso8601String(),
+      'evidence_basis': evidenceBasis,
+    },
     'profile': {
       ...profile.toJson(),
       'one_rm_estimates': oneRmEstimates,
@@ -833,9 +868,14 @@ class GeneratedPlan {
           profileJson['strength_baseline'] as Map? ?? const {},
         ),
         volumeCycleOffset: (profileJson['volume_cycle_offset'] as num?)?.toInt() ?? 0,
+        kcalAdjust: (profileJson['kcal_adjust'] as num?)?.toInt() ?? 0,
         injuries: List<String>.from(
           profileJson['injuries'] as List? ?? const [],
         ),
+        dietaryRestrictions: List<String>.from(
+          profileJson['dietary_restrictions'] as List? ?? const [],
+        ),
+        cookingAccess: (profileJson['cooking_access'] as String?) ?? 'home',
         warnings: List<String>.from(
           profileJson['warnings'] as List? ?? const [],
         ),

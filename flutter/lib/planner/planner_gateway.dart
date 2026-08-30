@@ -75,7 +75,8 @@ class PlannerGateway {
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
     final recoveryDays = planRecovery(profile, split, volumeReport);
-    final mesocycle = planMesocycle(profile, sessions, progression);
+    final mesocycle = planMesocycle(profile, sessions, progression,
+        surplusKcal: macros.surplusKcal);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),

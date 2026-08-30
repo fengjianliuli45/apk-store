@@ -14,10 +14,39 @@ from .response_profiler import profile_response
 from .load_planner import BASELINE_LIFTS
 from .progress_tracker import (
     aggregate_evidence, aggregate_observation, per_exercise_progress,
+    weekly_weight_pct,
 )
 
 
 _LOWER = {"squat", "hinge"}
+
+# 体重周变化率的目标带（%/周）——超出就按 ±150 kcal 微调。
+# fat_loss 0.5–1%/周保肌（Helms 2014, PMC4033492）；
+# 增肌 0.25–0.5%/周控脂（lean-bulk 文献）。
+_KCAL_STEP = 150
+_DIET_BANDS = {
+    "fat_loss": (-1.1, -0.3),        # 慢于 -0.3 → 加缺口；快于 -1.1 → 减缺口
+    "hypertrophy": (0.1, 0.6),       # 慢于 +0.1 → 加盈余；快于 +0.6 → 减盈余
+    "recomposition": (-0.35, 0.35),  # 只纠明显偏离
+    "strength": (-0.35, 0.5),
+}
+
+
+def _diet_adjust(goal: str, weekly_pct: float | None) -> tuple[int, str]:
+    """按体重趋势返回 (kcal 增量, 说明)。数据不足或在目标带内 → (0, "")。
+
+    统一逻辑：体重比目标带低 → 加热量 +150；比目标带高 → 减热量 -150。
+    （fat_loss 目标带为负值，掉太快 = 低于下界 → 也是加热量。）
+    """
+    band = _DIET_BANDS.get(goal)
+    if band is None or weekly_pct is None:
+        return 0, ""
+    low, high = band
+    if weekly_pct < low:
+        return _KCAL_STEP, f"体重周变化 {weekly_pct:+.2f}%，低于目标带 {low}~{high}%/周，热量上调 {_KCAL_STEP}"
+    if weekly_pct > high:
+        return -_KCAL_STEP, f"体重周变化 {weekly_pct:+.2f}%，高于目标带 {low}~{high}%/周，热量下调 {_KCAL_STEP}"
+    return 0, ""
 
 
 @dataclass
@@ -45,6 +74,8 @@ class CycleReview:
     makeup_sessions: int
     load_changes: list[LoadChange] = field(default_factory=list)
     unlock_reward: str | None = None
+    kcal_change: int = 0               # 下一周期热量增量（相对上一周期），0 = 不变
+    diet_note: str = ""
     next_raw: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -57,6 +88,8 @@ class CycleReview:
             "makeup_sessions": self.makeup_sessions,
             "load_changes": [c.to_dict() for c in self.load_changes],
             "unlock_reward": self.unlock_reward,
+            "kcal_change": self.kcal_change,
+            "diet_note": self.diet_note,
             "next_raw": self.next_raw,
         }
 
@@ -114,7 +147,8 @@ def _load_changes(plan: dict, per_ex: dict) -> list[LoadChange]:
     return changes
 
 
-def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str) -> dict:
+def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str,
+              kcal_delta: int = 0) -> dict:
     prof = plan.get("profile", {})
     one_rm = plan.get("profile", {}).get("one_rm_estimates", {})
     raw = {
@@ -126,7 +160,13 @@ def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str) ->
         "equipment": list(prof.get("equipment", [])),
         "body_fat_pct": prof.get("body_fat_pct"),
         "injuries": list(prof.get("injuries", [])),
+        "dietary_restrictions": list(prof.get("dietary_restrictions", [])),
+        "cooking_access": prof.get("cooking_access"),
+        "meals_per_day": prof.get("meals_per_day"),
     }
+    # 热量微调：在上一周期基础上累加，钳在 ±500
+    prev_kcal = int(prof.get("kcal_adjust", 0) or 0)
+    raw["kcal_adjust"] = max(-500, min(500, prev_kcal + int(kcal_delta)))
     # 起始重量：按 load_changes 里「该基准最重的那个动作」的比例更新估算 1RM
     sb = {}
     ratio: dict[str, float] = {}
@@ -187,7 +227,14 @@ def review_cycle(
         makeup = 0
         summary = "接近达成：同容量再跑一个中周期，数据攒够即达标"
 
-    next_raw = _next_raw(plan_json, load_changes, vol)
+    # 饮食微调：安全问题优先处理时不动饮食；其余按体重趋势调 ±150 kcal
+    kcal_delta, diet_note = (0, "")
+    if verdict != "address_safety":
+        weekly_pct = weekly_weight_pct(body_log)
+        kcal_delta, diet_note = _diet_adjust(
+            plan_json.get("profile", {}).get("goal", "hypertrophy"), weekly_pct)
+
+    next_raw = _next_raw(plan_json, load_changes, vol, kcal_delta)
 
     return CycleReview(
         verdict=verdict,
@@ -198,5 +245,7 @@ def review_cycle(
         makeup_sessions=makeup,
         load_changes=load_changes,
         unlock_reward=goal.unlock_reward if verdict == "advance" else None,
+        kcal_change=kcal_delta,
+        diet_note=diet_note,
         next_raw=next_raw,
     )

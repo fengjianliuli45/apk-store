@@ -9,6 +9,38 @@ import 'stage_assessor.dart';
 
 const _lower = {'squat', 'hinge'};
 
+// 体重周变化率的目标带（%/周）——超出就按 ±150 kcal 微调。
+// fat_loss 0.5–1%/周保肌（Helms 2014, PMC4033492）；增肌 0.25–0.5%/周控脂。
+const _kcalStep = 150;
+const _dietBands = <String, (double, double)>{
+  'fat_loss': (-1.1, -0.3),
+  'hypertrophy': (0.1, 0.6),
+  'recomposition': (-0.35, 0.35),
+  'strength': (-0.35, 0.5),
+};
+
+String _signed2(double x) => (x >= 0 ? '+' : '') + x.toStringAsFixed(2);
+
+/// 按体重趋势返回 (kcal 增量, 说明)。数据不足或在目标带内 → (0, '')。
+(int, String) _dietAdjust(String goal, double? weeklyPct) {
+  final band = _dietBands[goal];
+  if (band == null || weeklyPct == null) return (0, '');
+  final (low, high) = band;
+  if (weeklyPct < low) {
+    return (
+      _kcalStep,
+      '体重周变化 ${_signed2(weeklyPct)}%，低于目标带 $low~$high%/周，热量上调 $_kcalStep'
+    );
+  }
+  if (weeklyPct > high) {
+    return (
+      -_kcalStep,
+      '体重周变化 ${_signed2(weeklyPct)}%，高于目标带 $low~$high%/周，热量下调 $_kcalStep'
+    );
+  }
+  return (0, '');
+}
+
 const _basisKeywords = {
   'squat': ['squat', '深蹲', 'lunge', '箭步'],
   'bench': ['bench', 'press', '卧推', '推举', 'dip', 'chest'],
@@ -52,6 +84,8 @@ class CycleReview {
     required this.loadChanges,
     required this.unlockReward,
     required this.nextRaw,
+    this.kcalChange = 0,
+    this.dietNote = '',
   });
 
   final String verdict;
@@ -62,6 +96,8 @@ class CycleReview {
   final int makeupSessions;
   final List<LoadChange> loadChanges;
   final String? unlockReward;
+  final int kcalChange; // 下一周期热量增量（相对上一周期），0 = 不变
+  final String dietNote;
   final Map<String, dynamic> nextRaw;
 
   Map<String, dynamic> toJson() => {
@@ -73,6 +109,8 @@ class CycleReview {
         'makeup_sessions': makeupSessions,
         'load_changes': loadChanges.map((c) => c.toJson()).toList(),
         'unlock_reward': unlockReward,
+        'kcal_change': kcalChange,
+        'diet_note': dietNote,
         'next_raw': nextRaw,
       };
 }
@@ -106,8 +144,8 @@ List<LoadChange> _loadChanges(
   return changes;
 }
 
-Map<String, dynamic> _nextRaw(
-    Map plan, List<LoadChange> loadChanges, String volumeChange) {
+Map<String, dynamic> _nextRaw(Map plan, List<LoadChange> loadChanges,
+    String volumeChange, int kcalDelta) {
   final prof = plan['profile'] as Map;
   final oneRm = (prof['one_rm_estimates'] as Map?) ?? const {};
   final raw = <String, dynamic>{
@@ -122,7 +160,13 @@ Map<String, dynamic> _nextRaw(
     'equipment': List<String>.from(prof['equipment'] as List? ?? const []),
     'body_fat_pct': prof['body_fat_pct'],
     'injuries': List<String>.from(prof['injuries'] as List? ?? const []),
+    'dietary_restrictions':
+        List<String>.from(prof['dietary_restrictions'] as List? ?? const []),
+    'cooking_access': prof['cooking_access'],
+    'meals_per_day': prof['meals_per_day'],
   };
+  final prevKcal = (prof['kcal_adjust'] as num?)?.toInt() ?? 0;
+  raw['kcal_adjust'] = (prevKcal + kcalDelta).clamp(-500, 500);
   final ratio = <String, double>{};
   final heaviest = <String, double>{};
   for (final c in loadChanges) {
@@ -228,6 +272,17 @@ CycleReview reviewCycle(
     summary = '接近达成：同容量再跑一个中周期，数据攒够即达标';
   }
 
+  // 饮食微调：安全问题优先处理时不动饮食；其余按体重趋势调 ±150 kcal
+  var kcalDelta = 0;
+  var dietNote = '';
+  if (verdict != 'address_safety') {
+    final goalStr =
+        (planJson['profile'] as Map?)?['goal'] as String? ?? 'hypertrophy';
+    final r = _dietAdjust(goalStr, weeklyWeightPct(bodyLog));
+    kcalDelta = r.$1;
+    dietNote = r.$2;
+  }
+
   return CycleReview(
     verdict: verdict,
     summary: summary,
@@ -237,6 +292,8 @@ CycleReview reviewCycle(
     makeupSessions: makeup,
     loadChanges: loadChanges,
     unlockReward: verdict == 'advance' ? goal.unlockReward : null,
-    nextRaw: _nextRaw(planJson, loadChanges, vol),
+    kcalChange: kcalDelta,
+    dietNote: dietNote,
+    nextRaw: _nextRaw(planJson, loadChanges, vol, kcalDelta),
   );
 }

@@ -74,7 +74,11 @@ def allocate(profile: UserProfile, tdee: TDEEResult) -> MacroResult:
     notes: list[str] = []
 
     surplus = GOAL_SURPLUS.get(goal, 0)
-    daily_kcal = tdee.tdee + surplus
+    kcal_adjust = int(getattr(profile, "kcal_adjust", 0) or 0)
+    daily_kcal = tdee.tdee + surplus + kcal_adjust
+    if kcal_adjust:
+        direction = "上调" if kcal_adjust > 0 else "下调"
+        notes.append(f"按上一周期体重趋势，热量已{direction} {abs(kcal_adjust)} kcal")
 
     protein_per_kg = PROTEIN_PER_KG[goal]
     restrictions = normalize_restrictions(getattr(profile, "dietary_restrictions", []))

@@ -36,7 +36,11 @@ MacroResult allocateMacros(UserProfile profile, TDEEResult tdee) {
   final notes = <String>[];
 
   final surplus = goalSurplus[goal] ?? 0;
-  var dailyKcal = tdee.tdee + surplus;
+  final kcalAdjust = profile.kcalAdjust;
+  var dailyKcal = tdee.tdee + surplus + kcalAdjust;
+  if (kcalAdjust != 0) {
+    notes.add('按上一周期体重趋势，热量已${kcalAdjust > 0 ? '上调' : '下调'} ${kcalAdjust.abs()} kcal');
+  }
 
   var proteinPerKgVal = proteinPerKg[goal]!;
   final restrictions = normalizeRestrictions(profile.dietaryRestrictions);

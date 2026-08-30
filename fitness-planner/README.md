@@ -4,6 +4,24 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 深饮食：饮食进闭环 + 减脂 diet break（任务 E4）
+
+- `check_in_engine`：中周期边界按体重周变化率调热量 ±150 kcal（`_diet_adjust`）。
+  目标带：fat_loss −1.1~−0.3 %/周（Helms 2014）、hypertrophy +0.1~+0.6 %/周、
+  recomp/strength 只纠明显偏离。体重比目标带低→加热量、高→减。需 ≥3 次称重、
+  跨度 ≥14 天（`progress_tracker.weekly_weight_pct`，回归斜率）。
+  `CycleReview` 新增 `kcal_change` / `diet_note`；`next_raw.kcal_adjust` 在上一周期
+  基础上累加、钳 ±500。
+- `macro_allocator`：`profile.kcal_adjust` 直接加到 `daily_kcal`。
+- `mesocycle_planner`：fat_loss 的减载周 = diet break，热量提到维持量
+  （`diet_break` / `diet_kcal_delta = -surplus`；MATADOR / Byrne 2018 间歇性能量平衡
+  减少代谢适应、保肌）。`plan_mesocycle(..., surplus_kcal=)` 新参数。
+- `profile_validator` + `plan_output`：新增 `kcal_adjust`；profile 块补齐
+  `dietary_restrictions` / `cooking_access` / `meals_per_day` / `target_weight_kg`，
+  让闭环不再丢失这些字段。Dart 端 `meta.evidence_basis` 补上 → 整份计划 Python↔Dart
+  逐字一致（含 check-in 后重新生成的 next_plan）。
+- Python 163 / Flutter 76 测试。
+
 ## 2026-08-30 深饮食：具体吃法 + 饮食限制真正生效（任务 E1–E3）
 
 - 新增 `engine/food_db.py`：~45 项中式食物库（kind + 过敏原两属性推导限制），

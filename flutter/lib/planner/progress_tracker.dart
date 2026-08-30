@@ -214,6 +214,28 @@ double _fitSlope(List<(double, double)> pairs) {
   return (met, weightPct, waistPct);
 }
 
+/// 体重周变化率（%/周），用回归斜率算，抗单点波动。
+/// 需 ≥3 次称重、跨度 ≥14 天，否则 null（数据不够不调整）。
+double? weeklyWeightPct(List<Map<String, dynamic>> body) {
+  final b = [
+    for (final e in body)
+      if (e['weight_kg'] != null && e['date'] != null) e,
+  ]..sort((x, y) => (x['date'] as String).compareTo(y['date'] as String));
+  if (b.length < 3) return null;
+  final d0 = _ordinal(b.first['date'] as String);
+  final span = _ordinal(b.last['date'] as String) - d0;
+  if (span < 14) return null;
+  final pairs = [
+    for (final e in b)
+      ((_ordinal(e['date'] as String) - d0).toDouble(),
+          (e['weight_kg'] as num).toDouble()),
+  ];
+  final slopePerDay = _fitSlope(pairs);
+  final meanW = pairs.fold(0.0, (a, p) => a + p.$2) / pairs.length;
+  if (meanW <= 0) return null;
+  return double.parse((slopePerDay * 7 / meanW * 100).toStringAsFixed(3));
+}
+
 bool _painUnresolved(List<Map<String, dynamic>> sessions) {
   if (sessions.isEmpty) return false;
   final ordered = [...sessions]

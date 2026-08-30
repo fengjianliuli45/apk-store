@@ -97,4 +97,62 @@ void main() {
     out.writeAsStringSync(const JsonEncoder.withIndent('  ').convert(json));
     expect(out.existsSync(), isTrue);
   });
+
+  test('parity: fat_loss + vegan plan (diet break) + check-in for Python diff', () async {
+    final gateway = await PlannerGateway.instance();
+    final raw = {
+      'gender': 'F', 'age': 30, 'height_cm': 166.0, 'weight_kg': 62.0,
+      'level': 'intermediate', 'goal': 'fat_loss',
+      'days_per_week': 4, 'minutes_per_session': 55,
+      'equipment': const ['dumbbell', 'barbell'], 'meals_per_day': 4,
+      'dietary_restrictions': const ['vegan'], 'cooking_access': 'canteen',
+    };
+    final plan = gateway.generate(raw);
+    final pj = plan.toJson();
+    (pj['meta'] as Map)['generated_at'] = '2026-08-30T00:00:00+00:00';
+    File('${Directory.systemTemp.path}/dart_fatloss_plan.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(pj));
+
+    // ~4 周慢速掉秤 → 期望加缺口 -150
+    const dates = ['2026-06-01', '2026-06-08', '2026-06-15', '2026-06-22', '2026-06-29', '2026-07-06'];
+    final body = [
+      for (var i = 0; i < dates.length; i++)
+        {'date': dates[i], 'weight_kg': 62.0 - i * 0.11},
+    ];
+    final log = [
+      for (final d in const [
+        '2026-06-01', '2026-06-03', '2026-06-05', '2026-06-08', '2026-06-10',
+        '2026-06-12', '2026-06-15', '2026-06-17', '2026-06-19', '2026-06-22',
+        '2026-06-24', '2026-06-26'
+      ])
+        {
+          'date': d, 'plan_day': 1, 'session_type': 'full', 'planned_sets': 12,
+          'exercises': const [], 'aborted': false,
+        },
+    ];
+    final res = gateway.runCheckIn(pj, log.cast<Map<String, dynamic>>(),
+        bodyLog: body.cast<Map<String, dynamic>>());
+    final review = Map<String, dynamic>.from(res['review'] as Map);
+    // next_plan 的 generated_at 会变，剔掉再 dump
+    if (res['next_plan'] != null) {
+      final np = Map<String, dynamic>.from(res['next_plan'] as Map);
+      (np['meta'] as Map)['generated_at'] = 'X';
+      review['_next_plan'] = np;
+    }
+    File('${Directory.systemTemp.path}/dart_fatloss_review.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(review));
+    expect(review['kcal_change'], -150);
+
+    // 减脂中周期减载周 = diet break（热量提到维持量）
+    final deload =
+        ((pj['training'] as Map)['mesocycle'] as Map)['weeks'] as List;
+    expect((deload.last as Map)['diet_break'], true);
+    expect((deload.last as Map)['diet_kcal_delta'], greaterThan(0));
+    // 下一份计划确实降了热量
+    final nextKcal = (((review['_next_plan'] as Map)['nutrition'] as Map)['macros']
+        as Map)['daily_targets'] as Map;
+    final baseKcal =
+        ((pj['nutrition'] as Map)['macros'] as Map)['daily_targets'] as Map;
+    expect((nextKcal['kcal'] as num) < (baseKcal['kcal'] as num), true);
+  });
 }

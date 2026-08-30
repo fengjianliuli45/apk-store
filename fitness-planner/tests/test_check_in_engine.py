@@ -98,6 +98,59 @@ class TestClosedLoop(unittest.TestCase):
         self.assertGreater(sb["bench"]["one_rm_kg"], base_bench)
         self.assertLess(sb["bench"]["one_rm_kg"], base_bench * 1.1)  # 合理增幅
 
+    def _fatloss_plan(self):
+        return generate_plan({
+            "gender": "F", "age": 30, "height_cm": 166.0, "weight_kg": 62.0,
+            "level": "intermediate", "goal": "fat_loss",
+            "minutes_per_session": 55, "equipment": ["dumbbell", "barbell"],
+        })
+
+    def _body(self, kgs, start=datetime.date(2026, 9, 1)):
+        return [{"date": str(start + datetime.timedelta(days=7 * i)), "weight_kg": kg}
+                for i, kg in enumerate(kgs)]
+
+    def test_diet_kcal_down_when_loss_too_slow(self):
+        p = self._fatloss_plan()
+        body = self._body([62.0, 61.95, 61.9, 61.88, 61.85])  # ~-0.05kg/周，太慢
+        out = run_check_in(p, _log(p, 4, 0.03), body, 0)
+        rv = out["review"]
+        self.assertEqual(rv["kcal_change"], -150)
+        self.assertEqual(rv["next_raw"]["kcal_adjust"], -150)
+        # 下一份计划热量确实降了
+        self.assertLess(out["next_plan"]["nutrition"]["macros"]["daily_targets"]["kcal"],
+                        p["nutrition"]["macros"]["daily_targets"]["kcal"])
+
+    def test_diet_kcal_up_when_loss_too_fast(self):
+        p = self._fatloss_plan()
+        body = self._body([62.0, 61.3, 60.6, 59.9, 59.2])  # ~-0.7kg/周 ≈ -1.1%/周，太快
+        out = run_check_in(p, _log(p, 4, 0.03), body, 0)
+        self.assertEqual(out["review"]["kcal_change"], 150)
+
+    def test_diet_hold_when_in_band_or_no_data(self):
+        p = self._fatloss_plan()
+        self.assertEqual(run_check_in(p, _log(p, 4, 0.03), [], 0)["review"]["kcal_change"], 0)
+        body = self._body([62.0, 61.6, 61.2, 60.8, 60.4])  # -0.4kg/周 ≈ -0.65%/周，带内
+        self.assertEqual(run_check_in(p, _log(p, 4, 0.03), body, 0)["review"]["kcal_change"], 0)
+
+    def test_diet_adjust_accumulates_and_clamps(self):
+        from engine.check_in_engine import _next_raw
+        plan = {"profile": {"goal": "fat_loss", "kcal_adjust": -450, "equipment": []}}
+        raw = _next_raw(plan, [], "hold", kcal_delta=-150)
+        self.assertEqual(raw["kcal_adjust"], -500)  # 钳在 -500
+
+    def test_fatloss_mesocycle_has_diet_break(self):
+        p = self._fatloss_plan()
+        deload = p["training"]["mesocycle"]["weeks"][-1]
+        self.assertTrue(deload["diet_break"])
+        self.assertEqual(deload["diet_kcal_delta"], 400)
+        # 非减脂目标不给 diet break
+        h = generate_plan({
+            "gender": "M", "age": 28, "height_cm": 178.0, "weight_kg": 80.0,
+            "level": "intermediate", "goal": "hypertrophy", "minutes_per_session": 75,
+            "equipment": ["barbell", "dumbbell"],
+        })
+        self.assertFalse(h["training"]["mesocycle"]["weeks"][-1]["diet_break"])
+
 
 if __name__ == "__main__":
     unittest.main()
