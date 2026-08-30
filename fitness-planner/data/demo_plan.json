@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.6",
+    "version": "1.7",
     "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
@@ -254,6 +254,222 @@
         "items": []
       }
     ],
+    "mesocycle": {
+      "length_weeks": 5,
+      "current_week": 1,
+      "weeks": [
+        {
+          "week": 1,
+          "phase": "accumulation",
+          "rir_target": 3,
+          "is_deload": false,
+          "volume_mult": 0.7,
+          "set_overrides": {
+            "周一": {
+              "barbell_bench_press": 3,
+              "dumbbell_row": 3,
+              "dumbbell_shoulder_press": 3,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 3,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周二": {
+              "goblet_squat": 3,
+              "dumbbell_rdl": 3,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            },
+            "周四": {
+              "barbell_bench_press": 3,
+              "dumbbell_row": 3,
+              "dumbbell_shoulder_press": 3,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 3,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周五": {
+              "goblet_squat": 3,
+              "dumbbell_rdl": 3,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            }
+          },
+          "week_total_sets": 60
+        },
+        {
+          "week": 2,
+          "phase": "accumulation",
+          "rir_target": 2,
+          "is_deload": false,
+          "volume_mult": 0.8,
+          "set_overrides": {
+            "周一": {
+              "barbell_bench_press": 3,
+              "dumbbell_row": 3,
+              "dumbbell_shoulder_press": 3,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 3,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周二": {
+              "goblet_squat": 3,
+              "dumbbell_rdl": 3,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            },
+            "周四": {
+              "barbell_bench_press": 3,
+              "dumbbell_row": 3,
+              "dumbbell_shoulder_press": 3,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 3,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周五": {
+              "goblet_squat": 3,
+              "dumbbell_rdl": 3,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            }
+          },
+          "week_total_sets": 60
+        },
+        {
+          "week": 3,
+          "phase": "accumulation",
+          "rir_target": 1,
+          "is_deload": false,
+          "volume_mult": 0.9,
+          "set_overrides": {
+            "周一": {
+              "barbell_bench_press": 4,
+              "dumbbell_row": 4,
+              "dumbbell_shoulder_press": 4,
+              "dumbbell_bench_press": 3,
+              "seated_cable_row": 4,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周二": {
+              "goblet_squat": 4,
+              "dumbbell_rdl": 4,
+              "walking_lunges": 3,
+              "standing_calf_raise": 3,
+              "bodyweight_squat": 3
+            },
+            "周四": {
+              "barbell_bench_press": 4,
+              "dumbbell_row": 4,
+              "dumbbell_shoulder_press": 4,
+              "dumbbell_bench_press": 3,
+              "seated_cable_row": 4,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周五": {
+              "goblet_squat": 4,
+              "dumbbell_rdl": 4,
+              "walking_lunges": 3,
+              "standing_calf_raise": 3,
+              "bodyweight_squat": 3
+            }
+          },
+          "week_total_sets": 80
+        },
+        {
+          "week": 4,
+          "phase": "accumulation",
+          "rir_target": 0,
+          "is_deload": false,
+          "volume_mult": 1.0,
+          "set_overrides": {
+            "周一": {
+              "barbell_bench_press": 4,
+              "dumbbell_row": 4,
+              "dumbbell_shoulder_press": 4,
+              "dumbbell_bench_press": 3,
+              "seated_cable_row": 4,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周二": {
+              "goblet_squat": 4,
+              "dumbbell_rdl": 4,
+              "walking_lunges": 3,
+              "standing_calf_raise": 3,
+              "bodyweight_squat": 3
+            },
+            "周四": {
+              "barbell_bench_press": 4,
+              "dumbbell_row": 4,
+              "dumbbell_shoulder_press": 4,
+              "dumbbell_bench_press": 3,
+              "seated_cable_row": 4,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周五": {
+              "goblet_squat": 4,
+              "dumbbell_rdl": 4,
+              "walking_lunges": 3,
+              "standing_calf_raise": 3,
+              "bodyweight_squat": 3
+            }
+          },
+          "week_total_sets": 80
+        },
+        {
+          "week": 5,
+          "phase": "deload",
+          "rir_target": 3,
+          "is_deload": true,
+          "volume_mult": 0.6,
+          "set_overrides": {
+            "周一": {
+              "barbell_bench_press": 2,
+              "dumbbell_row": 2,
+              "dumbbell_shoulder_press": 2,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 2,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周二": {
+              "goblet_squat": 2,
+              "dumbbell_rdl": 2,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            },
+            "周四": {
+              "barbell_bench_press": 2,
+              "dumbbell_row": 2,
+              "dumbbell_shoulder_press": 2,
+              "dumbbell_bench_press": 2,
+              "seated_cable_row": 2,
+              "seated_dumbbell_press": 2,
+              "chin_up": 2
+            },
+            "周五": {
+              "goblet_squat": 2,
+              "dumbbell_rdl": 2,
+              "walking_lunges": 2,
+              "standing_calf_raise": 2,
+              "bodyweight_squat": 2
+            }
+          },
+          "week_total_sets": 48
+        }
+      ]
+    },
     "schedule": [
       {
         "day": "周一",

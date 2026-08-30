@@ -5,6 +5,7 @@ import 'meal_distributor.dart';
 import 'models.dart';
 import 'profile_validator.dart';
 import 'load_planner.dart';
+import 'mesocycle_planner.dart';
 import 'progression_planner.dart';
 import 'recovery_planner.dart';
 import 'schedule_planner.dart';
@@ -56,6 +57,7 @@ class PlannerGateway {
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
     final recoveryDays = planRecovery(profile, split, volumeReport);
+    final mesocycle = planMesocycle(profile, sessions, progression);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -81,6 +83,7 @@ class PlannerGateway {
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
       frequencyPlan: freqPlan.toJson(),
       recoveryDays: recoveryDays,
+      mesocycle: mesocycle,
       oneRmEstimates: {
         for (final e in buildOneRmMap(profile.strengthBaseline).entries)
           e.key: {'kg': e.value, 'name': baselineCn[e.key] ?? e.key},

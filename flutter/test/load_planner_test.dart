@@ -70,7 +70,7 @@ void main() {
         'row': {'weight_kg': 60, 'reps': 10},
       },
     }).toJson();
-    expect((plan['meta'] as Map)['version'], '1.6');
+    expect((plan['meta'] as Map)['version'], '1.7');
     expect(((plan['profile'] as Map)['one_rm_estimates'] as Map)['squat'], isNotNull);
     expect((plan['stage_goal'] as Map)['baseline_lifts'], isNotEmpty);
     final loads = [

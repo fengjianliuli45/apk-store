@@ -9,6 +9,17 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 中周期结构（任务 A / ④ 第 1 步）
+
+- 新增 `engine/mesocycle_planner.py`：把「一份周计划」展开成 4–6 周中周期。
+  - 积累期若干周（= `progression.next_check_week`）：容量系数 0.7 → 1.0 线性爬到 MAV，
+    RIR 目标 3 → 0；末周减载（组数 ×`deload_volume_pct`、保持重量、RIR 放松）。
+  - 组数小的时候靠 RIR 递减承接强度递进（RP 做法：组数持平则 RIR 加码）。
+  - 每周只产「对基准 session 的组数覆盖」`set_overrides = {day: {exercise_id: sets}}` +
+    `rir_target`；动作、重量、时长仍来自 `session_builder`（基准 = MAV 那一周）。
+- 计划 JSON `1.6 → 1.7`：`training.mesocycle`（`length_weeks` / `current_week` / `weeks[]`）。
+- 组间负荷进阶（双进阶）在中周期边界由 check-in 按实际表现处理——下一步（progress_tracker + check_in_engine）。
+
 ## 2026-08-30 起始重量 / 1RM（任务 ②）
 
 - 新增 `engine/load_planner.py`：把「65-80% 1RM」转成具体重量。

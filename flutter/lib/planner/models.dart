@@ -362,6 +362,81 @@ class RecoveryDay {
   );
 }
 
+// ── mesocycle_planner ─────────────────────────────────────────────
+
+class WeekPlan {
+  WeekPlan({
+    required this.week,
+    required this.phase,
+    required this.rirTarget,
+    required this.isDeload,
+    required this.volumeMult,
+    required this.setOverrides,
+    required this.weekTotalSets,
+  });
+
+  final int week;
+  final String phase;
+  final int rirTarget;
+  final bool isDeload;
+  final double volumeMult;
+  final Map<String, Map<String, int>> setOverrides;
+  final int weekTotalSets;
+
+  Map<String, dynamic> toJson() => {
+    'week': week,
+    'phase': phase,
+    'rir_target': rirTarget,
+    'is_deload': isDeload,
+    'volume_mult': double.parse(volumeMult.toStringAsFixed(2)),
+    'set_overrides': setOverrides,
+    'week_total_sets': weekTotalSets,
+  };
+
+  factory WeekPlan.fromJson(Map<String, dynamic> m) => WeekPlan(
+    week: m['week'] as int,
+    phase: m['phase'] as String,
+    rirTarget: m['rir_target'] as int,
+    isDeload: m['is_deload'] as bool,
+    volumeMult: (m['volume_mult'] as num).toDouble(),
+    setOverrides: {
+      for (final e in (m['set_overrides'] as Map).entries)
+        e.key as String: {
+          for (final x in (e.value as Map).entries)
+            x.key as String: (x.value as num).toInt(),
+        },
+    },
+    weekTotalSets: m['week_total_sets'] as int,
+  );
+}
+
+class Mesocycle {
+  Mesocycle({
+    required this.lengthWeeks,
+    required this.currentWeek,
+    required this.weeks,
+  });
+
+  final int lengthWeeks;
+  final int currentWeek;
+  final List<WeekPlan> weeks;
+
+  Map<String, dynamic> toJson() => {
+    'length_weeks': lengthWeeks,
+    'current_week': currentWeek,
+    'weeks': weeks.map((w) => w.toJson()).toList(),
+  };
+
+  factory Mesocycle.fromJson(Map<String, dynamic> m) => Mesocycle(
+    lengthWeeks: m['length_weeks'] as int,
+    currentWeek: m['current_week'] as int,
+    weeks: [
+      for (final w in (m['weeks'] as List))
+        WeekPlan.fromJson(w as Map<String, dynamic>),
+    ],
+  );
+}
+
 // ── progression_planner ────────────────────────────────────────────
 
 class ReassessmentTrigger {
@@ -635,6 +710,7 @@ class GeneratedPlan {
     this.frequencyPlan = const {},
     this.recoveryDays = const [],
     this.oneRmEstimates = const {},
+    this.mesocycle,
   });
 
   final DateTime generatedAt;
@@ -665,11 +741,14 @@ class GeneratedPlan {
   /// 休息日的轻日安排（交付 2）：mobility / cardio / pump / rest。
   final List<RecoveryDay> recoveryDays;
 
+  /// 中周期（任务 A/④）：积累期 + 减载周。
+  final Mesocycle? mesocycle;
+
   /// 起始 1RM 估计（任务 ②）：{basis: {kg, name}}。
   final Map<String, dynamic> oneRmEstimates;
 
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.6', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.7', 'generated_at': generatedAt.toIso8601String()},
     'profile': {
       ...profile.toJson(),
       'one_rm_estimates': oneRmEstimates,
@@ -692,6 +771,7 @@ class GeneratedPlan {
       'capacity_recommendation': capacityRecommendation,
       'frequency_plan': frequencyPlan.isEmpty ? null : frequencyPlan,
       'recovery_days': recoveryDays.map((r) => r.toJson()).toList(),
+      'mesocycle': mesocycle?.toJson(),
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
@@ -871,6 +951,9 @@ class GeneratedPlan {
       frequencyPlan: Map<String, dynamic>.from(
         training['frequency_plan'] as Map? ?? const {},
       ),
+      mesocycle: (training['mesocycle'] as Map<String, dynamic>?) == null
+          ? null
+          : Mesocycle.fromJson(training['mesocycle'] as Map<String, dynamic>),
       recoveryDays: [
         for (final r in (training['recovery_days'] as List? ?? const []))
           RecoveryDay.fromJson(r as Map<String, dynamic>),
