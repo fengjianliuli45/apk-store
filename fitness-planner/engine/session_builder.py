@@ -96,6 +96,11 @@ WARMUP_SEC_PER_BIG_MUSCLE = 90   # 每个复合大肌群 ~2 组递增热身
 WARMUP_CAP_SEC = 8 * 60         # 单节热身时间上限
 BIG_MUSCLES = ("chest", "back", "quads", "hamstrings", "shoulders")
 
+# 负重器械：拥有其一即视为"有器械"，纯自重动作在选池里降权
+_LOADED_EQUIPMENT = frozenset(
+    {"barbell", "dumbbell", "cable", "machine", "kettlebell", "trap_bar"}
+)
+
 # ── 训练类型 → 目标肌群映射 ────────────────────────────────
 
 SESSION_MUSCLES = {
@@ -304,7 +309,17 @@ def build_sessions(
             injuries=profile.injuries,
             level=level,
         )
-        exercises.sort(key=lambda e: (not e.compound, e.skill_level != "beginner"))
+        # 有负重器械的用户，纯自重动作排到后面（否则轮换会给他轮到俯卧撑）；
+        # 只有弹力带 / 单杠 / 自重的居家用户不降权。
+        has_loaded_gear = any(
+            eq in _LOADED_EQUIPMENT for eq in profile.equipment
+        )
+
+        def _bodyweight_demoted(e) -> int:
+            return 1 if (has_loaded_gear and e.equipment_required == ["bodyweight"]) else 0
+
+        exercises.sort(key=lambda e: (
+            _bodyweight_demoted(e), not e.compound, e.skill_level != "beginner"))
 
         session_exercises: list[ExerciseEntry] = []
         used_ids: set[str] = set()

@@ -222,6 +222,7 @@ class Exercise {
     required this.alternativesIfInjured,
     required this.formCues,
     this.videoUrl,
+    this.progressionRank,
   });
 
   final String id;
@@ -238,6 +239,7 @@ class Exercise {
   final List<String> alternativesIfInjured;
   final List<String> formCues;
   final String? videoUrl;
+  final int? progressionRank; // 徒手动作进阶序号（同 movement_pattern 内 1,2,3…）
 
   factory Exercise.fromJson(Map<String, dynamic> d) => Exercise(
     id: d['id'] as String,
@@ -264,6 +266,7 @@ class Exercise {
     ),
     videoUrl: d['video_url'] as String?,
     formCues: List<String>.from(d['form_cues'] as List? ?? const []),
+    progressionRank: (d['progression_rank'] as num?)?.toInt(),
   );
 }
 
