@@ -136,6 +136,88 @@ backend/
 
 ## 要你拍板
 
-- 阶段 1–3（地基 + 认证 + 核心训练域）先做，社交 / 聊天 / 饮食 / 附近 往后放 —— 同意？
-- 异步任务：先用 **BullMQ（Redis）** 顶着，RabbitMQ 等真有压力再上 —— 同意？（少一个组件）
-- `services/planner`（Python 同类对标）保留独立服务，不并进 NestJS —— 同意？
+- 阶段 1–3（地基 + 认证 + 核心训练域）先做，社交 / 聊天 / 饮食 / 附近 往后放 —— **已确认 ✅**
+- 异步任务：先用 **BullMQ（Redis）** 顶着，RabbitMQ 等真有压力再上 —— **已确认 ✅**
+- `services/planner`（Python 同类对标）保留独立服务，不并进 NestJS —— **已确认 ✅**
+
+---
+
+## 9. 以后会咬人的问题（现在就得定，否则后期返工很痛）
+
+按「不定好后期改动成本」从高到低。
+
+### 9.1 离线同步的冲突模型（最痛）
+- **问题**：多设备并发编辑、客户端时钟漂移、tombstone 何时回收、事件乱序到达。协议弱了以后重写要动全部客户端。
+- **现在要做**：
+  - 训练记录 = **事件追加（append-only）**，几乎不 update；服务端按 `event_id` 幂等去重。
+  - 每条写操作带 **`Idempotency-Key`**（所有 mutating 端点，不是选择性）。
+  - 设置 / 资料这类可变数据：用 **版本号（lamport / server-assigned）** 解冲突，不靠 `updated_at` 时间戳。
+  - 消息用**会话内单调序号**，绝不靠客户端时间排序。
+  - 点赞 / 关注靠 **DB 唯一约束**（`user_id + post_id`）而不是应用层查重。
+  - tombstone 保留期写进配置（如 90 天），到期后台清理，客户端拉不到 = 已删。
+  - 先写一份《同步协议 v1》放 `packages/contracts/sync.md`，Dart / TS 都照它实现。
+
+### 9.2 planner_version 三端漂移
+- **问题**：Dart 引擎、Python 引擎、已存的计划 —— 任一升级另两个没跟上，旧计划无法复现、同类数据不可比。
+- **现在要做**：
+  - 每份 `training_plans` 存 `planner_version` + **输入快照**（问卷原始输入），不只存结果。
+  - CI 加一道 **Dart↔Python 逐字对齐门禁**（本仓库已有对齐脚本，接进 CI）。
+  - JSON Schema 版本化放 `packages/contracts/planner/`，三端（Dart / Python / TS 校验）用同一份。
+  - 服务端计划生成**只在 Python `services/planner`**，NestJS 永不重实现。
+
+### 9.3 同类对标：数据可比性 + 冷启动 + 投毒
+- **可比性**：不同 `planner_version` 的 e1RM% 用的负荷模型不一样，不能混桶。→ cohort 键**加 `metric_schema_version`**（跟 planner 大版本绑），换版本另起桶。
+- **冷启动**：头几个月没有任何桶到 20 人，功能对用户是空的。→ 先用**文献基线**（Helms / RP 的典型进度区间）做占位，标注「参考值，非同类实测」；实测桶够了再切换。写进 `services/planner` 的 config。
+- **投毒 / 刷量**：匿名上报被脚本灌假数据会歪百分位。→ 上报走 `apps/api` 转发（带 account 上下文做限流 + 异常过滤：单设备频率、离群值裁剪 p1/p99），不让客户端直连 planner 的 submit。benchmark 查询可以直连或缓存。
+
+### 9.4 中国推送：FCM 在国内不通
+- **问题**：Android 国内 FCM 基本收不到。只做 FCM = 国内用户收不到训练提醒 / 互动通知。
+- **现在要做**：`notifications` 的 push driver 抽象成多通道：iOS→APNs、Android 国际→FCM、**Android 国内→厂商推送（小米 / 华为 / OPPO / vivo）或聚合（个推 / 极光）**。首期至少接一个国内聚合通道。
+
+### 9.5 内容安全（社交 / 头像 / 聊天）—— 法律要求
+- **问题**：国内 UGC 必须过内容审核（图文 + 昵称 + 简介），漏审有下架风险。
+- **现在要做**：`media` 上传 + `social` 发帖 + `chat` 发图，全部过 **内容安全 API（阿里云 / 腾讯云）**同步预审 + 异步复审。审核结果进 `reports` / 审计。别等社交模块做完再补。
+
+### 9.6 合规（PIPL）—— 身体数据是敏感个人信息
+- **现在要做**：
+  - 身体数据（体重 / 体脂 / 围度 / 伤病）单独存表、单独同意勾选、单独授权开关（架构文档已提"高敏身体数据与账号权限分离"，落实到 schema）。
+  - **注销**要真删 / 匿名化，不是软删标记；写一条注销 job 走全模块级联。
+  - 数据导出接口（用户可下载自己的全部数据）。
+  - 数据**境内存储**（服务器选国内区）。
+  - 未成年人：`age ≥ 16` 才允许注册（引擎已按此），16–18 加监护提示。
+  - 保留**同意记录**（时间 / 版本 / 条款哈希）。
+
+### 9.7 OTP 端点是头号攻击面（会烧真钱）
+- **问题**：短信轰炸机刷 `/auth/phone/send-code`，每条短信都是钱。
+- **现在要做**：per-phone（60s 一条 / 天 5 条）+ per-IP + 全局 QPS 三层限流（Redis），失败 N 次上**图形 / 滑块验证码**，异常号段直接拒。第一版就要有，不能后补。
+
+### 9.8 WebSocket 多实例
+- **问题**：单实例能跑通，加副本后跨实例的在线状态 / 未读推送就断了。
+- **现在要做**：WebSocket gateway 一开始就挂 **Redis adapter**（`@socket.io/redis-adapter` 或等价），本地也用 Redis 跑，别等扩容才加。
+
+### 9.9 UUIDv7 / 主键策略
+- **问题**：boilerplate 默认 UUID v4，有数据之后换主键生成策略几乎不可能。
+- **现在要做**：地基阶段就把所有实体 PK 换成 **UUIDv7（时间有序，索引友好）**，`common/` 里放一个生成器，`.hygen` 模板也改。
+
+### 9.10 Flutter 本地存储迁移
+- **问题**：架构文档 §7 提到业务数据要从 SharedPreferences 迁到 SQLite/Drift。上线后带着 SharedPreferences 数据的用户，迁移有风险。
+- **现在要做**：App 接后端之前**先做本地存储迁移**（Drift / Isar），并写一次性迁移逻辑 + 回滚方案。这是 App 那条线的活，但要在同步协议定稿前排期。
+
+### 9.11 fork 了 boilerplate 之后的上游安全更新
+- **问题**：重度改造后拉不动 upstream 的安全补丁。
+- **现在要做**：记录 fork 基线 commit，`docs/` 里写一份《upstream 跟进流程》（定期 diff `brocoders/main` 的 `src/auth*`、依赖版本、CVE），至少认证 / 依赖这两块要跟。
+
+### 9.12 队列抽象（为了以后换 RabbitMQ 不痛）
+- **现在要做**：worker 里所有 job 走一层薄抽象（`enqueue(name, payload)` / `handler`），底层现在是 BullMQ，以后换 RabbitMQ 只改抽象层实现，不动业务代码。
+
+### 9.13 媒体直传的安全
+- **问题**：预签名 URL 用错（范围太宽 / TTL 太长 / 不校验 content-type、大小）会被当免费图床。
+- **现在要做**：预签名限定 `key 前缀 + content-type + max-size + 短 TTL`，上传完成回调校验实际对象，再落 `media_objects`。
+
+---
+
+## 10. 首期最小闭环（建议 MVP 边界）
+
+避免摊子铺太大。首个可用版本 = **登录 → 填问卷出计划 → 跟练打卡 → check-in 调整 → 多设备同步**：
+`auth-phone` + `auth-wechat` + `profiles` + `plans` + `workouts` + `sync` + `notifications`(最简)。
+社交 / 聊天 / 饮食识别 / 附近的人 / 同类对标软提示 —— 都是第二批。
