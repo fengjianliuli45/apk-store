@@ -19,6 +19,8 @@ from .session_builder import build_sessions
 from .progression_planner import plan as plan_progression
 from .meal_distributor import distribute
 from .supplement_advisor import advise
+from .recovery_planner import plan_recovery
+from .session_builder import analyze_volume
 from .exercise_library import ExerciseLibrary
 from .plan_output import generate_json
 
@@ -37,8 +39,10 @@ def generate_plan(raw: dict, library: Optional[ExerciseLibrary] = None) -> dict:
     progression = plan_progression(profile)
     meals = distribute(profile, macros)
     supplements = advise(profile, macros)
+    recovery_days = plan_recovery(profile, split, analyze_volume(profile, split, sessions))
 
     return generate_json(
         profile, tdee, macros, split, sessions, progression, meals, supplements,
         frequency_plan=freq_plan,
+        recovery_days=recovery_days,
     )

@@ -5,6 +5,7 @@ import 'meal_distributor.dart';
 import 'models.dart';
 import 'profile_validator.dart';
 import 'progression_planner.dart';
+import 'recovery_planner.dart';
 import 'session_builder.dart';
 import 'split_selector.dart';
 import 'supplement_advisor.dart';
@@ -53,6 +54,7 @@ class PlannerGateway {
     final volume = weeklyVolumeFor(profile.level, profile.goal);
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
+    final recoveryDays = planRecovery(profile, split, volumeReport);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -73,6 +75,7 @@ class PlannerGateway {
       capacityRecommendation:
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
       frequencyPlan: freqPlan.toJson(),
+      recoveryDays: recoveryDays,
     );
   }
 }

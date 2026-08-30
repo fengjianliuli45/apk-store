@@ -317,6 +317,44 @@ class SessionResult {
   };
 }
 
+// ── recovery_planner ───────────────────────────────────────────────
+
+class RecoveryDay {
+  RecoveryDay({
+    required this.day,
+    required this.kind,
+    required this.durationMin,
+    required this.title,
+    required this.focus,
+    this.items = const [],
+  });
+
+  final String day;
+  final String kind; // rest | mobility | cardio | pump
+  final int durationMin;
+  final String title;
+  final String focus;
+  final List<String> items;
+
+  Map<String, dynamic> toJson() => {
+    'day': day,
+    'kind': kind,
+    'duration_min': durationMin,
+    'title': title,
+    'focus': focus,
+    'items': items,
+  };
+
+  factory RecoveryDay.fromJson(Map<String, dynamic> m) => RecoveryDay(
+    day: m['day'] as String,
+    kind: m['kind'] as String,
+    durationMin: (m['duration_min'] as num).toInt(),
+    title: m['title'] as String,
+    focus: m['focus'] as String,
+    items: List<String>.from(m['items'] as List? ?? const []),
+  );
+}
+
 // ── progression_planner ────────────────────────────────────────────
 
 class ReassessmentTrigger {
@@ -579,6 +617,7 @@ class GeneratedPlan {
     this.volumeNotes = const [],
     this.capacityRecommendation = const {},
     this.frequencyPlan = const {},
+    this.recoveryDays = const [],
   });
 
   final DateTime generatedAt;
@@ -602,8 +641,11 @@ class GeneratedPlan {
   /// 引擎定频率的结果（任务 ①.5）：天数、（可能上调的）时长、最低时长、说明。
   final Map<String, dynamic> frequencyPlan;
 
+  /// 休息日的轻日安排（交付 2）：mobility / cardio / pump / rest。
+  final List<RecoveryDay> recoveryDays;
+
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.3', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.4', 'generated_at': generatedAt.toIso8601String()},
     'profile': profile.toJson(),
     'nutrition': {
       'tdee': tdee.toJson(),
@@ -619,6 +661,7 @@ class GeneratedPlan {
       'volume_notes': volumeNotes,
       'capacity_recommendation': capacityRecommendation,
       'frequency_plan': frequencyPlan.isEmpty ? null : frequencyPlan,
+      'recovery_days': recoveryDays.map((r) => r.toJson()).toList(),
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
@@ -790,6 +833,10 @@ class GeneratedPlan {
       frequencyPlan: Map<String, dynamic>.from(
         training['frequency_plan'] as Map? ?? const {},
       ),
+      recoveryDays: [
+        for (final r in (training['recovery_days'] as List? ?? const []))
+          RecoveryDay.fromJson(r as Map<String, dynamic>),
+      ],
       stageGoal: json['stage_goal'] == null
           ? null
           : StageGoal.fromJson(json['stage_goal'] as Map<String, dynamic>),

@@ -44,6 +44,7 @@ def generate_json(
     meal_plan: MealPlan,
     supplements: SupplementResult,
     frequency_plan=None,
+    recovery_days=None,
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
@@ -54,7 +55,7 @@ def generate_json(
 
     return {
         "meta": {
-            "version": "1.3",
+            "version": "1.4",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -88,6 +89,7 @@ def generate_json(
             "volume_notes": volume_report["notes"],
             "capacity_recommendation": volume_report["recommendation"],
             "frequency_plan": frequency_plan.to_dict() if frequency_plan is not None else None,
+            "recovery_days": [rd.to_dict() for rd in (recovery_days or [])],
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,

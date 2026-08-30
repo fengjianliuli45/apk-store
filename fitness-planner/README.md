@@ -9,6 +9,23 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 休息日轻日 / 补练（交付 2）
+
+- 新增 `engine/recovery_planner.py`：把日程里的 rest 日填成有内容的「轻日」，
+  原则是**不抢主课的恢复**：
+  - 减脂 → 补低强度有氧（Zone2）：减脂靠热量缺口，有氧直接补。
+  - 增肌 / 增肌减脂 且主课覆盖 < 96% 且非新手 → 补 1 天「快恢复肌群泵感课」
+    （二头/三头/小腿/核心，20 分钟，24 小时恢复，不影响第二天大动作）。
+  - 新手 → rest 日只给主动恢复（拉伸 + 走路）。
+  - rest 日 ≥ 2 或硬练 ≥ 5 天 → 保留 1 天完全休息。
+  - 其余 rest 日 → 主动恢复。每天都有内容 → 服务「每天开 App / 连续天数 / 宠物」。
+- 计划 JSON `1.3 → 1.4`：`training.recovery_days`（`kind` = rest/mobility/cardio/pump，
+  `duration_min` / `title` / `focus` / `items`）。`schedule` 仍是 7 天（rest 保持 rest），
+  App 按 `day` 把两者对起来渲染。
+- 泵感课不计入 `volume_coverage_pct`（覆盖率只反映主课）；泵感课的 `focus` 文案
+  会说明它在补哪部分缺口。
+- 7 天训练 = 硬练（3–6 天）+ 轻日填满剩余天，不做 7 天硬练同肌群。
+
 ## 2026-08-30 引擎决定训练频率（任务 ①.5）
 
 - `days_per_week` 不再是必填输入。用户只填「每次能练多久」，频率是结果：
