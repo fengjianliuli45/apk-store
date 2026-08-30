@@ -21,13 +21,15 @@ from .exercise_library import ExerciseLibrary
 
 # 各水平的每周训练天数范围（下限=频率底线，上限=恢复与分肢约束）
 LEVEL_DAY_RANGE = {
-    "beginner": (3, 4),
+    "beginner": (3, 3),
     "intermediate": (3, 5),
     "advanced": (3, 6),
 }
 
-# 判定「兑现周训练量」的覆盖率门槛
-COVERAGE_TARGET = 92
+# 训练量「完成」= 每个肌群 ≥ MEV（自适应 coverage_pct 达到这个即算完成）
+COVERAGE_TARGET = 100
+# 训练量「到最优」= 相当于 MAV 的百分比达到这个即不必再加天数
+OPTIMAL_TARGET = 98
 
 # 课时搜索范围（分钟）
 _MIN_SCAN = 30
@@ -39,8 +41,9 @@ _SCAN_STEP = 5
 class FrequencyPlan:
     days_per_week: int
     minutes_per_session: int      # 可能被上调到最低训练时长
-    min_session_minutes: int      # 该 (水平,目标,器械) 达标所需的最短课时
-    coverage_pct: int             # 最终方案的覆盖率
+    min_session_minutes: int      # 保证「训练量完成（≥MEV）」的最短课时
+    coverage_pct: int             # 对自适应目标的覆盖率（通常 100）
+    vs_optimal_pct: int           # 相当于最优训练量(MAV)的百分比
     minutes_raised: bool          # 是否因低于最低时长而上调
     note: str = ""
 
@@ -50,39 +53,48 @@ class FrequencyPlan:
             "minutes_per_session": self.minutes_per_session,
             "min_session_minutes": self.min_session_minutes,
             "coverage_pct": self.coverage_pct,
+            "vs_optimal_pct": self.vs_optimal_pct,
             "minutes_raised": self.minutes_raised,
             "note": self.note,
         }
 
 
-def _coverage_at(profile: UserProfile, days: int, library: ExerciseLibrary) -> int:
-    trial = replace(profile, days_per_week=days)
+def _analyze_at(
+    profile: UserProfile, days: int, minutes: int, library: ExerciseLibrary
+) -> tuple[int, int]:
+    """返回 (coverage_pct, vs_optimal_pct)。"""
+    trial = replace(profile, days_per_week=days, minutes_per_session=minutes)
     sp = select(trial)
     sessions = build_sessions(trial, sp, library)
-    return analyze_volume(trial, sp, sessions)["coverage_pct"]
+    rep = analyze_volume(trial, sp, sessions)
+    return rep["coverage_pct"], rep["vs_optimal_pct"]
 
 
-def _fewest_days_hitting_target(
+def _pick_days(
     profile: UserProfile, minutes: int, library: ExerciseLibrary
-) -> tuple[int, int, bool]:
-    """返回 (天数, 覆盖率, 是否达标)。达标=覆盖率≥门槛；否则返回覆盖率最高的天数。"""
+) -> tuple[int, int, int]:
+    """给定时长，挑天数：优先「最少的、能到最优训练量」的天数；
+    没有能到最优的 → 选「相当于最优」最高的天数。
+    返回 (天数, coverage_pct, vs_optimal_pct)。"""
     lo, hi = LEVEL_DAY_RANGE.get(profile.level, (3, 5))
-    trial_minutes = replace(profile, minutes_per_session=minutes)
-    best_days, best_cov = hi, -1
+    best = None
     for d in range(lo, hi + 1):
-        cov = _coverage_at(trial_minutes, d, library)
-        if cov >= COVERAGE_TARGET:
-            return d, cov, True
-        if cov > best_cov:
-            best_days, best_cov = d, cov
-    return best_days, best_cov, False
+        cov, vs_opt = _analyze_at(profile, d, minutes, library)
+        if vs_opt >= OPTIMAL_TARGET:
+            return d, cov, vs_opt
+        if best is None or vs_opt > best[2]:
+            best = (d, cov, vs_opt)
+    return best
 
 
 def min_session_minutes(profile: UserProfile, library: ExerciseLibrary) -> int:
-    """能兑现周训练量的最短课时（5 分钟为粒度）。"""
+    """保证「训练量完成」（每个肌群 ≥ MEV → coverage_pct 达 100）的最短课时。"""
+    lo, hi = LEVEL_DAY_RANGE.get(profile.level, (3, 5))
     for m in range(_MIN_SCAN, _MAX_SCAN + 1, _SCAN_STEP):
-        _, _, hit = _fewest_days_hitting_target(profile, m, library)
-        if hit:
+        if any(
+            _analyze_at(profile, d, m, library)[0] >= COVERAGE_TARGET
+            for d in range(lo, hi + 1)
+        ):
             return m
     return _MAX_SCAN
 
@@ -114,12 +126,13 @@ def plan_frequency(profile: UserProfile, library: ExerciseLibrary) -> FrequencyP
 
     if profile.days_per_week is not None:
         days = profile.days_per_week
-        coverage = _coverage_at(profile, days, library) if days > 0 else 0
+        cov, vs_opt = _analyze_at(profile, days, requested, library) if days > 0 else (0, 0)
         return FrequencyPlan(
             days_per_week=days,
             minutes_per_session=requested,
             min_session_minutes=min_minutes,
-            coverage_pct=coverage,
+            coverage_pct=cov,
+            vs_optimal_pct=vs_opt,
             minutes_raised=False,
             note=f"按你指定的每周 {days} 天安排。",
         )
@@ -127,26 +140,32 @@ def plan_frequency(profile: UserProfile, library: ExerciseLibrary) -> FrequencyP
     minutes = max(requested, min_minutes)
     raised = minutes > requested
 
-    days, coverage, hit = _fewest_days_hitting_target(profile, minutes, library)
+    days, coverage, vs_opt = _pick_days(profile, minutes, library)
 
     if raised:
         note = (
-            f"{_goal_cn(profile.goal)}每次至少练 {min_minutes} 分钟才能保证每周训练量，"
+            f"{_goal_cn(profile.goal)}每次至少练 {min_minutes} 分钟才能完成每周训练量，"
             f"已按 {min_minutes} 分钟安排（你填的是 {requested} 分钟）。"
         )
-    elif not hit:
+    elif coverage < COVERAGE_TARGET:
         note = (
-            f"即使每次 {minutes} 分钟、每周 {days} 天，周训练量也只到约 {coverage}%。"
-            f"把每次时间再加长可完整兑现。"
+            f"每次 {minutes} 分钟 / 每周 {days} 天，训练量约 {coverage}%（略欠最低有效量）。"
+            f"每次再加长一点可补上。"
+        )
+    elif vs_opt < OPTIMAL_TARGET:
+        note = (
+            f"每次 {minutes} 分钟 / 每周 {days} 天，训练量已完成（相当于最优的 {vs_opt}%）。"
+            f"想冲最大增速：每次加约 15 分钟。"
         )
     else:
-        note = f"按你每次 {minutes} 分钟，安排每周 {days} 天即可兑现目标训练量。"
+        note = f"每次 {minutes} 分钟 / 每周 {days} 天，训练量到位（已接近最优）。"
 
     return FrequencyPlan(
         days_per_week=days,
         minutes_per_session=minutes,
         min_session_minutes=min_minutes,
         coverage_pct=coverage,
+        vs_optimal_pct=vs_opt,
         minutes_raised=raised,
         note=note,
     )

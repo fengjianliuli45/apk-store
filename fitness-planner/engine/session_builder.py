@@ -46,9 +46,16 @@ GOAL_VOLUME_SCALE = {
 # 兼容旧引用：WEEKLY_VOLUME 仍指增肌基准表
 WEEKLY_VOLUME = _BASE_WEEKLY_VOLUME
 
+# 最低有效量（MEV，每肌群每周组数）：低于这个才算「没练够」。
+# 只要每个肌群 ≥ MEV，计划就是科学完整的——一定能长肌肉（RP 容量地标）。
+MEV_WEEKLY = {
+    "chest": 8, "back": 10, "quads": 8, "hamstrings": 6, "shoulders": 8,
+    "biceps": 6, "triceps": 6, "calves": 6, "core": 4,
+}
+
 
 def weekly_volume_for(level: str, goal: str) -> dict[str, int]:
-    """按 level + goal 返回缩放后的每周每肌群组数。"""
+    """按 level + goal 返回「最优训练量」(MAV) —— 每周每肌群组数的上限目标。"""
     base = _BASE_WEEKLY_VOLUME.get(level, _BASE_WEEKLY_VOLUME["beginner"])
     scale = GOAL_VOLUME_SCALE.get(goal, 1.0)
     return {m: max(2, _round(v * scale)) for m, v in base.items()}
@@ -204,15 +211,17 @@ def _set_seconds(prescribed_rest: int, compound: bool) -> int:
 
 
 def _distribute_weekly(weekly_target: int, frequency: int, cap: int) -> list[int]:
-    """把周目标铺成每次暴露的组数序列，前重后轻，各次封顶到 cap。
+    """把周目标铺成每次暴露的组数序列，前重后轻，各次封顶到 cap，每次 ≥2 组。
 
-    例：14 组 / 2 次 / 上限 9 → [7, 7]；10 / 3 / 6 → [4, 3, 3]；
-        14 / 1 / 9 → [9]（余 5 无法兑现，由差额提示反映）。
+    周目标小的时候，宁可少练几次、每次 ≥2 组，也不排「1 组」的无效暴露。
+    例：14/2 → [7, 7]；10/3 → [4, 3, 3]；5/3 → [3, 2, 0]（腘绳每周练 2 次）。
     """
     freq = max(1, frequency)
-    base, rem = divmod(weekly_target, freq)
-    seq = [base + (1 if i < rem else 0) for i in range(freq)]
-    return [min(cap, s) for s in seq]
+    # 每次至少 2 组 → 有效暴露次数不超过 weekly // 2
+    eff_freq = max(1, min(freq, weekly_target // 2))
+    base, rem = divmod(weekly_target, eff_freq)
+    seq = [min(cap, base + (1 if i < rem else 0)) for i in range(eff_freq)]
+    return seq + [0] * (freq - eff_freq)
 
 
 def build_sessions(
@@ -409,76 +418,81 @@ def analyze_volume(
     split: SplitResult,
     sessions: list[SessionResult],
 ) -> dict:
-    """诚实层：对比周目标 vs 实际排出的容量，给出差额、覆盖率与补齐建议。
+    """训练量对账（自适应目标）。
 
-    返回 {target, delivered, frequency, coverage_pct, notes, recommendation}。
+    目标不是一张固定表，而是「用户这个时长/天数排得满的量」，夹在 [MEV, MAV] 之间：
+    只要每个肌群 ≥ MEV，计划就是科学完整的（一定长肌肉）→ coverage_pct 通常 100。
+    另给 vs_optimal_pct：相当于最优训练量(MAV)的百分比，是「还能更好」的提示。
+
+    返回 {target, optimal, delivered, frequency, coverage_pct, vs_optimal_pct,
+          notes, recommendation}。
     """
     level = profile.level
-    weekly_target = weekly_volume_for(level, profile.goal)
+    optimal = weekly_volume_for(level, profile.goal)          # MAV 上限
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     primary_frequency = _actual_muscle_frequency(split.weekly_schedule, primary_only=True)
 
-    # 按「动作被排进来时对应的配额肌群」计数，不用 primary_muscles，
-    # 避免复合动作的多肌群标签把 delivered 灌水。
-    delivered: dict[str, int] = {m: 0 for m in weekly_target}
+    # 按「动作被排进来时对应的配额肌群」计数
+    delivered: dict[str, int] = {m: 0 for m in optimal}
     for s in sessions:
         for ex in s.exercises:
             m = ex.target_muscle
             if m in delivered:
                 delivered[m] += ex.sets
 
-    indirect: list[str] = []           # 分肢结构上就不单独练的
-    low_freq_short: list[str] = []      # 每周只练 ≤1 次导致的欠量
-    time_short: list[str] = []          # 频率够、时间不够导致的欠量
-    covered_target = 0
-    covered_delivered = 0
-    for muscle, target in weekly_target.items():
+    target: dict[str, int] = {}          # 自适应目标（这份计划承诺的量）
+    indirect: list[str] = []             # 分肢结构上不单独练的
+    below_mev: list[str] = []            # 低于最低有效量（真·没练够）
+    covered_t = covered_d = 0
+    opt_t = opt_d = 0
+    for muscle, hi in optimal.items():
         got = delivered.get(muscle, 0)
+        # MEV 不会高于该目标下的 MAV（小肌群在减脂/力量缩放后 MAV 可能已很低）
+        mev = min(MEV_WEEKLY.get(muscle, 6), hi)
         freq = frequency.get(muscle, 0)
         pfreq = primary_frequency.get(muscle, 0)
         cn = _MUSCLE_CN.get(muscle, muscle)
-        # 分肢结构上不单独练（freq 0），或本周只以「次要肌群」身份出现（pfreq 0）：
-        # 靠复合动作间接带到，不计入需要「加时间」的欠量。
+        # 自适应目标：排得满多少就定多少，但至少 MEV、至多 MAV
+        tgt = max(mev, min(got, hi))
+        target[muscle] = tgt
         if freq == 0 or pfreq == 0:
             indirect.append(cn)
             continue
-        covered_target += target
-        covered_delivered += min(got, target)
-        if target - got >= 3:
-            (low_freq_short if pfreq <= 1 else time_short).append(cn)
+        covered_t += tgt
+        covered_d += min(got, tgt)
+        opt_t += hi
+        opt_d += min(got, hi)
+        if got < mev:
+            below_mev.append(cn)
 
-    coverage_pct = _round(100 * covered_delivered / covered_target) if covered_target else 100
+    coverage_pct = _round(100 * covered_d / covered_t) if covered_t else 100
+    vs_optimal_pct = _round(100 * opt_d / opt_t) if opt_t else 100
 
     notes: list[str] = []
-    if low_freq_short:
+    recommendation: dict = {}
+    if below_mev:
+        recommendation = _recommend_capacity(profile, coverage_pct)
+        opts = recommendation.get("suggestion", "每次加长时间")
         notes.append(
-            f"{'/'.join(low_freq_short)}：当前分肢这些肌群每周只练到 1 次，"
-            f"周训练量只能到目标的约 {coverage_pct}%。想显著提升：换 4+ 天分肢，或全身 3 天。"
+            f"{'/'.join(below_mev)}：每周训练量还没到最低有效量。{opts} 可补上。"
         )
-    if time_short:
-        if len(time_short) >= 3:
-            notes.append(
-                f"课时不足以塞下目标训练量：{'/'.join(time_short)} 等每周偏少（整体约 {coverage_pct}%）。"
-                f"每节 +10 分钟 或 +1 训练日可补齐。"
-            )
-        else:
-            for cn in time_short:
-                notes.append(f"{cn}：本周训练量略欠，每节 +10 分钟 或 +1 训练日可补。")
+    elif vs_optimal_pct < 90:
+        notes.append(
+            f"训练量已达标（相当于最优的 {vs_optimal_pct}%）。想冲最大增速：每次加约 15 分钟。"
+        )
     if indirect:
         notes.append(
             f"{'/'.join(indirect)}：当前分肢不单独安排，靠复合动作间接带到；"
             f"想直接练需加训练日或换分肢。"
         )
 
-    recommendation = _recommend_capacity(profile, coverage_pct)
-    if recommendation and recommendation.get("text"):
-        notes.append(recommendation["text"])
-
     return {
-        "target": weekly_target,
+        "target": target,
+        "optimal": optimal,
         "delivered": delivered,
         "frequency": frequency,
         "coverage_pct": coverage_pct,
+        "vs_optimal_pct": vs_optimal_pct,
         "notes": notes,
         "recommendation": recommendation,
     }

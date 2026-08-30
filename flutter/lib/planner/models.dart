@@ -614,6 +614,8 @@ class GeneratedPlan {
     this.stageGoal,
     this.weeklyVolumeDelivered = const {},
     this.volumeCoveragePct = 100,
+    this.vsOptimalPct = 100,
+    this.weeklyVolumeOptimal = const {},
     this.volumeNotes = const [],
     this.capacityRecommendation = const {},
     this.frequencyPlan = const {},
@@ -632,9 +634,13 @@ class GeneratedPlan {
   final Map<String, num> weeklyVolumePerGroup;
   final StageGoal? stageGoal;
 
-  /// 诚实层（任务 ①）：实际排出的周容量 / 覆盖率 / 提示 / 软建议。
+  /// 训练量对账。`weeklyVolumePerGroup` = 自适应目标（本计划承诺的量）；
+  /// `weeklyVolumeOptimal` = 最优训练量 MAV；`volumeCoveragePct` 对自适应目标
+  /// 通常 100；`vsOptimalPct` = 相当于最优的百分比。
   final Map<String, num> weeklyVolumeDelivered;
+  final Map<String, num> weeklyVolumeOptimal;
   final int volumeCoveragePct;
+  final int vsOptimalPct;
   final List<String> volumeNotes;
   final Map<String, dynamic> capacityRecommendation;
 
@@ -645,7 +651,7 @@ class GeneratedPlan {
   final List<RecoveryDay> recoveryDays;
 
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.4', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.5', 'generated_at': generatedAt.toIso8601String()},
     'profile': profile.toJson(),
     'nutrition': {
       'tdee': tdee.toJson(),
@@ -655,9 +661,12 @@ class GeneratedPlan {
     },
     'training': {
       'split': split.splitName,
+      'weekly_volume_target': weeklyVolumePerGroup,
+      'weekly_volume_optimal': weeklyVolumeOptimal,
       'weekly_volume_per_group': weeklyVolumePerGroup,
       'weekly_volume_delivered': weeklyVolumeDelivered,
       'volume_coverage_pct': volumeCoveragePct,
+      'vs_optimal_pct': vsOptimalPct,
       'volume_notes': volumeNotes,
       'capacity_recommendation': capacityRecommendation,
       'frequency_plan': frequencyPlan.isEmpty ? null : frequencyPlan,
@@ -820,10 +829,14 @@ class GeneratedPlan {
       weeklyVolumePerGroup: Map<String, num>.from(
         training['weekly_volume_per_group'] as Map,
       ),
+      weeklyVolumeOptimal: Map<String, num>.from(
+        training['weekly_volume_optimal'] as Map? ?? const {},
+      ),
       weeklyVolumeDelivered: Map<String, num>.from(
         training['weekly_volume_delivered'] as Map? ?? const {},
       ),
       volumeCoveragePct: (training['volume_coverage_pct'] as num?)?.toInt() ?? 100,
+      vsOptimalPct: (training['vs_optimal_pct'] as num?)?.toInt() ?? 100,
       volumeNotes: List<String>.from(
         training['volume_notes'] as List? ?? const [],
       ),

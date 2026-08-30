@@ -27,7 +27,6 @@ DAY_NAMES = ["周一", "周二", "周三", "周四", "周五", "周六", "周日
 # 每种分肢的日历模板（不含休息日）
 SPLIT_TEMPLATES = {
     "full_body": ["full_body", "rest", "full_body", "rest", "full_body", "rest", "rest"],
-    "full_body_4": ["full_body", "full_body", "rest", "full_body", "full_body", "rest", "rest"],
     "push_pull_legs": ["push", "pull", "legs", "rest", "push", "pull", "rest"],
     "upper_lower": ["upper", "lower", "rest", "upper", "lower", "rest", "rest"],
     "ppl_upper_lower": ["push", "pull", "legs", "upper", "lower", "rest", "rest"],
@@ -51,8 +50,7 @@ def select(profile: UserProfile) -> SplitResult:
         if level != "beginner":
             warnings.append("3 天训练用全身分肢（每肌群 2–3 次/周）比 PPL 更高效；想练 PPL 建议加到 6 天")
     elif d == 4:
-        # 新手 4 天仍走全身（每肌群 4 次/周），中级以上用上下分肢
-        split_name = "full_body_4" if level == "beginner" else "upper_lower"
+        split_name = "upper_lower"
     elif d == 5:
         split_name = "ppl_upper_lower"
     elif d == 6:

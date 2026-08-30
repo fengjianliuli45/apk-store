@@ -39,20 +39,35 @@ List<RecoveryDay> planRecovery(
 
   final goal = profile.goal;
   final level = profile.level;
-  final coverage = (volumeReport['coverage_pct'] as num?)?.toInt() ?? 100;
-  final hardDays =
-      split.weeklySchedule.where((d) => d.type != 'rest').length;
+  final vsOpt = (volumeReport['vs_optimal_pct'] as num?)?.toInt() ?? 100;
+  final nRest = restDays.length;
 
-  final keepFull = (restDays.length >= 2 || hardDays >= 5)
-      ? [restDays.last]
-      : <String>[];
-  final fillable = restDays.sublist(0, restDays.length - keepFull.length);
+  final wantFull = level == 'beginner' ? 2 : 1;
+  final wantCardio = goal == 'fat_loss'
+      ? (nRest - 1 < 0 ? 0 : (nRest - 1 < 2 ? nRest - 1 : 2))
+      : 0;
+  final wantPump = ((goal == 'hypertrophy' || goal == 'recomposition') &&
+          level != 'beginner' &&
+          vsOpt < 92 &&
+          nRest - wantCardio - 1 >= 1)
+      ? 1
+      : 0;
+  var keepFull = wantFull < (nRest - wantCardio - wantPump)
+      ? wantFull
+      : (nRest - wantCardio - wantPump);
+  final minKeep = nRest > 0 ? 1 : 0;
+  if (keepFull < minKeep) keepFull = minKeep;
+  if (keepFull > nRest) keepFull = nRest;
+
+  final keepFullDays =
+      keepFull > 0 ? restDays.sublist(nRest - keepFull) : <String>[];
+  final fillable = restDays.sublist(0, nRest - keepFull);
 
   final days = <RecoveryDay>[];
   var i = 0;
 
-  if (goal == 'fat_loss') {
-    final n = fillable.length < 2 ? fillable.length : 2;
+  if (wantCardio > 0) {
+    final n = wantCardio < fillable.length ? wantCardio : fillable.length;
     for (var k = 0; k < n; k++) {
       days.add(RecoveryDay(
         day: fillable[i++], kind: 'cardio', durationMin: 30,
@@ -61,23 +76,19 @@ List<RecoveryDay> planRecovery(
         items: List.of(_cardioItems),
       ));
     }
-  } else if ((goal == 'hypertrophy' || goal == 'recomposition') &&
-      level != 'beginner' &&
-      coverage < 96 &&
-      fillable.isNotEmpty) {
-    final delivered =
-        (volumeReport['delivered'] as Map?) ?? const {};
-    final target = (volumeReport['target'] as Map?) ?? const {};
+  } else if (wantPump > 0 && i < fillable.length) {
+    final delivered = (volumeReport['delivered'] as Map?) ?? const {};
+    final optimal = (volumeReport['optimal'] as Map?) ?? const {};
     var targets = [
       for (final m in const ['biceps', 'triceps', 'calves', 'core'])
-        if (((delivered[m] as num?) ?? 0) < ((target[m] as num?) ?? 0)) m,
+        if (((delivered[m] as num?) ?? 0) < ((optimal[m] as num?) ?? 999)) m,
     ];
     if (targets.isEmpty) targets = ['biceps', 'triceps', 'calves'];
     targets = targets.take(4).toList();
     days.add(RecoveryDay(
       day: fillable[i++], kind: 'pump', durationMin: 20,
       title: '快恢复肌群泵感课',
-      focus: '主课覆盖约 $coverage%，这 20 分钟补上手臂/小腿/核心的缺口，不抢大动作的恢复',
+      focus: '主课相当于最优的 $vsOpt%，这 20 分钟补上手臂/小腿/核心，往最优推一点，不抢大动作的恢复',
       items: [
         for (final m in targets)
           if (_pumpMoves.containsKey(m))
@@ -95,7 +106,7 @@ List<RecoveryDay> planRecovery(
     ));
   }
 
-  for (final d in keepFull) {
+  for (final d in keepFullDays) {
     days.add(RecoveryDay(
       day: d, kind: 'rest', durationMin: 0,
       title: '完全休息',

@@ -72,17 +72,32 @@ def plan_recovery(
     goal = profile.goal
     level = profile.level
     coverage = int(volume_report.get("coverage_pct", 100))
-    hard_days = sum(1 for d in split.weekly_schedule if d["type"] != "rest")
+    vs_opt = int(volume_report.get("vs_optimal_pct", 100))
+    n_rest = len(rest_days)
 
-    # rest 日 ≥ 2，或硬练 ≥ 5 天：保留最后一天完全休息
-    keep_full = rest_days[-1:] if (len(rest_days) >= 2 or hard_days >= 5) else []
-    fillable = rest_days[: len(rest_days) - len(keep_full)]
+    # 完全休息天数：文献——新手 2–3 天、中高级 1–2 天，即使高级也留 1 天。
+    # 但减脂要留出有氧日、增肌欠量要留泵感课日，所以完全休息让位给这些「补量」日。
+    want_full = 2 if level == "beginner" else 1
+    if goal == "fat_loss":
+        want_cardio = min(2, max(0, n_rest - 1))
+    else:
+        want_cardio = 0
+    want_pump = (
+        1 if goal in ("hypertrophy", "recomposition") and level != "beginner"
+        and vs_opt < 92 and n_rest - want_cardio - 1 >= 1
+        else 0
+    )
+    keep_full = min(want_full, max(1 if n_rest else 0, n_rest - want_cardio - want_pump))
+    keep_full = min(keep_full, n_rest)
+
+    keep_full_days = rest_days[n_rest - keep_full:] if keep_full else []
+    fillable = rest_days[: n_rest - keep_full]
 
     days: list[RecoveryDay] = []
     i = 0
 
-    if goal == "fat_loss":
-        for _ in range(min(2, len(fillable))):
+    if want_cardio:
+        for _ in range(min(want_cardio, len(fillable))):
             days.append(RecoveryDay(
                 day=fillable[i], kind="cardio", duration_min=30,
                 title="低强度有氧",
@@ -90,19 +105,18 @@ def plan_recovery(
                 items=list(CARDIO_ITEMS),
             ))
             i += 1
-    elif goal in ("hypertrophy", "recomposition") and level != "beginner" \
-            and coverage < 96 and fillable:
-        # 取主课没排满、且恢复快的肌群
+    elif want_pump and i < len(fillable):
+        # 取还没到最优、且恢复快的肌群
         delivered = volume_report.get("delivered", {})
-        target = volume_report.get("target", {})
+        opt = volume_report.get("optimal", {})
         targets = [m for m in ("biceps", "triceps", "calves", "core")
-                   if delivered.get(m, 0) < target.get(m, 0)]
+                   if delivered.get(m, 0) < opt.get(m, 999)]
         targets = (targets or ["biceps", "triceps", "calves"])[:4]
         items = [f"{PUMP_MOVES[m][0]} — {PUMP_MOVES[m][1]}" for m in targets if m in PUMP_MOVES]
         days.append(RecoveryDay(
             day=fillable[i], kind="pump", duration_min=20,
             title="快恢复肌群泵感课",
-            focus=f"主课覆盖约 {coverage}%，这 20 分钟补上手臂/小腿/核心的缺口，不抢大动作的恢复",
+            focus=f"主课相当于最优的 {vs_opt}%，这 20 分钟补上手臂/小腿/核心，往最优推一点，不抢大动作的恢复",
             items=items,
         ))
         i += 1
@@ -115,7 +129,7 @@ def plan_recovery(
             items=list(MOBILITY_ITEMS),
         ))
 
-    for d in keep_full:
+    for d in keep_full_days:
         days.append(RecoveryDay(
             day=d, kind="rest", duration_min=0,
             title="完全休息",

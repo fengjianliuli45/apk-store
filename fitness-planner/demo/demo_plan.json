@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.4",
+    "version": "1.5",
     "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
@@ -36,7 +36,7 @@
     "warnings": [],
     "notes": [
       "未指定训练天数，将按每次时长/目标/水平自动安排",
-      "按你每次 75 分钟，安排每周 4 天即可兑现目标训练量。"
+      "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
     ]
   },
   "nutrition": {
@@ -125,7 +125,18 @@
   },
   "training": {
     "split": "upper_lower",
-    "weekly_volume_per_group": {
+    "weekly_volume_target": {
+      "chest": 14,
+      "back": 16,
+      "quads": 14,
+      "hamstrings": 8,
+      "shoulders": 12,
+      "biceps": 6,
+      "triceps": 6,
+      "calves": 6,
+      "core": 4
+    },
+    "weekly_volume_optimal": {
       "chest": 14,
       "back": 16,
       "quads": 14,
@@ -147,7 +158,19 @@
       "calves": 6,
       "core": 0
     },
+    "weekly_volume_per_group": {
+      "chest": 14,
+      "back": 16,
+      "quads": 14,
+      "hamstrings": 8,
+      "shoulders": 12,
+      "biceps": 6,
+      "triceps": 6,
+      "calves": 6,
+      "core": 4
+    },
     "volume_coverage_pct": 100,
+    "vs_optimal_pct": 100,
     "volume_notes": [
       "二头/三头/核心：当前分肢不单独安排，靠复合动作间接带到；想直接练需加训练日或换分肢。"
     ],
@@ -155,10 +178,11 @@
     "frequency_plan": {
       "days_per_week": 4,
       "minutes_per_session": 75,
-      "min_session_minutes": 65,
+      "min_session_minutes": 60,
       "coverage_pct": 100,
+      "vs_optimal_pct": 100,
       "minutes_raised": false,
-      "note": "按你每次 75 分钟，安排每周 4 天即可兑现目标训练量。"
+      "note": "每次 75 分钟 / 每周 4 天，训练量到位（已接近最优）。"
     },
     "recovery_days": [
       {

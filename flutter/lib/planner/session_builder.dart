@@ -33,7 +33,13 @@ const goalVolumeScale = {
 /// 兼容旧引用：增肌基准表
 const weeklyVolume = _baseWeeklyVolume;
 
-/// 按 level + goal 返回缩放后的每周每肌群组数。
+/// 最低有效量（MEV）：每个肌群 ≥ 这个，计划就是科学完整的（一定长肌肉）。
+const mevWeekly = {
+  'chest': 8, 'back': 10, 'quads': 8, 'hamstrings': 6, 'shoulders': 8,
+  'biceps': 6, 'triceps': 6, 'calves': 6, 'core': 4,
+};
+
+/// 按 level + goal 返回「最优训练量」(MAV) —— 每周每肌群组数的上限目标。
 Map<String, int> weeklyVolumeFor(String level, String goal) {
   final base = _baseWeeklyVolume[level] ?? _baseWeeklyVolume['beginner']!;
   final scale = goalVolumeScale[goal] ?? 1.0;
@@ -65,7 +71,7 @@ const _warmupSecPerBigMuscle = 90;
 const _warmupCapSec = 8 * 60;
 const _bigMuscles = {'chest', 'back', 'quads', 'hamstrings', 'shoulders'};
 
-const _sessionMuscles = {
+const sessionMuscles = {
   'push': ['chest', 'shoulders', 'triceps'],
   'pull': ['back', 'biceps', 'rear_delt'],
   'legs': ['quads', 'hamstrings', 'glutes', 'calves'],
@@ -107,7 +113,7 @@ Map<String, int> _actualMuscleFrequency(
     final secondary = primaryOnly
         ? (_secondaryMusclesByType[dayInfo.type] ?? const <String>{})
         : const <String>{};
-    for (final muscle in _sessionMuscles[dayInfo.type] ?? const <String>[]) {
+    for (final muscle in sessionMuscles[dayInfo.type] ?? const <String>[]) {
       if (secondary.contains(muscle)) continue;
       freq[muscle] = (freq[muscle] ?? 0) + 1;
     }
@@ -122,14 +128,18 @@ int _setSeconds(int prescribedRest, bool compound) {
   return _workSecIsolation + prescribedRest;
 }
 
-/// 周目标铺成每次暴露的组数序列，前重后轻，各次封顶到 cap。
-/// 14/2/9 → [7,7]；10/3/6 → [4,3,3]；14/1/9 → [9]。
+/// 周目标铺成每次暴露的组数序列，前重后轻，各次封顶到 cap，每次 ≥2 组。
+/// 周目标小的时候宁可少练几次、每次 ≥2 组。5/3 → [3,2,0]。
 List<int> _distributeWeekly(int weeklyTarget, int frequency, int cap) {
   final freq = frequency < 1 ? 1 : frequency;
-  final base = weeklyTarget ~/ freq;
-  final rem = weeklyTarget % freq;
+  final byTwo = weeklyTarget ~/ 2;
+  final effFreq = (freq < byTwo ? freq : byTwo).clamp(1, freq);
+  final base = weeklyTarget ~/ effFreq;
+  final rem = weeklyTarget % effFreq;
   return [
-    for (var i = 0; i < freq; i++) (base + (i < rem ? 1 : 0)).clamp(0, cap).toInt(),
+    for (var i = 0; i < effFreq; i++)
+      (base + (i < rem ? 1 : 0)).clamp(0, cap).toInt(),
+    for (var i = 0; i < freq - effFreq; i++) 0,
   ];
 }
 
@@ -169,7 +179,7 @@ List<SessionResult> buildSessions(
       continue;
     }
 
-    final targetMuscles = _sessionMuscles[sessionType] ?? const <String>[];
+    final targetMuscles = sessionMuscles[sessionType] ?? const <String>[];
     final secondary =
         _secondaryMusclesByType[sessionType] ?? const <String>{};
     final primaryMusclesToday =
@@ -353,12 +363,12 @@ Map<String, dynamic> analyzeVolume(
   List<SessionResult> sessions,
 ) {
   final level = profile.level;
-  final weeklyTarget = weeklyVolumeFor(level, profile.goal);
+  final optimal = weeklyVolumeFor(level, profile.goal); // MAV 上限
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final primaryFrequency =
       _actualMuscleFrequency(split.weeklySchedule, primaryOnly: true);
 
-  final delivered = <String, int>{for (final m in weeklyTarget.keys) m: 0};
+  final delivered = <String, int>{for (final m in optimal.keys) m: 0};
   for (final s in sessions) {
     for (final ex in s.exercises) {
       if (delivered.containsKey(ex.targetMuscle)) {
@@ -367,61 +377,56 @@ Map<String, dynamic> analyzeVolume(
     }
   }
 
+  final target = <String, int>{};
   final indirect = <String>[];
-  final lowFreqShort = <String>[];
-  final timeShort = <String>[];
-  var coveredTarget = 0;
-  var coveredDelivered = 0;
-  weeklyTarget.forEach((muscle, target) {
+  final belowMev = <String>[];
+  var coveredT = 0, coveredD = 0, optT = 0, optD = 0;
+  optimal.forEach((muscle, hi) {
     final got = delivered[muscle] ?? 0;
+    final mevRaw = mevWeekly[muscle] ?? 6;
+    final mev = mevRaw < hi ? mevRaw : hi;
     final freq = frequency[muscle] ?? 0;
     final pfreq = primaryFrequency[muscle] ?? 0;
     final cn = _muscleCn[muscle] ?? muscle;
+    final gotClampedHi = got < hi ? got : hi;
+    final tgt = mev > gotClampedHi ? mev : gotClampedHi;
+    target[muscle] = tgt;
     if (freq == 0 || pfreq == 0) {
       indirect.add(cn);
       return;
     }
-    coveredTarget += target;
-    coveredDelivered += got < target ? got : target;
-    if (target - got >= 3) {
-      (pfreq <= 1 ? lowFreqShort : timeShort).add(cn);
-    }
+    coveredT += tgt;
+    coveredD += got < tgt ? got : tgt;
+    optT += hi;
+    optD += gotClampedHi;
+    if (got < mev) belowMev.add(cn);
   });
 
-  final coveragePct = coveredTarget == 0
-      ? 100
-      : (100 * coveredDelivered / coveredTarget).round();
+  final coveragePct =
+      coveredT == 0 ? 100 : (100 * coveredD / coveredT).round();
+  final vsOptimalPct = optT == 0 ? 100 : (100 * optD / optT).round();
 
   final notes = <String>[];
-  if (lowFreqShort.isNotEmpty) {
-    notes.add('${lowFreqShort.join('/')}：当前分肢这些肌群每周只练到 1 次，'
-        '周训练量只能到目标的约 $coveragePct%。想显著提升：换 4+ 天分肢，或全身 3 天。');
-  }
-  if (timeShort.isNotEmpty) {
-    if (timeShort.length >= 3) {
-      notes.add('课时不足以塞下目标训练量：${timeShort.join('/')} 等每周偏少'
-          '（整体约 $coveragePct%）。每节 +10 分钟 或 +1 训练日可补齐。');
-    } else {
-      for (final cn in timeShort) {
-        notes.add('$cn：本周训练量略欠，每节 +10 分钟 或 +1 训练日可补。');
-      }
-    }
+  var recommendation = <String, dynamic>{};
+  if (belowMev.isNotEmpty) {
+    recommendation = _recommendCapacity(profile, coveragePct);
+    final opts = (recommendation['suggestion'] as String?) ?? '每次加长时间';
+    notes.add('${belowMev.join('/')}：每周训练量还没到最低有效量。$opts 可补上。');
+  } else if (vsOptimalPct < 90) {
+    notes.add('训练量已达标（相当于最优的 $vsOptimalPct%）。想冲最大增速：每次加约 15 分钟。');
   }
   if (indirect.isNotEmpty) {
     notes.add('${indirect.join('/')}：当前分肢不单独安排，靠复合动作间接带到；'
         '想直接练需加训练日或换分肢。');
   }
 
-  final recommendation = _recommendCapacity(profile, coveragePct);
-  if (recommendation['text'] != null) {
-    notes.add(recommendation['text'] as String);
-  }
-
   return {
-    'target': weeklyTarget,
+    'target': target,
+    'optimal': optimal,
     'delivered': delivered,
     'frequency': frequency,
     'coverage_pct': coveragePct,
+    'vs_optimal_pct': vsOptimalPct,
     'notes': notes,
     'recommendation': recommendation,
   };

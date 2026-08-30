@@ -178,15 +178,17 @@ class TestSessionBuilder(unittest.TestCase):
         self.assertLessEqual(cov_short, cov_long)
         self.assertLessEqual(cov_long, 100)
 
-    def test_tight_schedule_flagged(self):
-        """3 天 60 分钟的中级用户：覆盖率不足 90%，给出提示与软建议。"""
+    def test_adaptive_target_coverage_100_but_below_optimal(self):
+        """自适应目标：短课时下 coverage ~100（≥MEV），但 vs_optimal < 100，并给「加时间」提示。"""
         from engine.session_builder import analyze_volume
         p = self._profile(level="intermediate", days_per_week=3, minutes_per_session=60)
         split = select(p)
         rep = analyze_volume(p, split, build_sessions(p, split, self.lib))
-        self.assertLess(rep["coverage_pct"], 90)
-        self.assertTrue(rep["notes"])
-        self.assertTrue(rep["recommendation"])
+        self.assertGreaterEqual(rep["coverage_pct"], 95)
+        self.assertLess(rep["vs_optimal_pct"], rep["coverage_pct"] + 1)
+        # 每个肌群的自适应目标不超过最优
+        for m, t in rep["target"].items():
+            self.assertLessEqual(t, rep["optimal"][m])
 
     def test_secondary_muscle_only_exposure_is_indirect(self):
         """5 天 PPL+上下：三头只在 push 日为主肌群、upper 日为次要 →
@@ -198,13 +200,15 @@ class TestSessionBuilder(unittest.TestCase):
         # 不应出现"三头...每节 +10 分钟"这类时间型提示
         self.assertFalse(any("三头" in n and "分钟" in n for n in rep["notes"]))
 
-    def test_capacity_recommendation_soft_hint(self):
-        """覆盖率不足时给出 B 方案软提示（可选、不拦截）。"""
+    def test_vs_optimal_rises_with_time(self):
+        """时间越多，相当于最优的百分比越高（覆盖率则一直是 ~100）。"""
         from engine.session_builder import analyze_volume
-        p = self._profile(level="intermediate", days_per_week=4, minutes_per_session=45)
-        rep = analyze_volume(p, select(p), build_sessions(p, select(p), self.lib))
-        self.assertTrue(rep["recommendation"])
-        self.assertIn("可选", rep["recommendation"]["text"])
+        short = self._profile(level="intermediate", days_per_week=4, minutes_per_session=45)
+        long = self._profile(level="intermediate", days_per_week=4, minutes_per_session=90)
+        r_s = analyze_volume(short, select(short), build_sessions(short, select(short), self.lib))
+        r_l = analyze_volume(long, select(long), build_sessions(long, select(long), self.lib))
+        self.assertLessEqual(r_s["vs_optimal_pct"], r_l["vs_optimal_pct"])
+        self.assertLessEqual(r_l["vs_optimal_pct"], 100)
 
 
 if __name__ == "__main__":

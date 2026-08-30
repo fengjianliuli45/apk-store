@@ -9,12 +9,15 @@ import 'split_selector.dart';
 /// 挑最少的、能兑现每周训练量的天数。低于最低训练时长 → 上调时长（科学优先）。
 
 const levelDayRange = {
-  'beginner': [3, 4],
+  'beginner': [3, 3],
   'intermediate': [3, 5],
   'advanced': [3, 6],
 };
 
-const coverageTarget = 92;
+/// 训练量「完成」= 每个肌群 ≥ MEV（自适应 coverage_pct 达 100）
+const coverageTarget = 100;
+/// 训练量「到最优」= 相当于 MAV 的百分比达到即不必再加天数
+const optimalTarget = 98;
 
 const _minScan = 30;
 const _maxScan = 120;
@@ -33,6 +36,7 @@ class FrequencyPlan {
     required this.minutesPerSession,
     required this.minSessionMinutes,
     required this.coveragePct,
+    required this.vsOptimalPct,
     required this.minutesRaised,
     this.note = '',
   });
@@ -41,6 +45,7 @@ class FrequencyPlan {
   final int minutesPerSession;
   final int minSessionMinutes;
   final int coveragePct;
+  final int vsOptimalPct;
   final bool minutesRaised;
   final String note;
 
@@ -49,6 +54,7 @@ class FrequencyPlan {
     'minutes_per_session': minutesPerSession,
     'min_session_minutes': minSessionMinutes,
     'coverage_pct': coveragePct,
+    'vs_optimal_pct': vsOptimalPct,
     'minutes_raised': minutesRaised,
     'note': note,
   };
@@ -74,38 +80,36 @@ UserProfile _withMinutes(UserProfile p, int minutes) => UserProfile(
       warnings: p.warnings, notes: p.notes,
     );
 
-int _coverageAt(UserProfile profile, int days, ExerciseLibrary library) {
-  final trial = _withDays(profile, days);
+/// 返回 [coveragePct, vsOptimalPct]。
+List<int> _analyzeAt(
+    UserProfile profile, int days, int minutes, ExerciseLibrary library) {
+  final trial = _withMinutes(_withDays(profile, days), minutes);
   final sp = selectSplit(trial);
   final sessions = buildSessions(trial, sp, library);
-  return analyzeVolume(trial, sp, sessions)['coverage_pct'] as int;
+  final rep = analyzeVolume(trial, sp, sessions);
+  return [rep['coverage_pct'] as int, rep['vs_optimal_pct'] as int];
 }
 
-/// 返回 [days, coverage, hit]。
-List<Object> _fewestDaysHittingTarget(
-  UserProfile profile,
-  int minutes,
-  ExerciseLibrary library,
-) {
+/// 返回 [days, coveragePct, vsOptimalPct]。
+List<int> _pickDays(UserProfile profile, int minutes, ExerciseLibrary library) {
   final range = levelDayRange[profile.level] ?? const [3, 5];
   final lo = range[0], hi = range[1];
-  final trial = _withMinutes(profile, minutes);
-  var bestDays = hi, bestCov = -1;
+  List<int>? best;
   for (var d = lo; d <= hi; d++) {
-    final cov = _coverageAt(trial, d, library);
-    if (cov >= coverageTarget) return [d, cov, true];
-    if (cov > bestCov) {
-      bestDays = d;
-      bestCov = cov;
-    }
+    final r = _analyzeAt(profile, d, minutes, library);
+    if (r[1] >= optimalTarget) return [d, r[0], r[1]];
+    if (best == null || r[1] > best[2]) best = [d, r[0], r[1]];
   }
-  return [bestDays, bestCov, false];
+  return best!;
 }
 
 int minSessionMinutes(UserProfile profile, ExerciseLibrary library) {
+  final range = levelDayRange[profile.level] ?? const [3, 5];
+  final lo = range[0], hi = range[1];
   for (var m = _minScan; m <= _maxScan; m += _scanStep) {
-    final r = _fewestDaysHittingTarget(profile, m, library);
-    if (r[2] as bool) return m;
+    for (var d = lo; d <= hi; d++) {
+      if (_analyzeAt(profile, d, m, library)[0] >= coverageTarget) return m;
+    }
   }
   return _maxScan;
 }
@@ -132,12 +136,15 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
 
   if (profile.daysPerWeek != null) {
     final days = profile.daysPerWeek!;
-    final coverage = days > 0 ? _coverageAt(profile, days, library) : 0;
+    final r = days > 0
+        ? _analyzeAt(profile, days, requested, library)
+        : const [0, 0];
     return FrequencyPlan(
       daysPerWeek: days,
       minutesPerSession: requested,
       minSessionMinutes: minMinutes,
-      coveragePct: coverage,
+      coveragePct: r[0],
+      vsOptimalPct: r[1],
       minutesRaised: false,
       note: '按你指定的每周 $days 天安排。',
     );
@@ -146,19 +153,19 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
   final minutes = requested > minMinutes ? requested : minMinutes;
   final raised = minutes > requested;
 
-  final r = _fewestDaysHittingTarget(profile, minutes, library);
-  final days = r[0] as int;
-  final coverage = r[1] as int;
-  final hit = r[2] as bool;
+  final r = _pickDays(profile, minutes, library);
+  final days = r[0], coverage = r[1], vsOpt = r[2];
 
   final String note;
   if (raised) {
-    note = '${_goalCn[profile.goal] ?? profile.goal}每次至少练 $minMinutes 分钟才能保证每周训练量，'
+    note = '${_goalCn[profile.goal] ?? profile.goal}每次至少练 $minMinutes 分钟才能完成每周训练量，'
         '已按 $minMinutes 分钟安排（你填的是 $requested 分钟）。';
-  } else if (!hit) {
-    note = '即使每次 $minutes 分钟、每周 $days 天，周训练量也只到约 $coverage%。把每次时间再加长可完整兑现。';
+  } else if (coverage < coverageTarget) {
+    note = '每次 $minutes 分钟 / 每周 $days 天，训练量约 $coverage%（略欠最低有效量）。每次再加长一点可补上。';
+  } else if (vsOpt < optimalTarget) {
+    note = '每次 $minutes 分钟 / 每周 $days 天，训练量已完成（相当于最优的 $vsOpt%）。想冲最大增速：每次加约 15 分钟。';
   } else {
-    note = '按你每次 $minutes 分钟，安排每周 $days 天即可兑现目标训练量。';
+    note = '每次 $minutes 分钟 / 每周 $days 天，训练量到位（已接近最优）。';
   }
 
   return FrequencyPlan(
@@ -166,6 +173,7 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
     minutesPerSession: minutes,
     minSessionMinutes: minMinutes,
     coveragePct: coverage,
+    vsOptimalPct: vsOpt,
     minutesRaised: raised,
     note: note,
   );

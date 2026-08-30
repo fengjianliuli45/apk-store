@@ -101,6 +101,6 @@ void main() {
     });
     expect(plan.profile.daysPerWeek, isNotNull);
     expect(plan.frequencyPlan['days_per_week'], plan.profile.daysPerWeek);
-    expect((plan.toJson()['meta'] as Map)['version'], '1.4');
+    expect((plan.toJson()['meta'] as Map)['version'], '1.5');
   });
 }

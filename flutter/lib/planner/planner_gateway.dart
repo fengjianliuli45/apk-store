@@ -6,6 +6,7 @@ import 'models.dart';
 import 'profile_validator.dart';
 import 'progression_planner.dart';
 import 'recovery_planner.dart';
+import 'schedule_planner.dart';
 import 'session_builder.dart';
 import 'split_selector.dart';
 import 'supplement_advisor.dart';
@@ -46,12 +47,11 @@ class PlannerGateway {
     final (profile, freqPlan) = resolveFrequency(validated, _library);
     final tdee = calculateTdee(profile);
     final macros = allocateMacros(profile, tdee);
-    final split = selectSplit(profile);
+    final split = reschedule(profile, selectSplit(profile));
     final sessions = buildSessions(profile, split, _library);
     final progression = planProgression(profile);
     final mealPlan = distributeMeals(profile, macros);
     final supplements = adviseSupplements(profile, macros);
-    final volume = weeklyVolumeFor(profile.level, profile.goal);
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
     final recoveryDays = planRecovery(profile, split, volumeReport);
@@ -66,11 +66,15 @@ class PlannerGateway {
       progression: progression,
       mealPlan: mealPlan,
       supplements: supplements,
-      weeklyVolumePerGroup: volume,
+      weeklyVolumePerGroup:
+          Map<String, num>.from(volumeReport['target'] as Map),
       stageGoal: stageGoal,
+      weeklyVolumeOptimal:
+          Map<String, num>.from(volumeReport['optimal'] as Map),
       weeklyVolumeDelivered:
           Map<String, num>.from(volumeReport['delivered'] as Map),
       volumeCoveragePct: volumeReport['coverage_pct'] as int,
+      vsOptimalPct: volumeReport['vs_optimal_pct'] as int,
       volumeNotes: List<String>.from(volumeReport['notes'] as List),
       capacityRecommendation:
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),

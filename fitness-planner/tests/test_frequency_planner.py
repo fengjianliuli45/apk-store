@@ -49,7 +49,15 @@ class TestFrequencyPlanner(unittest.TestCase):
     def test_enough_time_hits_target(self):
         fp = plan_frequency(self._p(level="beginner", goal="hypertrophy", minutes_per_session=75), self.lib)
         self.assertFalse(fp.minutes_raised)
-        self.assertGreaterEqual(fp.coverage_pct, COVERAGE_TARGET)
+        self.assertGreaterEqual(fp.coverage_pct, COVERAGE_TARGET)  # 训练量完成（≥MEV）
+        self.assertLessEqual(fp.vs_optimal_pct, 100)
+
+    def test_more_time_raises_vs_optimal(self):
+        low = plan_frequency(self._p(level="advanced", goal="hypertrophy", minutes_per_session=45), self.lib)
+        high = plan_frequency(self._p(level="advanced", goal="hypertrophy", minutes_per_session=90), self.lib)
+        self.assertGreaterEqual(low.coverage_pct, 100)   # 两种都「完成」
+        self.assertGreaterEqual(high.coverage_pct, 100)
+        self.assertLessEqual(low.vs_optimal_pct, high.vs_optimal_pct)  # 但时间多的更接近最优
 
     def test_fewest_days_preference(self):
         """时间充足时，优先排更少的天数。"""
@@ -96,11 +104,11 @@ class TestPipeline(unittest.TestCase):
             "minutes_per_session": 60, "equipment": ["dumbbell", "bodyweight"],
         }
         plan = generate_plan(raw, self.lib)
-        self.assertEqual(plan["meta"]["version"], "1.4")
+        self.assertEqual(plan["meta"]["version"], "1.5")
         self.assertEqual(len(plan["training"]["schedule"]), 7)
         fp = plan["training"]["frequency_plan"]
         self.assertIsNotNone(fp)
-        self.assertIn(fp["days_per_week"], (3, 4))
+        self.assertEqual(fp["days_per_week"], 3)  # 新手锁 3 天
         self.assertEqual(plan["profile"]["days_per_week"], fp["days_per_week"])
 
     def test_generate_plan_with_explicit_days(self):

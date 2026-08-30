@@ -96,13 +96,17 @@ void main() {
     expect(cov(short), lessThanOrEqualTo(cov(long)));
   });
 
-  test('tight schedule surfaces a soft capacity recommendation', () {
+  test('adaptive target: coverage ~100 but below optimal on a tight schedule', () {
     final p = _profile(level: 'intermediate', days: 3, minutes: 60);
     final sp = selectSplit(p);
     final report = analyzeVolume(p, sp, buildSessions(p, sp, lib));
-    expect(report['coverage_pct'] as int, lessThan(90));
-    expect((report['recommendation'] as Map).isNotEmpty, isTrue);
-    expect((report['notes'] as List), isNotEmpty);
+    expect(report['coverage_pct'] as int, greaterThanOrEqualTo(95));
+    expect(report['vs_optimal_pct'] as int, lessThanOrEqualTo(report['coverage_pct'] as int));
+    final target = report['target'] as Map;
+    final optimal = report['optimal'] as Map;
+    target.forEach((m, t) {
+      expect((t as num) <= (optimal[m] as num), isTrue);
+    });
   });
 
   test('3-day intermediate now maps to full_body (higher frequency)', () {

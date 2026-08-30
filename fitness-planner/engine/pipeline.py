@@ -15,6 +15,7 @@ from .frequency_planner import resolve as resolve_frequency, FrequencyPlan
 from .tdee_calculator import calculate
 from .macro_allocator import allocate
 from .split_selector import select
+from .schedule_planner import reschedule
 from .session_builder import build_sessions
 from .progression_planner import plan as plan_progression
 from .meal_distributor import distribute
@@ -34,7 +35,7 @@ def generate_plan(raw: dict, library: Optional[ExerciseLibrary] = None) -> dict:
 
     tdee = calculate(profile)
     macros = allocate(profile, tdee)
-    split = select(profile)
+    split = reschedule(profile, select(profile))
     sessions = build_sessions(profile, split, library)
     progression = plan_progression(profile)
     meals = distribute(profile, macros)

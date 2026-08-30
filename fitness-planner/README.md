@@ -9,6 +9,25 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 自适应训练量 + 按恢复排日历（交付 2b）
+
+- **训练量目标自适应**（`analyze_volume`）：目标不再是固定表，而是「用户这个时长/天数
+  排得满的量」，夹在 [MEV, MAV] 之间。只要每个肌群 ≥ MEV（`MEV_WEEKLY`），计划就
+  科学完整（一定长肌肉）→ `volume_coverage_pct` 通常 100。另给 `vs_optimal_pct`
+  （相当于最优训练量 MAV 的百分比），是「还能更好，加时间往上推」的提示。
+- `_distribute_weekly`：周目标小的时候宁可少练几次、每次 ≥2 组（`5/3 → [3,2,0]`），
+  不排「1 组」的无效暴露。
+- **频率决策**改为优化 `vs_optimal_pct`：给定时长，挑「最少的、能到最优」的天数；
+  没有能到最优的选最接近的。`min_session_minutes` 仍以「每个肌群 ≥ MEV」为门槛
+  （= 保证训练量完成的最短课时）。
+- 新增 `engine/schedule_planner.py`：`split_selector` 只定训练日**类型序列**，
+  schedule_planner 按肌群恢复窗口（`RECOVERY_MIN_GAP`：大肌群绝不连续两天）
+  枚举所有摆法，挑间隔最均匀、周末最轻的。删掉 `full_body_4` 模板；新手锁 3 天。
+- `recovery_planner`：完全休息天数按水平（新手 2 / 中高级 1），但让位给减脂的有氧日
+  和增肌欠量的泵感课日。
+- 计划 JSON `1.4 → 1.5`：`training` 下 `weekly_volume_target`（自适应）/
+  `weekly_volume_optimal`（MAV）/ `vs_optimal_pct`；`frequency_plan` 增 `vs_optimal_pct`。
+
 ## 2026-08-30 休息日轻日 / 补练（交付 2）
 
 - 新增 `engine/recovery_planner.py`：把日程里的 rest 日填成有内容的「轻日」，
