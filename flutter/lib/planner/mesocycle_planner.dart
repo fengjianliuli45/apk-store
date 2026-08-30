@@ -14,8 +14,11 @@ WeekPlan _weekPlan(
   int rir,
   double vmult,
   List<SessionResult> sessions,
-  bool isDeload,
-) {
+  bool isDeload, {
+  bool dietBreak = false,
+  int dietKcalDelta = 0,
+  String note = '',
+}) {
   final overrides = <String, Map<String, int>>{};
   var total = 0;
   for (final s in sessions) {
@@ -37,6 +40,9 @@ WeekPlan _weekPlan(
     volumeMult: vmult,
     setOverrides: overrides,
     weekTotalSets: total,
+    dietBreak: dietBreak,
+    dietKcalDelta: dietKcalDelta,
+    note: note,
   );
 }
 
@@ -45,6 +51,7 @@ Mesocycle planMesocycle(
   List<SessionResult> sessions,
   ProgressionResult progression, {
   int currentWeek = 1,
+  int surplusKcal = 0,
 }) {
   final buildWeeks =
       progression.nextCheckWeek < 3 ? 3 : progression.nextCheckWeek;
@@ -57,7 +64,16 @@ Mesocycle planMesocycle(
   }
   final deloadMult =
       (progression.deloadVolumePct / 100) < 0.4 ? 0.4 : progression.deloadVolumePct / 100;
-  weeks.add(_weekPlan(buildWeeks + 1, 'deload', 3, deloadMult, sessions, true));
+  // 减脂：减载周热量回到维持量（MATADOR / Byrne 2018）。其它目标饮食不变。
+  final isDietBreak = profile.goal == 'fat_loss' && surplusKcal < 0;
+  weeks.add(_weekPlan(
+    buildWeeks + 1, 'deload', 3, deloadMult, sessions, true,
+    dietBreak: isDietBreak,
+    dietKcalDelta: isDietBreak ? -surplusKcal : 0,
+    note: isDietBreak
+        ? '减载周：训练量减半的同时，热量提到维持量（约 +${-surplusKcal} kcal），缓解代谢适应、保肌'
+        : '',
+  ));
   final cw = currentWeek < 1
       ? 1
       : (currentWeek > buildWeeks + 1 ? buildWeeks + 1 : currentWeek);

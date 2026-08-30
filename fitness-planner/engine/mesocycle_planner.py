@@ -35,6 +35,9 @@ class WeekPlan:
     volume_mult: float
     set_overrides: dict            # {day: {exercise_id: sets}}
     week_total_sets: int
+    diet_break: bool = False       # 该周热量回到维持量（配合减载清疲劳 + 缓解代谢适应）
+    diet_kcal_delta: int = 0       # 相对常规日的热量增量（fat_loss 减载周 = 取消缺口）
+    note: str = ""
 
     def to_dict(self) -> dict:
         return {
@@ -45,6 +48,9 @@ class WeekPlan:
             "volume_mult": round(self.volume_mult, 2),
             "set_overrides": self.set_overrides,
             "week_total_sets": self.week_total_sets,
+            "diet_break": self.diet_break,
+            "diet_kcal_delta": self.diet_kcal_delta,
+            "note": self.note,
         }
 
 
@@ -85,6 +91,7 @@ def plan_mesocycle(
     sessions: list[SessionResult],
     progression: ProgressionResult,
     current_week: int = 1,
+    surplus_kcal: int = 0,
 ) -> Mesocycle:
     build_weeks = max(3, progression.next_check_week)
     weeks: list[WeekPlan] = []
@@ -94,7 +101,14 @@ def plan_mesocycle(
         rir = _round(RIR_START - (RIR_START - RIR_END) * frac)
         weeks.append(_week_plan(w, "accumulation", rir, vmult, sessions, False))
     deload_mult = max(0.4, progression.deload_volume_pct / 100)
-    weeks.append(_week_plan(build_weeks + 1, "deload", 3, deload_mult, sessions, True))
+    deload = _week_plan(build_weeks + 1, "deload", 3, deload_mult, sessions, True)
+    # 减脂：减载周热量回到维持量（MATADOR / Byrne 2018：间歇性能量平衡期
+    # 减少代谢适应、更好保肌）。其它目标减载周饮食不变。
+    if profile.goal == "fat_loss" and surplus_kcal < 0:
+        deload.diet_break = True
+        deload.diet_kcal_delta = -surplus_kcal
+        deload.note = f"减载周：训练量减半的同时，热量提到维持量（约 +{-surplus_kcal} kcal），缓解代谢适应、保肌"
+    weeks.append(deload)
     return Mesocycle(
         length_weeks=build_weeks + 1,
         current_week=max(1, min(current_week, build_weeks + 1)),

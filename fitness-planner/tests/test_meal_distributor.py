@@ -52,9 +52,26 @@ class TestMealDistributor(unittest.TestCase):
             avg_protein_non = sum(m.protein_g for m in non_post) / len(non_post)
             self.assertGreater(post[0].protein_g, avg_protein_non)
 
-    def test_food_examples_present(self):
+    def test_meal_options_present(self):
         p, macros, mp = self._get_meal_plan()
-        self.assertGreater(len(mp.food_examples), 0)
+        for meal in mp.meals:
+            self.assertGreater(len(meal.options), 0)
+            self.assertTrue(meal.hand_portions)
+
+    def test_vegan_protein_bump_and_filter(self):
+        p, macros, mp = self._get_meal_plan(dietary_restrictions=["vegan"])
+        # 纯素蛋白 g/kg 应比默认高
+        self.assertGreater(macros.per_kg["protein"], 2.0)
+        # 方案里不应出现动物蛋白
+        joined = " ".join(i for m in mp.meals for o in m.options for i in o["items"])
+        for animal in ("鸡胸", "鸡腿", "瘦牛肉", "猪里脊", "龙利", "三文鱼", "虾仁",
+                       "全蛋", "蛋清", "希腊酸奶", "白干酪", "牛奶", "乳清"):
+            self.assertNotIn(animal, joined)
+
+    def test_fiber_and_water(self):
+        p, macros, mp = self._get_meal_plan()
+        self.assertGreater(mp.fiber_g, 0)
+        self.assertEqual(mp.water_ml_training, mp.water_ml_rest + 500)
 
     def test_total_kcal_positive(self):
         p, macros, mp = self._get_meal_plan()

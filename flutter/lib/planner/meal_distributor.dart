@@ -1,3 +1,4 @@
+import 'food_db.dart' as food_db;
 import 'models.dart';
 
 /// Port of fitness-planner's `meal_distributor.py`.
@@ -6,12 +7,14 @@ const mealNames5 = ['早餐', '午餐', '练后加餐', '晚餐', '晚加餐'];
 const mealNames3 = ['早餐', '午餐', '晚餐'];
 const mealNames6 = ['早餐', '早加餐', '午餐', '练后加餐', '晚餐', '晚加餐'];
 
-const foodExamples = {
-  '35g_protein': '鸡胸肉 150g ≈ 鸡蛋 5个 ≈ 蛋白粉 1.5勺 ≈ 豆腐 400g',
-  '40g_protein': '鸡胸肉 170g ≈ 鸡蛋 6个 ≈ 蛋白粉 1.7勺 ≈ 豆腐 450g',
-  '30g_protein': '鸡胸肉 130g ≈ 鸡蛋 4个 ≈ 蛋白粉 1.3勺 ≈ 豆腐 350g',
-  '20g_protein': '鸡胸肉 85g ≈ 鸡蛋 3个 ≈ 蛋白粉 0.9勺 ≈ 豆腐 230g',
-};
+/// 膳食纤维 14g / 1000 kcal（Academy of Nutrition and Dietetics）
+const fiberPer1000Kcal = 14;
+
+/// 饮水 33 ml/kg 基线，训练日额外 +500 ml
+const waterMlPerKg = 33;
+const waterMlTrainingBonus = 500;
+
+int _round(double x) => (x + 0.5).floor();
 
 MealPlan distributeMeals(UserProfile profile, MacroResult macros) {
   final n = profile.mealsPerDay;
@@ -40,15 +43,20 @@ MealPlan distributeMeals(UserProfile profile, MacroResult macros) {
     var protein = perMealProtein;
     var fat = perMealFat;
     var carbs = perMealCarbs;
-    var kcal = protein * 4 + fat * 9 + carbs * 4;
-
-    if (name == '练后加餐') {
+    final isPostWorkout = name == '练后加餐';
+    if (isPostWorkout) {
       protein *= 1.2;
       carbs *= 1.2;
-      kcal = protein * 4 + fat * 9 + carbs * 4;
     }
-
-    meals.add(Meal(name: name, kcal: kcal, proteinG: protein, fatG: fat, carbsG: carbs));
+    final kcal = protein * 4 + fat * 9 + carbs * 4;
+    meals.add(Meal(
+      name: name,
+      kcal: kcal,
+      proteinG: protein,
+      fatG: fat,
+      carbsG: carbs,
+      isPostWorkout: isPostWorkout,
+    ));
   }
 
   final totalPBefore = meals.fold<double>(0, (s, m) => s + m.proteinG);
@@ -69,10 +77,46 @@ MealPlan distributeMeals(UserProfile profile, MacroResult macros) {
     m.kcal = m.proteinG * 4 + m.fatG * 9 + m.carbsG * 4;
   }
 
+  // 具体吃法
+  final restrictions = food_db.normalizeRestrictions(profile.dietaryRestrictions);
+  final cooking = profile.cookingAccess;
+  for (var idx = 0; idx < meals.length; idx++) {
+    final m = meals[idx];
+    final target = {'protein_g': m.proteinG, 'carbs_g': m.carbsG, 'fat_g': m.fatG};
+    m.options = food_db.suggestMeal(target, restrictions, cooking, m.isPostWorkout,
+        rotate: idx);
+    m.handPortions = food_db.handPortionText(target);
+  }
+
   final totalP = meals.fold<double>(0, (s, m) => s + m.proteinG);
   final totalF = meals.fold<double>(0, (s, m) => s + m.fatG);
   final totalC = meals.fold<double>(0, (s, m) => s + m.carbsG);
   final totalK = meals.fold<double>(0, (s, m) => s + m.kcal);
+
+  final fiberG = _round(totalK / 1000 * fiberPer1000Kcal);
+  final waterRest = _round(profile.weightKg * waterMlPerKg);
+  final waterTraining = waterRest + waterMlTrainingBonus;
+
+  final dietNotes = <String>[...macros.notes];
+  // 每餐 0.4 g/kg 为最优刺激（Schoenfeld & Aragon 2018），0.3 g/kg 为触发阈值下限
+  final proteinFloor =
+      double.parse((0.3 * profile.weightKg).toStringAsFixed(1));
+  final proteinTarget =
+      double.parse((0.4 * profile.weightKg).toStringAsFixed(1));
+  final lowMeals = meals
+      .where((m) => m.proteinG + 1e-6 < proteinFloor)
+      .map((m) => m.name)
+      .toList();
+  if (lowMeals.isNotEmpty) {
+    dietNotes.add('每餐蛋白最优 ~${proteinTarget}g（0.4 g/kg），下限 ${proteinFloor}g（0.3 g/kg）；'
+        '偏低的餐：${lowMeals.join('、')}——把蛋白挪一些过去或加一份');
+  }
+  dietNotes.add('蛋白尽量均分到各餐，相邻 3–4 小时一次（MPS 窗口 ~2–3h）');
+  dietNotes.add('膳食纤维 ≥${fiberG}g/天：每餐一拳蔬菜 + 主食尽量选糙米/燕麦/薯类');
+  dietNotes.add('饮水：非训练日约 ${waterRest}ml，训练日约 ${waterTraining}ml');
+  if (restrictions.contains('vegan')) {
+    dietNotes.add('纯素需额外关注：维生素 B12（必补）、铁、Omega-3（藻油）——见补剂建议');
+  }
 
   return MealPlan(
     meals: meals,
@@ -80,6 +124,9 @@ MealPlan distributeMeals(UserProfile profile, MacroResult macros) {
     totalProteinG: totalP,
     totalFatG: totalF,
     totalCarbsG: totalC,
-    foodExamples: foodExamples,
+    fiberG: fiberG,
+    waterMlRest: waterRest,
+    waterMlTraining: waterTraining,
+    dietNotes: dietNotes,
   );
 }

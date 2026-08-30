@@ -1,8 +1,10 @@
+import 'food_db.dart';
 import 'models.dart';
 
 /// Port of fitness-planner's `supplement_advisor.py`.
 SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
   final results = <Supplement>[];
+  final restrictions = normalizeRestrictions(profile.dietaryRestrictions);
 
   final userSupps = profile.supplements.map((s) => s.toLowerCase()).toList();
   final explicitlyRejected = userSupps.any((s) => s.contains('no') || s.contains('不') || s.contains('拒绝'));
@@ -22,12 +24,14 @@ SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
   final dietProteinEst = profile.weightKg * 1.0;
   if (dailyProtein > dietProteinEst) {
     final deficit = double.parse((dailyProtein - dietProteinEst).toStringAsFixed(1));
+    final vegan = restrictions.contains('vegan');
     results.add(Supplement(
-      name: '乳清蛋白粉',
-      nameEn: 'Whey Protein',
+      name: vegan ? '大豆分离蛋白粉' : '乳清蛋白粉',
+      nameEn: vegan ? 'Soy Protein Isolate' : 'Whey Protein',
       dose: '补足差额约 ${deficit}g 蛋白',
       condition: '饮食蛋白不足时',
-      note: '优先从食物摄取，不足部分用蛋白粉补足。',
+      note: '优先从食物摄取，不足部分用蛋白粉补足。'
+          '${vegan ? '大豆分离蛋白亮氨酸接近乳清。' : ''}',
       pmid: '28698222',
     ));
   }
@@ -42,15 +46,29 @@ SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
     ));
   }
 
-  final restrictions = profile.dietaryRestrictions.map((r) => r.toLowerCase()).toList();
-  final isVegetarian = restrictions.any((r) => r.contains('veg') || r.contains('素'));
-  if (isVegetarian) {
+  if (restrictions.contains('vegetarian')) {
     results.add(Supplement(
       name: '鱼油 / 藻油',
       nameEn: 'Fish Oil / Algae Oil',
       dose: '1-2g EPA+DHA/日',
       condition: '素食且无鱼摄入',
-      note: '补充 Omega-3 脂肪酸，藻油为素食替代。',
+      note: '补充 Omega-3 脂肪酸，藻油为纯素替代。',
+    ));
+  }
+  if (restrictions.contains('vegan')) {
+    results.add(Supplement(
+      name: '维生素 B12',
+      nameEn: 'Vitamin B12 (cyanocobalamin)',
+      dose: '约 250 µg/日 或 2000 µg/周',
+      condition: '纯素（膳食几乎无 B12 来源，必补）',
+      note: '缺乏会致贫血与不可逆神经损伤，纯素人群务必规律补充。',
+    ));
+    results.add(Supplement(
+      name: '铁（按需）',
+      nameEn: 'Iron',
+      dose: '按血清铁蛋白结果补，不盲补',
+      condition: '纯素 + 化验提示缺铁',
+      note: '植物性非血红素铁吸收率低；搭配维C食物、避开浓茶咖啡。',
     ));
   }
 
