@@ -195,6 +195,10 @@ Map<String, dynamic> _nextRaw(Map plan, List<LoadChange> loadChanges,
   } else {
     raw['volume_cycle_offset'] = cur;
   }
+  // 动作轮换：只在「阶段达成 / 进入新周期」（up_one_step）时 +1
+  final prevEx = (prof['exercise_cycle_offset'] as num?)?.toInt() ?? 0;
+  raw['exercise_cycle_offset'] =
+      volumeChange == 'up_one_step' ? (prevEx + 1 > 12 ? 12 : prevEx + 1) : prevEx;
   raw.removeWhere((k, v) => v == null);
   return raw;
 }

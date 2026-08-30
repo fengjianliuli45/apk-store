@@ -154,6 +154,8 @@ List<SessionResult> buildSessions(
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
   final volume = weeklyVolumeFor(level, goal, profile.volumeCycleOffset);
+  final exerciseOffset =
+      profile.exerciseCycleOffset < 0 ? 0 : profile.exerciseCycleOffset;
   final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final prescribedRest = vars_['rest_sec'] as int;
@@ -193,12 +195,14 @@ List<SessionResult> buildSessions(
         targetMuscles.where((m) => secondary.contains(m)).toList();
 
     final sessionTargets = <String, int>{};
+    final sessionExposure = <String, int>{}; // 本周该肌群第几次练（0 起）
     for (final muscle in targetMuscles) {
       if (!volume.containsKey(muscle)) {
         sessionTargets[muscle] = _accessorySets[muscle] ?? 0;
         continue;
       }
       final k = exposure[muscle] ?? 0;
+      sessionExposure[muscle] = k;
       final seq = distribution[muscle] ?? const <int>[];
       var tgt = k < seq.length ? seq[k] : 0;
       if (secondary.contains(muscle) && tgt > _secondarySessionCap) {
@@ -257,7 +261,15 @@ List<SessionResult> buildSessions(
       if (want < 2) return 0;
       final p = pool(muscle);
       if (p.isEmpty) return 0;
-      final ex = p.first;
+      // 锚定动作（该肌群本节课第一个动作）永远取 p.first，保证双进阶 / 1RM 追踪；
+      // 之后的辅助动作按「跨中周期档位 + 本周该肌群第几次练」轮换到兄弟动作。
+      final Exercise ex;
+      if (deliveredSession.containsKey(muscle)) {
+        final rot = exerciseOffset + (sessionExposure[muscle] ?? 0);
+        ex = p[rot % p.length];
+      } else {
+        ex = p.first;
+      }
       final cost = _setSeconds(prescribedRest, ex.compound);
       final fitSets = (workBudgetSec - usedSec) ~/ cost;
       if (fitSets < 2) return 0;

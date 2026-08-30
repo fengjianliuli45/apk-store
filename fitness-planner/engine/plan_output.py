@@ -81,6 +81,7 @@ def generate_json(
             "target_weight_kg": profile.target_weight_kg,
             "volume_cycle_offset": getattr(profile, "volume_cycle_offset", 0),
             "kcal_adjust": getattr(profile, "kcal_adjust", 0),
+            "exercise_cycle_offset": getattr(profile, "exercise_cycle_offset", 0),
             "strength_baseline": getattr(profile, "strength_baseline", {}) or {},
             "one_rm_estimates": {b: {"kg": v, "name": BASELINE_CN.get(b, b)} for b, v in one_rm.items()},
             "warnings": profile.warnings,

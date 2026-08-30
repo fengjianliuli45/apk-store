@@ -189,6 +189,10 @@ def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str,
         raw["volume_cycle_offset"] = max(-2, int(prof.get("volume_cycle_offset", 0)) - 1)
     else:
         raw["volume_cycle_offset"] = int(prof.get("volume_cycle_offset", 0))
+    # 动作轮换：只在「阶段达成 / 进入新周期」（up_one_step）时 +1，
+    # 延长 / 减载重试保持同一批动作再冲一次
+    prev_ex = int(prof.get("exercise_cycle_offset", 0) or 0)
+    raw["exercise_cycle_offset"] = min(12, prev_ex + 1) if volume_change == "up_one_step" else prev_ex
     return {k: v for k, v in raw.items() if v is not None}
 
 
