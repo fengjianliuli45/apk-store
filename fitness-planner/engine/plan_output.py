@@ -52,9 +52,12 @@ def generate_json(
     from .session_builder import analyze_volume
     volume_report = analyze_volume(profile, split, sessions)
 
+    from .load_planner import build_one_rm_map, BASELINE_CN
+    one_rm = build_one_rm_map(getattr(profile, "strength_baseline", {}) or {})
+
     return {
         "meta": {
-            "version": "1.5",
+            "version": "1.6",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -71,6 +74,8 @@ def generate_json(
             "minutes_per_session": profile.minutes_per_session,
             "equipment": profile.equipment,
             "injuries": profile.injuries,
+            "strength_baseline": getattr(profile, "strength_baseline", {}) or {},
+            "one_rm_estimates": {b: {"kg": v, "name": BASELINE_CN.get(b, b)} for b, v in one_rm.items()},
             "warnings": profile.warnings,
             "notes": profile.notes,
         },

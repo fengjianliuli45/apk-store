@@ -66,7 +66,7 @@ UserProfile _withDays(UserProfile p, int days) => UserProfile(
       equipment: p.equipment, daysPerWeek: days, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -76,7 +76,7 @@ UserProfile _withMinutes(UserProfile p, int minutes) => UserProfile(
       equipment: p.equipment, daysPerWeek: p.daysPerWeek, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -195,7 +195,8 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
     mealsPerDay: profile.mealsPerDay, supplements: profile.supplements,
     targetWeightKg: profile.targetWeightKg, injuries: profile.injuries,
     dietaryRestrictions: profile.dietaryRestrictions,
-    cookingAccess: profile.cookingAccess, warnings: profile.warnings,
+    cookingAccess: profile.cookingAccess,
+    strengthBaseline: profile.strengthBaseline, warnings: profile.warnings,
     notes: notes,
   );
   return (resolved, fp);

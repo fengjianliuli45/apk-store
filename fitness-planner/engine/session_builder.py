@@ -19,6 +19,7 @@ from math import ceil, floor
 from .profile_validator import UserProfile
 from .split_selector import SplitResult
 from .exercise_library import ExerciseLibrary
+from .load_planner import build_one_rm_map, suggest_load
 
 
 def _round(x: float) -> int:
@@ -74,10 +75,10 @@ MAX_SETS_PER_MUSCLE_SESSION = {
 # ── 训练变量（按 goal） ────────────────────────────────────
 
 TRAINING_VARS = {
-    "hypertrophy":     {"load_pct": "65-80% 1RM", "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
-    "strength":        {"load_pct": "≥80% 1RM",   "reps": "3-6",  "sets_range": (3, 5), "rest_sec": 150, "rpe": 8.0, "tempo": "受控",   "rir": "1-2"},
-    "fat_loss":        {"load_pct": "60-75% 1RM", "reps": "10-15","sets_range": (3, 4), "rest_sec": 45,  "rpe": 7.0, "tempo": "3-1-2-0", "rir": "2-3"},
-    "recomposition":   {"load_pct": "65-80% 1RM", "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
+    "hypertrophy":     {"load_pct": "65-80% 1RM", "load_pct_mid": 0.72, "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
+    "strength":        {"load_pct": "≥80% 1RM",   "load_pct_mid": 0.85, "reps": "3-6",  "sets_range": (3, 5), "rest_sec": 150, "rpe": 8.0, "tempo": "受控",   "rir": "1-2"},
+    "fat_loss":        {"load_pct": "60-75% 1RM", "load_pct_mid": 0.68, "reps": "10-15","sets_range": (3, 4), "rest_sec": 45,  "rpe": 7.0, "tempo": "3-1-2-0", "rir": "2-3"},
+    "recomposition":   {"load_pct": "65-80% 1RM", "load_pct_mid": 0.72, "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
 }
 
 # ── 时间估算常量 ──────────────────────────────────────────
@@ -146,6 +147,7 @@ class ExerciseEntry:
     compound: bool = False
     form_cues: list[str] = field(default_factory=list)
     target_muscle: str = ""  # 这个动作是为哪个肌群配额排进来的（容量统计用）
+    load_kg: float | None = None  # 有起始 1RM 时算出的建议重量；否则 None（首周找）
 
     def to_dict(self) -> dict:
         return {
@@ -155,6 +157,7 @@ class ExerciseEntry:
             "sets": self.sets,
             "reps": self.reps,
             "load": self.load,
+            "load_kg": self.load_kg,
             "rest_sec": self.rest_sec,
             "rpe": self.rpe,
             "tempo": self.tempo,
@@ -238,6 +241,9 @@ def build_sessions(
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
     sets_range = vars_["sets_range"]
+    one_rm_map = build_one_rm_map(getattr(profile, "strength_baseline", {}) or {})
+    load_mid = vars_.get("load_pct_mid", 0.72)
+    load_label = vars_["load_pct"]
 
     total_budget_sec = max(15 * 60, profile.minutes_per_session * 60)
 
@@ -317,13 +323,15 @@ def build_sessions(
             sets = min(want, sets_range[1], fit_sets)
             if sets < 2:
                 return 0
+            load_text, load_kg = suggest_load(ex, one_rm_map, load_mid, load_label)
             session_exercises.append(ExerciseEntry(
                 name=ex.name,
                 name_en=ex.name_en,
                 exercise_id=ex.id,
                 sets=sets,
                 reps=vars_["reps"],
-                load=vars_["load_pct"],
+                load=load_text,
+                load_kg=load_kg,
                 rest_sec=vars_["rest_sec"],
                 rpe=vars_["rpe"],
                 tempo=vars_["tempo"],

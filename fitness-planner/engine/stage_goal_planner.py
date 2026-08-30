@@ -44,6 +44,7 @@ class StageGoal:
     outcome_targets: list[OutcomeTarget] = field(default_factory=list)
     completion_rule: str = ""
     unlock_reward: str = "pet_hatchling"
+    baseline_lifts: list[dict] = field(default_factory=list)   # 标准化测试动作 + 首周基线
 
     def to_dict(self) -> dict:
         return {
@@ -58,6 +59,7 @@ class StageGoal:
             "outcome_targets": [target.to_dict() for target in self.outcome_targets],
             "completion_rule": self.completion_rule,
             "unlock_reward": self.unlock_reward,
+            "baseline_lifts": self.baseline_lifts,
         }
 
 
@@ -103,6 +105,7 @@ def plan_stage_goal(
     weekly_sessions = sum(1 for session in sessions if session.type != "rest")
     planned_sessions = weekly_sessions * cycle_weeks
     required_sessions = ceil(planned_sessions * 0.8) if planned_sessions else 0
+    baseline_lifts = _baseline_lifts(profile, sessions)
 
     return StageGoal(
         stage_type="adaptation",
@@ -119,4 +122,33 @@ def plan_stage_goal(
             "百分比表现提升必须由两次可比较训练确认；"
             "存在未处理安全问题时不得自动达成"
         ),
+        baseline_lifts=baseline_lifts,
     )
+
+
+def _baseline_lifts(profile: UserProfile, sessions: list[SessionResult]) -> list[dict]:
+    """挑几个复合动作作为「标准化测试动作」，首周记录基线、后续对比。
+
+    优先用户填了起始重量的动作；否则用计划里每类模式的第一个复合动作。
+    """
+    from .load_planner import build_one_rm_map, BASELINE_CN, _basis_and_coef
+
+    one_rm = build_one_rm_map(getattr(profile, "strength_baseline", {}) or {})
+    seen: set[str] = set()
+    out: list[dict] = []
+    for s in sessions:
+        for ex in s.exercises:
+            if not ex.compound or ex.exercise_id in seen:
+                continue
+            seen.add(ex.exercise_id)
+            entry = {
+                "exercise_id": ex.exercise_id,
+                "name": ex.name,
+                "start_load_kg": ex.load_kg,
+                "record": "首周记录：相同负荷下的规范次数" if ex.load_kg
+                          else "首周记录：动作 + 完成的规范次数",
+            }
+            out.append(entry)
+            if len(out) >= 4:
+                return out
+    return out

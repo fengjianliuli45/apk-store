@@ -4,6 +4,7 @@ import 'macro_allocator.dart';
 import 'meal_distributor.dart';
 import 'models.dart';
 import 'profile_validator.dart';
+import 'load_planner.dart';
 import 'progression_planner.dart';
 import 'recovery_planner.dart';
 import 'schedule_planner.dart';
@@ -80,6 +81,10 @@ class PlannerGateway {
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
       frequencyPlan: freqPlan.toJson(),
       recoveryDays: recoveryDays,
+      oneRmEstimates: {
+        for (final e in buildOneRmMap(profile.strengthBaseline).entries)
+          e.key: {'kg': e.value, 'name': baselineCn[e.key] ?? e.key},
+      },
     );
   }
 }
