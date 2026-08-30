@@ -57,14 +57,36 @@ class TestExerciseLibrary(unittest.TestCase):
             self.assertTrue(all(eq in ["bodyweight"] for eq in ex.equipment_required))
 
     def test_injury_filter(self):
+        """硬禁的（过顶推举 / 直立划船）被剔除；软提示的（卧推）保留但排后。"""
         results = self.lib.query(
             exercise_type="push",
-            equipment=["barbell", "bench"],
+            equipment=["barbell", "bench", "dumbbell"],
             injuries=["shoulder_impingement"],
-            level="beginner",
+            level="intermediate",
         )
-        for ex in results:
-            self.assertNotIn("shoulder_impingement", ex.injury_contraindications)
+        ids = {ex.id for ex in results}
+        self.assertNotIn("overhead_press", ids)       # 硬禁
+        self.assertNotIn("upright_row", ids)          # 硬禁
+        self.assertNotIn("dips", ids)                 # 硬禁
+        self.assertIn("barbell_bench_press", ids)     # 软提示：保留（session_builder 排后）
+
+    def test_injury_normalization(self):
+        from engine.injury_planner import normalize_injuries
+        self.assertEqual(normalize_injuries(["左膝盖有点疼"]), {"knee"})
+        self.assertEqual(normalize_injuries(["lower back pain", "wrist"]), {"lower_back", "wrist"})
+        self.assertEqual(normalize_injuries(["跟腱炎"]), {"ankle"})
+        self.assertEqual(normalize_injuries(["随便写的"]), set())
+
+    def test_injury_substitutes_not_starves(self):
+        """膝伤：腿日仍有得练（换成髋主导 / 器械），不是整块删掉。"""
+        knee = self.lib.query(exercise_type="legs",
+                              equipment=["barbell", "dumbbell", "machine"],
+                              injuries=["knee"], level="intermediate")
+        self.assertGreater(len(knee), 3)
+        ids = {e.id for e in knee}
+        self.assertNotIn("walking_lunges", ids)
+        self.assertNotIn("single_leg_squat", ids)
+        self.assertTrue({"leg_press", "romanian_deadlift", "hip_thrust"} & ids)
 
     def test_level_filter(self):
         results = self.lib.query(

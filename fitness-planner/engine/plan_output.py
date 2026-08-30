@@ -46,6 +46,7 @@ def generate_json(
     frequency_plan=None,
     recovery_days=None,
     mesocycle=None,
+    library=None,
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
@@ -110,8 +111,50 @@ def generate_json(
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,
+            "injury_accommodations": _injury_block(profile, volume_report, sessions, library),
         },
         "stage_goal": plan_stage_goal(profile, progression, sessions).to_dict(),
+    }
+
+
+def _injury_block(profile, volume_report, sessions, library=None) -> dict:
+    """伤病适配说明 + 被挤掉的肌群 + 计划里需要「无痛幅度」做的动作。"""
+    from .injury_planner import normalize_injuries, injury_accommodations, is_cautioned
+    inj = normalize_injuries(getattr(profile, "injuries", []) or [])
+    if not inj:
+        return {"injuries": [], "notes": [], "under_covered_muscles": [],
+                "pain_free_range_exercises": []}
+
+    starved: list[str] = []
+    if library is not None:
+        delivered = volume_report.get("delivered", {})
+        target = volume_report.get("target", {})
+        equip = profile.equipment
+        for m, t in target.items():
+            if t < 2 or delivered.get(m, 0) > 0:
+                continue
+            healthy = library.query_by_muscle(m, equip, profile.level)
+            safe = library.query_by_muscle(m, equip, profile.level, profile.injuries)
+            if healthy and not safe:
+                starved.append(m)
+
+    caution: list[str] = []
+    if library is not None:
+        seen: set[str] = set()
+        for s in sessions:
+            for e in s.exercises:
+                if e.exercise_id in seen:
+                    continue
+                seen.add(e.exercise_id)
+                ex = library.get_by_id(e.exercise_id)
+                if ex and is_cautioned(ex, inj):
+                    caution.append(e.name)
+
+    return {
+        "injuries": sorted(inj),
+        "notes": injury_accommodations(inj),
+        "under_covered_muscles": sorted(starved),
+        "pain_free_range_exercises": caution,
     }
 
 

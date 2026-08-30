@@ -1,4 +1,5 @@
 import 'exercise_library.dart';
+import 'injury_planner.dart';
 import 'load_planner.dart';
 import 'models.dart';
 
@@ -239,25 +240,33 @@ List<SessionResult> buildSessions(
             e.equipmentRequired.first == 'bodyweight')
         ? 1
         : 0;
+    // 伤病"软提示"动作排到最后：有干净替代就不用它。
+    final inj = normalizeInjuries(profile.injuries);
+    int injCautioned(Exercise e) =>
+        (inj.isNotEmpty && isCautioned(e, inj)) ? 1 : 0;
     // Stable sort (Dart's List.sort is not stable — break ties by original
     // index to stay identical to Python's list.sort()).
     final indexed = exercises.indexed.toList()
       ..sort((a, b) {
         final aKey = (
+          injCautioned(a.$2),
           bwDemoted(a.$2),
           a.$2.compound ? 0 : 1,
           a.$2.skillLevel != 'beginner' ? 1 : 0
         );
         final bKey = (
+          injCautioned(b.$2),
           bwDemoted(b.$2),
           b.$2.compound ? 0 : 1,
           b.$2.skillLevel != 'beginner' ? 1 : 0
         );
         final c0 = aKey.$1.compareTo(bKey.$1);
         if (c0 != 0) return c0;
-        final c1 = aKey.$2.compareTo(bKey.$2);
+        final cB = aKey.$2.compareTo(bKey.$2);
+        if (cB != 0) return cB;
+        final c1 = aKey.$3.compareTo(bKey.$3);
         if (c1 != 0) return c1;
-        final c2 = aKey.$3.compareTo(bKey.$3);
+        final c2 = aKey.$4.compareTo(bKey.$4);
         if (c2 != 0) return c2;
         return a.$1.compareTo(b.$1);
       });

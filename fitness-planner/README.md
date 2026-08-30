@@ -4,6 +4,26 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 伤病处理（任务 P0 #3）
+
+原来：伤病词跟动作 `injury_contraindications` 做子串匹配，命中就把整个动作删掉——
+容易漏 / 误伤，还可能把整块肌肉练空。改成规范化 + 分级：
+
+- 新增 `engine/injury_planner.py` + `.dart`：
+  - `normalize_injuries()`：中英自由文本（"左膝盖疼" / "shoulder impingement" / "跟腱炎"）
+    → 规范键（knee / shoulder / lower_back / wrist / elbow / hip / ankle / neck）
+  - `INJURY_RULES`：每个伤病一张「硬禁动作模式 / 具体动作」表 + 一句给用户的说明。
+    循证（PMC12591260、训练修改指南）：肩→不做过顶推举 / 直立划船 / 侧平举过肩 / 双杠；
+    下背→不做大重量轴向负荷和负重脊柱屈曲 / 旋转；膝→不做弓步 / 跳跃 / 单腿蹲、深蹲控幅度；等。
+  - `is_contraindicated`（硬禁，从选池剔除）vs `is_cautioned`（动作自带禁忌 → 保留但
+    `session_builder` 排到最后，有干净替代就不用它）。
+- `exercise_library.query` / `query_by_muscle`：按上面规则过滤（不再子串匹配）。
+- `plan_output.training.injury_accommodations`：`{injuries, notes, under_covered_muscles
+  （本来能练、被伤病挤空的肌群）, pain_free_range_exercises（计划里要"无痛幅度"做的动作）}`。
+- 效果：肩伤用户仍拿到哑铃推举 / 卧推（标注无痛幅度）+ 面拉，不做 OHP；膝伤用户腿日换成
+  腿举 + 髋主导，不做弓步。计划不被删空。
+- Python 183 / Flutter 82；demo + 3 种伤病计划 Python↔Dart 逐字一致。
+
 ## 2026-08-30 徒手力量估算（补 P0 #2 的坑）
 
 用户提议：徒手动作按「一次做多少个」推算力量。查了成熟做法（自重动作举起体重的固定

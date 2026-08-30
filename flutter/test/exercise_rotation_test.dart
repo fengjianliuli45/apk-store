@@ -218,4 +218,31 @@ void main() {
     File('${Directory.systemTemp.path}/dart_bwrep_review.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(review));
   });
+
+  test('injury accommodation: plan stays functional + parity dump', () async {
+    final gw = await PlannerGateway.instance();
+    for (final entry in {
+      'knee': ['knee'],
+      'shoulder': ['shoulder impingement'],
+      'lowback_wrist': ['腰', '手腕'],
+    }.entries) {
+      final plan = gw.generate({
+        'gender': 'M', 'age': 30, 'height_cm': 178.0, 'weight_kg': 80.0,
+        'level': 'intermediate', 'goal': 'hypertrophy', 'minutes_per_session': 75,
+        'equipment': const ['barbell', 'dumbbell', 'cable', 'machine'],
+        'injuries': entry.value,
+      }).toJson();
+      (plan['meta'] as Map)['generated_at'] = 'X';
+      final ib = (plan['training'] as Map)['injury_accommodations'] as Map;
+      expect((ib['injuries'] as List), isNotEmpty);
+      // 计划仍然有内容（没被伤病删空）
+      final total = [
+        for (final s in (plan['training'] as Map)['schedule'] as List)
+          if ((s as Map)['type'] != 'rest') (s['exercises'] as List).length
+      ].fold<int>(0, (a, b) => a + b);
+      expect(total, greaterThan(6));
+      File('${Directory.systemTemp.path}/dart_injury_${entry.key}.json')
+          .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(plan));
+    }
+  });
 }

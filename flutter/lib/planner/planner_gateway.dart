@@ -1,5 +1,6 @@
 import 'exercise_library.dart';
 import 'frequency_planner.dart';
+import 'injury_planner.dart';
 import 'macro_allocator.dart';
 import 'meal_distributor.dart';
 import 'check_in_engine.dart';
@@ -77,6 +78,7 @@ class PlannerGateway {
     final recoveryDays = planRecovery(profile, split, volumeReport);
     final mesocycle = planMesocycle(profile, sessions, progression,
         surplusKcal: macros.surplusKcal);
+    final injuryAcc = injuryBlock(profile, volumeReport, sessions, _library);
 
     return GeneratedPlan(
       generatedAt: DateTime.now().toUtc(),
@@ -107,6 +109,7 @@ class PlannerGateway {
         for (final e in buildOneRmMap(profile.strengthBaseline).entries)
           e.key: {'kg': e.value, 'name': baselineCn[e.key] ?? e.key},
       },
+      injuryAccommodations: injuryAcc,
     );
   }
 }
