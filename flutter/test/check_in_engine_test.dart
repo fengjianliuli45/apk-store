@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rest_pod_hud/planner/exercise_library.dart';
 import 'package:rest_pod_hud/planner/planner_gateway.dart';
 import 'package:rest_pod_hud/planner/progress_tracker.dart';
 
@@ -8,9 +9,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late PlannerGateway gateway;
+  late ExerciseLibrary lib;
   late Map<String, dynamic> plan;
   setUpAll(() async {
     gateway = await PlannerGateway.instance();
+    lib = await ExerciseLibrary.load();
     plan = gateway.generate({
       'gender': 'M', 'age': 28, 'height_cm': 178.0, 'weight_kg': 80.0,
       'level': 'intermediate', 'goal': 'hypertrophy', 'minutes_per_session': 75,
@@ -72,7 +75,7 @@ void main() {
   });
 
   test('evidence aggregation from a good 4-week log', () {
-    final ev = aggregateEvidence(plan, log(4, 0.06), const []);
+    final ev = aggregateEvidence(plan, log(4, 0.06), const [], lib);
     expect(ev.completedSessions, greaterThanOrEqualTo(12));
     expect(ev.activeWeeks, greaterThanOrEqualTo(3));
     expect(ev.comparableMeasurements, greaterThanOrEqualTo(2));

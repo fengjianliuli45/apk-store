@@ -20,6 +20,16 @@ from .response_profiler import ResponseObservation
 
 _RIR_TRUSTWORTHY = 3   # RIR > 3 的组离力竭太远，不能用来估 1RM
 
+_LIB = None
+
+
+def _lib():
+    global _LIB
+    if _LIB is None:
+        from .exercise_library import ExerciseLibrary
+        _LIB = ExerciseLibrary()
+    return _LIB
+
 
 def epley_e1rm(weight_kg: float, reps: int, rir: int | None) -> float | None:
     """Epley + RIR 修正。RIR 缺失按 0（练到力竭）；RIR > 3 视为不可信，返回 None。"""
@@ -55,8 +65,11 @@ def _baseline_ids(plan: dict) -> list[str]:
 
 def _lift_series(plan: dict, sessions: list[dict]) -> dict[str, list[dict]]:
     """每个基准动作按时间排的 [{date, best_e1rm, best_reps_at_load, top_load, all_top_range, all_below_bottom}]。"""
+    from .load_planner import bodyweight_e1rm
+
     reps_range = _plan_reps_range(plan)
     wanted = set(_baseline_ids(plan))
+    body_kg = float((plan.get("profile") or {}).get("weight_kg") or 0)
     series: dict[str, list[dict]] = {i: [] for i in wanted}
     for sess in sorted(sessions, key=lambda s: s.get("date", "")):
         if not _is_completed(sess):
@@ -72,6 +85,18 @@ def _lift_series(plan: dict, sessions: list[dict]) -> dict[str, list[dict]]:
                 if s.get("weight_kg") and s.get("reps")
             ]
             e1rms = [v for v in e1rms if v is not None]
+            # 徒手动作（没填重量）：按体重占比估等效 e1RM
+            if not e1rms:
+                ex_obj = _lib().get_by_id(eid)
+                if ex_obj is not None:
+                    for s in sets:
+                        if s.get("weight_kg") or not s.get("reps"):
+                            continue
+                        rir = s.get("rir")
+                        eff = s["reps"] + (rir if rir is not None and rir <= _RIR_TRUSTWORTHY else 0)
+                        v = bodyweight_e1rm(body_kg, ex_obj, eff)
+                        if v is not None:
+                            e1rms.append(v)
             loads = [s["weight_kg"] for s in sets if s.get("weight_kg")]
             top_load = max(loads) if loads else None
             lo, hi = reps_range.get(eid, (6, 12))

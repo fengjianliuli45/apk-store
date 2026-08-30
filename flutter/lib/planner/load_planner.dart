@@ -50,9 +50,47 @@ const _noLoadPatterns = {
   'core', 'trunk_flexion', 'trunk_rotation', 'anti_extension',
 };
 
+/// 自重动作举起的「体重占比」——研究实测（JSCR / Suprak 2011 PMID 20179649；ExRx）。
+const _bodymassFraction = <String, double>{
+  'push_up': 0.64, 'wide_push_up': 0.64, 'close_grip_push_up': 0.64,
+  'diamond_push_up': 0.64, 'incline_push_up': 0.45, 'decline_push_up': 0.75,
+  'archer_push_up': 0.80, 'knee_push_up': 0.49, 'bench_dips': 0.40,
+  'pike_push_up': 0.60, 'elevated_pike_push_up': 0.70, 'handstand_push_up': 1.0,
+  'pull_up': 1.0, 'chin_up': 1.0, 'assisted_pull_up': 0.55,
+  'inverted_row': 0.60, 'feet_elevated_inverted_row': 0.75,
+  'bodyweight_squat': 0.68, 'split_squat': 0.85, 'reverse_lunge': 0.85,
+  'lunges': 0.85, 'step_up': 0.85, 'sissy_squat': 0.75, 'single_leg_squat': 1.0,
+  'single_leg_rdl_bw': 0.55, 'glute_bridge': 0.40, 'single_leg_glute_bridge': 0.55,
+  'bodyweight_hip_thrust': 0.55, 'single_leg_hip_thrust': 0.75, 'frog_pump': 0.35,
+  'sliding_leg_curl': 0.50, 'nordic_curl': 0.65,
+  'bodyweight_calf_raise': 0.95, 'single_leg_calf_raise': 1.0,
+};
+
+const _bwPatternFraction = <String, double>{
+  'horizontal_push': 0.60, 'vertical_push': 0.60,
+  'vertical_pull': 0.95, 'horizontal_pull': 0.60,
+  'squat': 0.70, 'hip_hinge': 0.55, 'hip_extension': 0.45,
+  'knee_flexion': 0.50, 'calf_raise': 0.90,
+};
+
+const _bwRepCap = 20;
+
 double estimate1rm(double weightKg, int reps) {
   final r = reps < 1 ? 1 : (reps > 12 ? 12 : reps);
   return (weightKg * (1 + r / 30) * 10 + 0.5).floor() / 10;
+}
+
+/// 徒手动作：体重 × 体重占比 × Epley → 等效负荷 e1RM（kg）。占比查不到 → null。
+double? bodyweightE1rm(double bodyweightKg, Exercise ex, int reps) {
+  var frac = _bodymassFraction[ex.id];
+  if (frac == null &&
+      ex.equipmentRequired.length == 1 &&
+      ex.equipmentRequired.first == 'bodyweight') {
+    frac = _bwPatternFraction[ex.movementPattern];
+  }
+  if (frac == null || frac == 0 || bodyweightKg == 0 || reps == 0) return null;
+  final r = reps < 1 ? 1 : (reps > _bwRepCap ? _bwRepCap : reps);
+  return (bodyweightKg * frac * (1 + r / 30) * 10 + 0.5).floor() / 10;
 }
 
 Map<String, double> buildOneRmMap(Map<String, dynamic> strengthBaseline) {

@@ -1,3 +1,5 @@
+import 'exercise_library.dart';
+import 'load_planner.dart' show bodyweightE1rm;
 import 'stage_assessor.dart';
 import 'response_profiler.dart';
 
@@ -66,9 +68,11 @@ Map<String, (int, int)> _planRepsRange(Map plan) {
 }
 
 Map<String, List<Map<String, dynamic>>> _liftSeries(
-    Map plan, List<Map<String, dynamic>> sessions) {
+    Map plan, List<Map<String, dynamic>> sessions, ExerciseLibrary library) {
   final repsRange = _planRepsRange(plan);
   final wanted = _baselineIds(plan).toSet();
+  final bodyKg =
+      ((plan['profile'] as Map?)?['weight_kg'] as num?)?.toDouble() ?? 0;
   final series = <String, List<Map<String, dynamic>>>{for (final i in wanted) i: []};
   final ordered = [...sessions]
     ..sort((a, b) => (a['date'] as String).compareTo(b['date'] as String));
@@ -90,6 +94,22 @@ Map<String, List<Map<String, dynamic>>> _liftSeries(
         if (w != null && reps != null) {
           final v = epleyE1rm(w, reps, rir);
           if (v != null) e1rms.add(v);
+        }
+      }
+      // 徒手动作（没填重量）：按体重占比估等效 e1RM
+      if (e1rms.isEmpty) {
+        final exObj = library.getById(eid);
+        if (exObj != null) {
+          for (final s in sets) {
+            if ((s['weight_kg'] as num?) != null) continue;
+            final reps = (s['reps'] as num?)?.toInt();
+            if (reps == null) continue;
+            final rir = (s['rir'] as num?)?.toInt();
+            final eff =
+                reps + (rir != null && rir <= _rirTrustworthy ? rir : 0);
+            final v = bodyweightE1rm(bodyKg, exObj, eff);
+            if (v != null) e1rms.add(v);
+          }
         }
       }
       final topLoad = loads.isEmpty ? null : loads.reduce((a, b) => a > b ? a : b);
@@ -249,6 +269,7 @@ StageEvidence aggregateEvidence(
   Map plan,
   List<Map<String, dynamic>> workoutLog,
   List<Map<String, dynamic>> bodyLog,
+  ExerciseLibrary library,
 ) {
   final goal = (plan['profile'] as Map?)?['goal'] as String? ?? 'hypertrophy';
   final completed = workoutLog.where(_isCompleted).toList();
@@ -256,7 +277,7 @@ StageEvidence aggregateEvidence(
     for (final s in completed)
       if (s['date'] != null) _isoWeek(s['date'] as String),
   }.length;
-  final series = _liftSeries(plan, workoutLog);
+  final series = _liftSeries(plan, workoutLog, library);
   final comparable = series.values
       .map((v) => v.where((e) => e['best_e1rm'] != null).length)
       .fold(0, (a, b) => a > b ? a : b);
@@ -280,13 +301,14 @@ ResponseObservation aggregateObservation(
   List<Map<String, dynamic>> workoutLog,
   List<Map<String, dynamic>> bodyLog,
   int completedCycles,
+  ExerciseLibrary library,
 ) {
   final goal = (plan['profile'] as Map?)?['goal'] as String? ?? 'hypertrophy';
   final planned =
       ((plan['stage_goal'] as Map?)?['planned_sessions'] as num?)?.toInt() ?? 1;
   final completed = workoutLog.where(_isCompleted).length;
   final adherence = double.parse((completed / planned * 100).toStringAsFixed(1));
-  final series = _liftSeries(plan, workoutLog);
+  final series = _liftSeries(plan, workoutLog, library);
   final (perfPct, _) = _performancePct(series);
   final (_, weightPct, waistPct) = _bodyTrend(bodyLog, goal);
   final rirGaps = [
@@ -323,8 +345,9 @@ int _trailingTrue(List<Map<String, dynamic>> entries, String key) {
 Map<String, Map<String, dynamic>> perExerciseProgress(
   Map plan,
   List<Map<String, dynamic>> workoutLog,
+  ExerciseLibrary library,
 ) {
-  final series = _liftSeries(plan, workoutLog);
+  final series = _liftSeries(plan, workoutLog, library);
   final out = <String, Map<String, dynamic>>{};
   series.forEach((eid, entries) {
     if (entries.isEmpty) return;

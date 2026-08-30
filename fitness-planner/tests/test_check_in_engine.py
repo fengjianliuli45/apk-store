@@ -173,6 +173,41 @@ class TestClosedLoop(unittest.TestCase):
                      if s["type"] != "rest"][0]["exercises"][0]["exercise_id"]
         self.assertNotEqual(old_first, new_first)
 
+    def test_bodyweight_rep_progress_counts_as_advance(self):
+        """徒手用户次数逐周涨 → 阶段评估看到 e1RM 提升 → advance（不是减载重试）。"""
+        import datetime
+        from engine.load_planner import bodyweight_e1rm
+        from engine.exercise_library import ExerciseLibrary
+        lib = ExerciseLibrary()
+        # 70kg 做 15 个标准俯卧撑 ≈ 67kg 等效卧推 e1RM
+        v = bodyweight_e1rm(70.0, lib.get_by_id("push_up"), 15)
+        self.assertIsNotNone(v)
+        self.assertGreater(v, 50)
+
+        p = generate_plan({
+            "gender": "M", "age": 25, "height_cm": 175.0, "weight_kg": 70.0,
+            "level": "beginner", "goal": "hypertrophy", "minutes_per_session": 60,
+            "equipment": ["bodyweight", "band", "pull_up_bar"],
+        })
+        sched = [s for s in p["training"]["schedule"] if s["type"] != "rest"]
+        log = []
+        d = datetime.date(2026, 9, 1)
+        for w in range(4):
+            for s in sched:
+                reps = 8 + w * 2   # 8 → 14
+                log.append({
+                    "date": str(d), "plan_day": 1, "session_type": s["type"],
+                    "planned_sets": 12, "aborted": False,
+                    "exercises": [
+                        {"exercise_id": e["exercise_id"], "planned_sets": e["sets"],
+                         "sets": [{"reps": reps, "rir": 2} for _ in range(e["sets"])]}
+                        for e in s["exercises"]
+                    ],
+                })
+                d += datetime.timedelta(days=2)
+        out = run_check_in(p, log, [], 0)
+        self.assertEqual(out["review"]["verdict"], "advance")
+
     def test_bodyweight_regress_below_bottom(self):
         from engine.check_in_engine import _bodyweight_changes
         from engine.exercise_library import ExerciseLibrary
