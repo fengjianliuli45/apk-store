@@ -54,7 +54,7 @@ class PlannerGateway {
     int completedCycles = 0,
   }) {
     final review = reviewCycle(planJson, workoutLog,
-        bodyLog: bodyLog, completedCycles: completedCycles);
+        bodyLog: bodyLog, completedCycles: completedCycles, library: _library);
     Map<String, dynamic>? nextPlan;
     if (review.verdict != 'address_safety' && review.nextRaw.isNotEmpty) {
       nextPlan = generate(review.nextRaw).toJson();

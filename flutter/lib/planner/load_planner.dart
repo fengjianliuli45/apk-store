@@ -94,6 +94,10 @@ String _fmt(double v) =>
       ex.equipmentRequired.first == 'bodyweight') {
     return ('自重（按次数 / 难度递进）', 0);
   }
+  if (ex.equipmentRequired.length == 1 &&
+      ex.equipmentRequired.first == 'band') {
+    return ('弹力带 · 选阻力做到目标次数、末组留 1-2 次；变强了换更粗的带或缩短带长', 0);
+  }
   final (basis, coef) = _basisAndCoef(ex);
   if (basis == null || coef <= 0) {
     return ('首周按 RPE 找重量（目标 $loadPctLabel）', 0);

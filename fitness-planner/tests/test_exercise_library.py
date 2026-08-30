@@ -117,9 +117,9 @@ class TestExerciseLibrary(unittest.TestCase):
         self.assertNotIn("pull_up_bar", _expand_equipment(["dumbbell"]))
 
     def test_progression_rank_parsed(self):
-        push = self.lib.get_by_id("push_up")
+        plank = self.lib.get_by_id("plank")
         archer = self.lib.get_by_id("archer_push_up")
-        self.assertIsNone(push.progression_rank)   # 老数据没这字段
+        self.assertIsNone(plank.progression_rank)   # 非阶梯动作无此字段
         self.assertEqual(archer.progression_rank, 6)
 
 

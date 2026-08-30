@@ -28,7 +28,15 @@ OPTIONAL_WITH_DEFAULT = {
     "volume_cycle_offset": 0,    # check-in 产出：+1 往 MRV 推一档，-1 下调
     "kcal_adjust": 0,            # check-in 产出：按体重趋势累计微调热量（钳在 ±500）
     "exercise_cycle_offset": 0,  # check-in 产出：阶段达成后 +1，辅助动作轮换到兄弟动作
+    "bodyweight_progress": {},    # check-in 产出：{movement_pattern: 净进阶档数}，徒手动作换更难/更易变式
 }
+
+VALID_MOVEMENT_PATTERNS = (
+    "horizontal_push", "vertical_push", "horizontal_pull", "vertical_pull",
+    "squat", "hip_hinge", "hip_extension", "knee_flexion", "calf_raise",
+    "elbow_flexion", "elbow_extension", "trunk_flexion", "trunk_rotation",
+    "anti_extension", "core",
+)
 
 TRACKING_ONLY = (
     "arm_cm", "waist_cm", "chest_cm", "fitness_test_data",
@@ -64,6 +72,7 @@ class UserProfile:
     volume_cycle_offset: int = 0
     kcal_adjust: int = 0
     exercise_cycle_offset: int = 0
+    bodyweight_progress: dict = field(default_factory=dict)
     # 校验时生成的元信息
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -258,6 +267,11 @@ def validate(raw: dict) -> UserProfile:
         volume_cycle_offset=int(raw.get("volume_cycle_offset", 0) or 0),
         kcal_adjust=max(-500, min(500, int(raw.get("kcal_adjust", 0) or 0))),
         exercise_cycle_offset=max(0, min(12, int(raw.get("exercise_cycle_offset", 0) or 0))),
+        bodyweight_progress={
+            k: max(-3, min(6, int(v)))
+            for k, v in (raw.get("bodyweight_progress") or {}).items()
+            if k in VALID_MOVEMENT_PATTERNS and isinstance(v, (int, float))
+        },
         warnings=warnings,
         notes=notes,
     )

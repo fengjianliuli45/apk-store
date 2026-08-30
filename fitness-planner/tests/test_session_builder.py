@@ -226,6 +226,31 @@ class TestSessionBuilder(unittest.TestCase):
         self.assertNotIn("push_up", bw_only)
         self.assertNotIn("bodyweight_squat", bw_only)
 
+    def test_bodyweight_progression_swaps_variation(self):
+        """挣得 horizontal_push +2 档 → 俯卧撑换成钻石俯卧撑那一级。"""
+        p0 = self._profile(level="beginner", days_per_week=3, minutes_per_session=60,
+                           equipment=["bodyweight", "band", "pull_up_bar"])
+        p2 = self._profile(level="beginner", days_per_week=3, minutes_per_session=60,
+                           equipment=["bodyweight", "band", "pull_up_bar"],
+                           bodyweight_progress={"horizontal_push": 2})
+        first0 = build_sessions(p0, select(p0), self.lib)[0].exercises[0].exercise_id
+        first2 = build_sessions(p2, select(p2), self.lib)[0].exercises[0].exercise_id
+        self.assertEqual(first0, "push_up")
+        self.assertNotEqual(first2, "push_up")
+        # 换到的动作 progression_rank 应更高
+        self.assertGreater(self.lib.get_by_id(first2).progression_rank,
+                           self.lib.get_by_id("push_up").progression_rank)
+
+    def test_bodyweight_load_text_names_next_rung(self):
+        p = self._profile(level="beginner", days_per_week=3, minutes_per_session=60,
+                          equipment=["bodyweight", "band", "pull_up_bar"])
+        for s in build_sessions(p, select(p), self.lib):
+            for e in s.exercises:
+                ex = self.lib.get_by_id(e.exercise_id)
+                if ex and ex.equipment_required == ["bodyweight"] and ex.progression_rank:
+                    self.assertIn("自重", e.load)  # 徒手动作有进阶提示文案
+                    break
+
     def test_home_user_gets_full_plan(self):
         """纯自重 + 弹力带 + 单杠 的用户能拿到覆盖每个肌群的计划。"""
         p = self._profile(level="beginner", days_per_week=None,

@@ -161,6 +161,7 @@ List<SessionResult> buildSessions(
   final volume = weeklyVolumeFor(level, goal, profile.volumeCycleOffset);
   final exerciseOffset =
       profile.exerciseCycleOffset < 0 ? 0 : profile.exerciseCycleOffset;
+  final bwProgress = profile.bodyweightProgress;
   final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final prescribedRest = vars_['rest_sec'] as int;
@@ -268,6 +269,49 @@ List<SessionResult> buildSessions(
     var usedSec = 0;
     final deliveredSession = <String, int>{};
 
+    // 徒手进阶：同 movement_pattern 的自重变式按 progressionRank 排成阶梯（稳定排序）
+    List<Exercise> bwLadder(String pattern) {
+      final rungs = exercises.indexed
+          .where((e) =>
+              e.$2.equipmentRequired.length == 1 &&
+              e.$2.equipmentRequired.first == 'bodyweight' &&
+              e.$2.movementPattern == pattern &&
+              e.$2.progressionRank != null)
+          .toList()
+        ..sort((a, b) {
+          final c = a.$2.progressionRank!.compareTo(b.$2.progressionRank!);
+          return c != 0 ? c : a.$1.compareTo(b.$1);
+        });
+      return rungs.map((e) => e.$2).toList();
+    }
+
+    (Exercise, String) bwPick(Exercise ex, Set<String> used) {
+      if (!(ex.equipmentRequired.length == 1 &&
+              ex.equipmentRequired.first == 'bodyweight') ||
+          ex.progressionRank == null) {
+        return (ex, '');
+      }
+      final step = bwProgress[ex.movementPattern] ?? 0;
+      final ladder = bwLadder(ex.movementPattern);
+      if (ladder.isEmpty) return (ex, '');
+      final target = ex.progressionRank! + step;
+      final avail =
+          ladder.where((e) => !used.contains(e.id) || e.id == ex.id).toList();
+      final pickFrom = avail.isEmpty ? ladder : avail;
+      final chosen = pickFrom.reduce((a, b) {
+        final da = ((a.progressionRank! - target).abs(), a.progressionRank!);
+        final db = ((b.progressionRank! - target).abs(), b.progressionRank!);
+        if (da.$1 != db.$1) return da.$1 < db.$1 ? a : b;
+        return da.$2 <= db.$2 ? a : b;
+      });
+      final harder =
+          ladder.where((e) => e.progressionRank! > chosen.progressionRank!).toList();
+      final hint = harder.isNotEmpty
+          ? '做满次数上限×全组且有余力 → 进阶「${harder.first.name}」'
+          : '已是最难变式，加次数 / 放慢离心';
+      return (chosen, hint);
+    }
+
     List<Exercise> pool(String muscle) {
       var p = exercises
           .where((e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id))
@@ -286,13 +330,16 @@ List<SessionResult> buildSessions(
       if (p.isEmpty) return 0;
       // 锚定动作（该肌群本节课第一个动作）永远取 p.first，保证双进阶 / 1RM 追踪；
       // 之后的辅助动作按「跨中周期档位 + 本周该肌群第几次练」轮换到兄弟动作。
-      final Exercise ex;
+      Exercise ex;
       if (deliveredSession.containsKey(muscle)) {
         final rot = exerciseOffset + (sessionExposure[muscle] ?? 0);
         ex = p[rot % p.length];
       } else {
         ex = p.first;
       }
+      // 徒手动作：按已挣得的进阶档换成对应难度的变式
+      final (bwEx, bwHint) = bwPick(ex, usedIds);
+      ex = bwEx;
       final cost = _setSeconds(prescribedRest, ex.compound);
       final fitSets = (workBudgetSec - usedSec) ~/ cost;
       if (fitSets < 2) return 0;
@@ -300,8 +347,13 @@ List<SessionResult> buildSessions(
       if (sets > setsRange[1]) sets = setsRange[1];
       if (sets > fitSets) sets = fitSets;
       if (sets < 2) return 0;
-      final (loadText, loadKg) =
+      var (loadText, loadKg) =
           suggestLoad(ex, oneRmMap, loadMid, loadLabel);
+      if (bwHint.isNotEmpty &&
+          ex.equipmentRequired.length == 1 &&
+          ex.equipmentRequired.first == 'bodyweight') {
+        loadText = '自重 · $bwHint';
+      }
       sessionExercises.add(ExerciseEntry(
         name: ex.name,
         nameEn: ex.nameEn,

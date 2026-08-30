@@ -145,6 +145,11 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
         ((raw['kcal_adjust'] as num?)?.toInt() ?? 0).clamp(-500, 500),
     exerciseCycleOffset:
         ((raw['exercise_cycle_offset'] as num?)?.toInt() ?? 0).clamp(0, 12),
+    bodyweightProgress: {
+      for (final e in (raw['bodyweight_progress'] as Map? ?? const {}).entries)
+        if (validMovementPatterns.contains(e.key) && e.value is num)
+          e.key as String: (e.value as num).toInt().clamp(-3, 6),
+    },
     warnings: warnings,
     notes: notes,
   );

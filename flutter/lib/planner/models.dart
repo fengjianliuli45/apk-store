@@ -24,6 +24,12 @@ const validGenders = ['M', 'F'];
 const validLevels = ['beginner', 'intermediate', 'advanced'];
 const validGoals = ['hypertrophy', 'fat_loss', 'strength', 'recomposition'];
 const validCooking = ['home', 'canteen', 'none'];
+const validMovementPatterns = {
+  'horizontal_push', 'vertical_push', 'horizontal_pull', 'vertical_pull',
+  'squat', 'hip_hinge', 'hip_extension', 'knee_flexion', 'calf_raise',
+  'elbow_flexion', 'elbow_extension', 'trunk_flexion', 'trunk_rotation',
+  'anti_extension', 'core',
+};
 
 class ValidationError implements Exception {
   ValidationError(this.errors);
@@ -56,12 +62,14 @@ class UserProfile {
     this.volumeCycleOffset = 0,
     this.kcalAdjust = 0,
     this.exerciseCycleOffset = 0,
+    Map<String, int>? bodyweightProgress,
     List<String>? warnings,
     List<String>? notes,
   }) : supplements = supplements ?? ['creatine'],
        injuries = injuries ?? [],
        dietaryRestrictions = dietaryRestrictions ?? [],
        strengthBaseline = strengthBaseline ?? {},
+       bodyweightProgress = bodyweightProgress ?? {},
        warnings = warnings ?? [],
        notes = notes ?? [];
 
@@ -85,6 +93,7 @@ class UserProfile {
   final int volumeCycleOffset; // check-in 产出：+1 往 MRV 推一档，-1 下调
   final int kcalAdjust; // check-in 产出：按体重趋势累计微调热量（钳在 ±500）
   final int exerciseCycleOffset; // check-in 产出：阶段达成后 +1，辅助动作轮换
+  final Map<String, int> bodyweightProgress; // check-in 产出：{movement_pattern: 净进阶档数}
   final List<String> warnings;
   final List<String> notes;
 
@@ -119,6 +128,7 @@ class UserProfile {
     'volume_cycle_offset': volumeCycleOffset,
     'kcal_adjust': kcalAdjust,
     'exercise_cycle_offset': exerciseCycleOffset,
+    'bodyweight_progress': bodyweightProgress,
     'warnings': warnings,
     'notes': notes,
   };
@@ -877,6 +887,10 @@ class GeneratedPlan {
         kcalAdjust: (profileJson['kcal_adjust'] as num?)?.toInt() ?? 0,
         exerciseCycleOffset:
             (profileJson['exercise_cycle_offset'] as num?)?.toInt() ?? 0,
+        bodyweightProgress: {
+          for (final e in (profileJson['bodyweight_progress'] as Map? ?? const {}).entries)
+            e.key as String: (e.value as num).toInt(),
+        },
         injuries: List<String>.from(
           profileJson['injuries'] as List? ?? const [],
         ),

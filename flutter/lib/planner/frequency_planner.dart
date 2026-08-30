@@ -66,7 +66,7 @@ UserProfile _withDays(UserProfile p, int days) => UserProfile(
       equipment: p.equipment, daysPerWeek: days, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset, bodyweightProgress: p.bodyweightProgress,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -76,7 +76,7 @@ UserProfile _withMinutes(UserProfile p, int minutes) => UserProfile(
       equipment: p.equipment, daysPerWeek: p.daysPerWeek, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset, bodyweightProgress: p.bodyweightProgress,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -199,7 +199,8 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
     strengthBaseline: profile.strengthBaseline,
     volumeCycleOffset: profile.volumeCycleOffset,
     kcalAdjust: profile.kcalAdjust,
-    exerciseCycleOffset: profile.exerciseCycleOffset, warnings: profile.warnings,
+    exerciseCycleOffset: profile.exerciseCycleOffset,
+    bodyweightProgress: profile.bodyweightProgress, warnings: profile.warnings,
     notes: notes,
   );
   return (resolved, fp);

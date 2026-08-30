@@ -76,6 +76,7 @@ class CycleReview:
     unlock_reward: str | None = None
     kcal_change: int = 0               # 下一周期热量增量（相对上一周期），0 = 不变
     diet_note: str = ""
+    bodyweight_changes: dict = field(default_factory=dict)  # {movement_pattern: 本次进阶档数变化}
     next_raw: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
@@ -90,6 +91,7 @@ class CycleReview:
             "unlock_reward": self.unlock_reward,
             "kcal_change": self.kcal_change,
             "diet_note": self.diet_note,
+            "bodyweight_changes": self.bodyweight_changes,
             "next_raw": self.next_raw,
         }
 
@@ -147,8 +149,32 @@ def _load_changes(plan: dict, per_ex: dict) -> list[LoadChange]:
     return changes
 
 
+def _bodyweight_changes(plan: dict, per_ex: dict, library) -> dict:
+    """徒手基准动作的进阶信号 → {movement_pattern: 档数变化}。
+
+    做满次数上限 × 全组 & RIR ≤ 1 → +1 档（换更难变式）；
+    连续 2 次未达次数下限 → -1 档（回退更易变式）。
+    """
+    lifts = {b["exercise_id"]: b for b in plan.get("stage_goal", {}).get("baseline_lifts", [])}
+    deltas: dict[str, int] = {}
+    for eid, sig in per_ex.items():
+        lift = lifts.get(eid)
+        if not lift or lift.get("start_load_kg"):   # 只处理徒手（无起始重量）
+            continue
+        ex = library.get_by_id(eid)
+        if not ex or ex.progression_rank is None:
+            continue
+        mp = ex.movement_pattern
+        rir = sig.get("avg_rir")
+        if sig.get("last_all_top_range") and (rir if rir is not None else 3) <= 1:
+            deltas[mp] = deltas.get(mp, 0) + 1
+        elif sig.get("consecutive_below_bottom", 0) >= 2:
+            deltas[mp] = deltas.get(mp, 0) - 1
+    return deltas
+
+
 def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str,
-              kcal_delta: int = 0) -> dict:
+              kcal_delta: int = 0, bw_deltas: dict | None = None) -> dict:
     prof = plan.get("profile", {})
     one_rm = plan.get("profile", {}).get("one_rm_estimates", {})
     raw = {
@@ -193,6 +219,11 @@ def _next_raw(plan: dict, load_changes: list[LoadChange], volume_change: str,
     # 延长 / 减载重试保持同一批动作再冲一次
     prev_ex = int(prof.get("exercise_cycle_offset", 0) or 0)
     raw["exercise_cycle_offset"] = min(12, prev_ex + 1) if volume_change == "up_one_step" else prev_ex
+    # 徒手进阶：把本次信号累加到上一周期的档位（钳 -3..6）
+    bw = dict(prof.get("bodyweight_progress", {}) or {})
+    for mp, d in (bw_deltas or {}).items():
+        bw[mp] = max(-3, min(6, int(bw.get(mp, 0)) + int(d)))
+    raw["bodyweight_progress"] = bw
     return {k: v for k, v in raw.items() if v is not None}
 
 
@@ -201,7 +232,10 @@ def review_cycle(
     workout_log: list[dict],
     body_log: list[dict] | None = None,
     completed_cycles: int = 0,
+    library=None,
 ) -> CycleReview:
+    from .exercise_library import ExerciseLibrary
+    library = library or ExerciseLibrary()
     body_log = body_log or []
     goal = _stage_goal_from(plan_json)
     evidence = aggregate_evidence(plan_json, workout_log, body_log)
@@ -238,7 +272,10 @@ def review_cycle(
         kcal_delta, diet_note = _diet_adjust(
             plan_json.get("profile", {}).get("goal", "hypertrophy"), weekly_pct)
 
-    next_raw = _next_raw(plan_json, load_changes, vol, kcal_delta)
+    # 徒手进阶：安全问题优先时不动；其余按次数信号换更难 / 更易变式
+    bw_deltas = {} if verdict == "address_safety" else _bodyweight_changes(plan_json, per_ex, library)
+
+    next_raw = _next_raw(plan_json, load_changes, vol, kcal_delta, bw_deltas)
 
     return CycleReview(
         verdict=verdict,
@@ -251,5 +288,6 @@ def review_cycle(
         unlock_reward=goal.unlock_reward if verdict == "advance" else None,
         kcal_change=kcal_delta,
         diet_note=diet_note,
+        bodyweight_changes=bw_deltas,
         next_raw=next_raw,
     )
