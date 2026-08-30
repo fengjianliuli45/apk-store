@@ -276,12 +276,12 @@ CycleReview reviewCycle(
     ],
   );
 
-  final evidence = aggregateEvidence(planJson, workoutLog, bodyLog);
+  final evidence = aggregateEvidence(planJson, workoutLog, bodyLog, library);
   final assessment = assessStage(goal, evidence);
   final obs = aggregateObservation(
-      planJson, workoutLog, bodyLog, completedCycles + 1);
+      planJson, workoutLog, bodyLog, completedCycles + 1, library);
   final response = profileResponse(obs);
-  final perEx = perExerciseProgress(planJson, workoutLog);
+  final perEx = perExerciseProgress(planJson, workoutLog, library);
   final loadChanges = _loadChanges(planJson, perEx);
 
   String verdict, vol, summary;

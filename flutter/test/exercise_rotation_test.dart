@@ -176,4 +176,46 @@ void main() {
     File('${Directory.systemTemp.path}/dart_bwprog_review.json')
         .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(review));
   });
+
+  test('bodyweight rep progress → advance (not deload) + parity dump', () async {
+    final gw = await PlannerGateway.instance();
+    const home = {
+      'gender': 'M', 'age': 25, 'height_cm': 175.0, 'weight_kg': 70.0,
+      'level': 'beginner', 'goal': 'hypertrophy', 'minutes_per_session': 60,
+      'equipment': ['bodyweight', 'band', 'pull_up_bar'],
+    };
+    final plan = gw.generate(home).toJson();
+    final sched = [
+      for (final s in ((plan['training'] as Map)['schedule'] as List).cast<Map>())
+        if (s['type'] != 'rest') s,
+    ];
+    final log = <Map<String, dynamic>>[];
+    var d = DateTime(2026, 9, 1);
+    for (var w = 0; w < 4; w++) {
+      for (final s in sched) {
+        final reps = 8 + w * 2; // 8 → 14
+        log.add({
+          'date': '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}',
+          'plan_day': 1, 'session_type': s['type'], 'planned_sets': 12,
+          'exercises': [
+            for (final e in s['exercises'] as List)
+              {
+                'exercise_id': (e as Map)['exercise_id'],
+                'planned_sets': e['sets'],
+                'sets': [
+                  for (var i = 0; i < (e['sets'] as int); i++)
+                    {'reps': reps, 'rir': 2},
+                ],
+              },
+          ],
+          'aborted': false,
+        });
+        d = d.add(const Duration(days: 2));
+      }
+    }
+    final review = Map<String, dynamic>.from(gw.runCheckIn(plan, log)['review'] as Map);
+    expect(review['verdict'], 'advance');
+    File('${Directory.systemTemp.path}/dart_bwrep_review.json')
+        .writeAsStringSync(const JsonEncoder.withIndent('  ').convert(review));
+  });
 }

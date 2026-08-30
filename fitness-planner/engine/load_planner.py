@@ -63,10 +63,59 @@ _EXERCISE_COEF = {
 _NO_LOAD_PATTERNS = {"core", "trunk_flexion", "trunk_rotation", "anti_extension"}
 
 
+# 自重动作举起的「体重占比」——研究实测（JSCR / Suprak 2011 PMID 20179649；ExRx）。
+# 用来把「一次做多少个」换成等效负荷，再走 Epley 估 e1RM。
+_BODYMASS_FRACTION = {
+    # 水平推
+    "push_up": 0.64, "wide_push_up": 0.64, "close_grip_push_up": 0.64,
+    "diamond_push_up": 0.64, "incline_push_up": 0.45, "decline_push_up": 0.75,
+    "archer_push_up": 0.80, "knee_push_up": 0.49, "bench_dips": 0.40,
+    # 垂直推
+    "pike_push_up": 0.60, "elevated_pike_push_up": 0.70, "handstand_push_up": 1.0,
+    # 垂直拉 / 水平拉
+    "pull_up": 1.0, "chin_up": 1.0, "assisted_pull_up": 0.55,
+    "inverted_row": 0.60, "feet_elevated_inverted_row": 0.75,
+    # 下肢 蹲
+    "bodyweight_squat": 0.68, "split_squat": 0.85, "reverse_lunge": 0.85,
+    "lunges": 0.85, "step_up": 0.85, "sissy_squat": 0.75, "single_leg_squat": 1.0,
+    # 髋铰链 / 髋伸展
+    "single_leg_rdl_bw": 0.55, "glute_bridge": 0.40, "single_leg_glute_bridge": 0.55,
+    "bodyweight_hip_thrust": 0.55, "single_leg_hip_thrust": 0.75, "frog_pump": 0.35,
+    # 勾腿
+    "sliding_leg_curl": 0.50, "nordic_curl": 0.65,
+    # 提踵
+    "bodyweight_calf_raise": 0.95, "single_leg_calf_raise": 1.0,
+}
+
+# 兜底：动作不在表里但是纯自重时，按 movement_pattern 给个保守占比
+_BW_PATTERN_FRACTION = {
+    "horizontal_push": 0.60, "vertical_push": 0.60,
+    "vertical_pull": 0.95, "horizontal_pull": 0.60,
+    "squat": 0.70, "hip_hinge": 0.55, "hip_extension": 0.45,
+    "knee_flexion": 0.50, "calf_raise": 0.90,
+}
+
+_BW_REP_CAP = 20   # 徒手常做高次数，Epley 截断放宽到 20（相对追踪仍成立）
+
+
 def estimate_1rm(weight_kg: float, reps: int) -> float:
     """Epley 公式。次数超过 12 精度下降，截断到 12。"""
     r = max(1, min(int(reps), 12))
     return floor(weight_kg * (1 + r / 30) * 10 + 0.5) / 10
+
+
+def bodyweight_e1rm(bodyweight_kg: float, ex: Exercise, reps: int) -> float | None:
+    """徒手动作：体重 × 体重占比 × Epley → 等效负荷 e1RM（kg）。
+
+    占比查不到（等长动作 / 核心 / 弹力带）→ None。
+    """
+    frac = _BODYMASS_FRACTION.get(ex.id)
+    if frac is None and list(ex.equipment_required) == ["bodyweight"]:
+        frac = _BW_PATTERN_FRACTION.get(ex.movement_pattern)
+    if not frac or not bodyweight_kg or not reps:
+        return None
+    r = max(1, min(int(reps), _BW_REP_CAP))
+    return floor(bodyweight_kg * frac * (1 + r / 30) * 10 + 0.5) / 10
 
 
 def build_one_rm_map(strength_baseline: dict) -> dict[str, float]:

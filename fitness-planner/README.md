@@ -4,6 +4,24 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 徒手力量估算（补 P0 #2 的坑）
+
+用户提议：徒手动作按「一次做多少个」推算力量。查了成熟做法（自重动作举起体重的固定
+比例，研究实测）：
+
+- `load_planner._BODYMASS_FRACTION`：每个自重动作的体重占比——标准俯卧撑 0.64、
+  脚高 0.75、引体/反手 1.0、双杠 0.40（三头）、徒手深蹲 0.68、分腿蹲 0.85、
+  单腿臀推 0.75 …（JSCR / Suprak 2011 PMID 20179649、ExRx）。兜底按 movement_pattern。
+- `bodyweight_e1rm(体重, 动作, 次数) = 体重 × 占比 × (1 + min(次数,20)/30)`（Epley，
+  次数上限放宽到 20，因为徒手常做高次数，相对追踪仍成立）。
+- `progress_tracker._lift_series`：徒手基准动作的 `best_e1rm` 不再是 None，用上式算。
+  → 闭环里所有现成逻辑（`performance_improvement_pct`、`e1rm_declining` → 减载、
+  达成判定）**对徒手用户自动生效**，补掉了「徒手用户老被判 deload_then_retry」的坑。
+  `aggregate_evidence` / `aggregate_observation` / `per_exercise_progress` /
+  `_lift_series` 增 `library` 参数（Python 走模块级单例，Dart 显式传）。
+- 实测：居家新手俯卧撑次数 8 → 14（4 周）→ e1RM +15% → verdict `advance`（原为 deload）。
+- Python 179 / Flutter 81；居家用户次数进步 check-in Python↔Dart 逐字一致。
+
 ## 2026-08-30 徒手进阶模型（任务 P0 #2）
 
 自重动作不再只写「按次数 / 难度递进」，而是走明确的变式阶梯，由闭环驱动。
