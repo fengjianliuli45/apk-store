@@ -110,6 +110,22 @@ int minSessionMinutes(UserProfile profile, ExerciseLibrary library) {
   return _maxScan;
 }
 
+/// onboarding 用：用户选完 目标/水平/器械 后、还没选时长时算「每次至少练多少分钟」，
+/// 让时长选项从这里起步，而不是给更短的选项再事后上调。
+int minSessionMinutesFor(
+  String level,
+  String goal,
+  List<String> equipment,
+  ExerciseLibrary library,
+) {
+  final probe = UserProfile(
+    gender: 'M', age: 30, heightCm: 175, weightKg: 75,
+    level: level, goal: goal, minutesPerSession: 60,
+    equipment: equipment.isEmpty ? const ['bodyweight'] : equipment,
+  );
+  return minSessionMinutes(probe, library);
+}
+
 FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
   final requested = profile.minutesPerSession;
   final minMinutes = minSessionMinutes(profile, library);

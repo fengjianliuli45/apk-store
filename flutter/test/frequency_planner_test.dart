@@ -73,6 +73,25 @@ void main() {
     expect(fl.minSessionMinutes, lessThanOrEqualTo(hy.minSessionMinutes));
   });
 
+  test('minSessionMinutesFor matches the planner and gates the selector', () {
+    const equip = ['dumbbell', 'bodyweight'];
+    final m = minSessionMinutesFor('beginner', 'hypertrophy', equip, lib);
+    final atMin = planFrequency(_p(minutes: m), lib);
+    expect(atMin.minSessionMinutes, m);
+    expect(atMin.minutesRaised, isFalse);
+    final below = planFrequency(_p(minutes: m - 5), lib);
+    expect(below.minutesRaised, isTrue);
+  });
+
+  test('gateway exposes minSessionMinutes for onboarding', () async {
+    final gateway = await PlannerGateway.instance();
+    final m = gateway.minSessionMinutes(
+      level: 'beginner', goal: 'hypertrophy', equipment: const ['dumbbell'],
+    );
+    expect(m, greaterThanOrEqualTo(30));
+    expect(m % 5, 0);
+  });
+
   test('gateway resolves frequency into the plan', () async {
     final gateway = await PlannerGateway.instance();
     final plan = gateway.generate({

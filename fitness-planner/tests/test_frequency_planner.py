@@ -71,6 +71,18 @@ class TestFrequencyPlanner(unittest.TestCase):
         hy = plan_frequency(self._p(goal="hypertrophy", minutes_per_session=30), self.lib)
         self.assertLessEqual(fl.min_session_minutes, hy.min_session_minutes)
 
+    def test_min_session_minutes_for_matches_plan(self):
+        """onboarding 查询到的最低时长 == 实际排计划时用的最低时长。"""
+        from engine.frequency_planner import min_session_minutes_for
+        equip = ["dumbbell", "bodyweight"]
+        m = min_session_minutes_for("beginner", "hypertrophy", equip, self.lib)
+        fp = plan_frequency(self._p(minutes_per_session=m), self.lib)
+        self.assertEqual(fp.min_session_minutes, m)
+        self.assertFalse(fp.minutes_raised)
+        # 比它短一档就会被上调
+        fp_short = plan_frequency(self._p(minutes_per_session=m - 5), self.lib)
+        self.assertTrue(fp_short.minutes_raised)
+
 
 class TestPipeline(unittest.TestCase):
 

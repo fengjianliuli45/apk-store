@@ -28,6 +28,15 @@ class PlannerGateway {
     return _instance ??= PlannerGateway._(await ExerciseLibrary.load());
   }
 
+  /// onboarding: 用户选完 目标/水平/器械 后，用这个拿「每次最少练多少分钟」，
+  /// 把时长选项的下限设成它——不要给更短的选项再事后上调。
+  int minSessionMinutes({
+    required String level,
+    required String goal,
+    required List<String> equipment,
+  }) =>
+      minSessionMinutesFor(level, goal, equipment, _library);
+
   /// Runs the full pipeline: validate → frequency → TDEE → macros → split →
   /// sessions → progression → meals → supplements → assembled plan. Throws
   /// [ValidationError] if `raw` is missing/out-of-range required fields.

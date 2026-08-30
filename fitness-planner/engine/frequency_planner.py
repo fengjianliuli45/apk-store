@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Optional
 
 from .profile_validator import UserProfile
 from .split_selector import select
@@ -84,6 +85,23 @@ def min_session_minutes(profile: UserProfile, library: ExerciseLibrary) -> int:
         if hit:
             return m
     return _MAX_SCAN
+
+
+def min_session_minutes_for(
+    level: str, goal: str, equipment: list[str],
+    library: Optional[ExerciseLibrary] = None,
+) -> int:
+    """onboarding 用：在用户选完 目标/水平/器械 后、还没选时长时，
+    算出「每次至少练多少分钟」，让 UI 的时长选项从这里起步，
+    而不是给一个更短的选项再事后上调。
+    """
+    library = library or ExerciseLibrary()
+    probe = UserProfile(
+        gender="M", age=30, height_cm=175.0, weight_kg=75.0,
+        level=level, goal=goal, minutes_per_session=60,
+        equipment=list(equipment) or ["bodyweight"],
+    )
+    return min_session_minutes(probe, library)
 
 
 def plan_frequency(profile: UserProfile, library: ExerciseLibrary) -> FrequencyPlan:

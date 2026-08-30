@@ -15,10 +15,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from math import ceil
+from math import ceil, floor
 from .profile_validator import UserProfile
 from .split_selector import SplitResult
 from .exercise_library import ExerciseLibrary
+
+
+def _round(x: float) -> int:
+    """半数向上取整（正数域），与 Dart num.round() 对齐，避免 Python 银行家舍入
+    在 Python↔Dart 之间产生 1 的偏差。"""
+    return floor(x + 0.5)
 
 
 # ── 每周总组数 ────────────────────────────────────────────
@@ -45,7 +51,7 @@ def weekly_volume_for(level: str, goal: str) -> dict[str, int]:
     """按 level + goal 返回缩放后的每周每肌群组数。"""
     base = _BASE_WEEKLY_VOLUME.get(level, _BASE_WEEKLY_VOLUME["beginner"])
     scale = GOAL_VOLUME_SCALE.get(goal, 1.0)
-    return {m: max(2, round(v * scale)) for m, v in base.items()}
+    return {m: max(2, _round(v * scale)) for m, v in base.items()}
 
 # 单次训练单肌群组数上限。证据：每肌群每次 6–8 个有效组最优，>10–12 组疲劳拖累、
 # 收益骤降（Schoenfeld 剂量反应 / 容量地标 MEV-MAV-MRV）。
@@ -193,7 +199,7 @@ def _actual_muscle_frequency(schedule: list[dict], primary_only: bool = False) -
 def _set_seconds(prescribed_rest: int, compound: bool) -> int:
     """单组真实耗时估计（做组 + 实际组间休息），仅用于排课估时。"""
     if compound:
-        return WORK_SEC_COMPOUND + round(prescribed_rest * REST_MULT_COMPOUND)
+        return WORK_SEC_COMPOUND + _round(prescribed_rest * REST_MULT_COMPOUND)
     return WORK_SEC_ISOLATION + prescribed_rest
 
 
@@ -356,7 +362,7 @@ def build_sessions(
         used_sec = state["used_sec"]
         total_sets = sum(e.sets for e in session_exercises)
         if total_sets:
-            est_min = round((warmup_sec + used_sec) / 60)
+            est_min = _round((warmup_sec + used_sec) / 60)
             est_min = max(1, min(est_min, profile.minutes_per_session))
         else:
             est_min = profile.minutes_per_session
@@ -379,7 +385,7 @@ def _recommend_capacity(profile: UserProfile, coverage_pct: int) -> dict:
     if coverage_pct >= 90:
         return {}
     ratio = 100 / max(coverage_pct, 1)
-    rec_minutes = min(120, int(round(profile.minutes_per_session * ratio / 5)) * 5)
+    rec_minutes = min(120, _round(profile.minutes_per_session * ratio / 5) * 5)
     rec_days = min(6, (profile.days_per_week or 3) + 1)
     options = []
     if rec_minutes > profile.minutes_per_session:
@@ -441,7 +447,7 @@ def analyze_volume(
         if target - got >= 3:
             (low_freq_short if pfreq <= 1 else time_short).append(cn)
 
-    coverage_pct = round(100 * covered_delivered / covered_target) if covered_target else 100
+    coverage_pct = _round(100 * covered_delivered / covered_target) if covered_target else 100
 
     notes: list[str] = []
     if low_freq_short:
