@@ -143,6 +143,8 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
     volumeCycleOffset: (raw['volume_cycle_offset'] as num?)?.toInt() ?? 0,
     kcalAdjust:
         ((raw['kcal_adjust'] as num?)?.toInt() ?? 0).clamp(-500, 500),
+    exerciseCycleOffset:
+        ((raw['exercise_cycle_offset'] as num?)?.toInt() ?? 0).clamp(0, 12),
     warnings: warnings,
     notes: notes,
   );

@@ -242,6 +242,7 @@ def build_sessions(
     goal = profile.goal
     vars_ = TRAINING_VARS.get(goal, TRAINING_VARS["hypertrophy"])
     weekly_volume = weekly_volume_for(level, goal, getattr(profile, "volume_cycle_offset", 0))
+    exercise_offset = max(0, int(getattr(profile, "exercise_cycle_offset", 0) or 0))
     cap = MAX_SETS_PER_MUSCLE_SESSION.get(level, 8)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
@@ -278,11 +279,13 @@ def build_sessions(
 
         # 本节课每个肌群的目标组数：取该肌群第 k 次暴露对应的配额
         session_targets: dict[str, int] = {}
+        session_exposure: dict[str, int] = {}   # 本周该肌群第几次练（0 起）
         for muscle in target_muscles:
             if muscle not in weekly_volume:
                 session_targets[muscle] = ACCESSORY_SETS.get(muscle, 0)
                 continue
             k = exposure.get(muscle, 0)
+            session_exposure[muscle] = k
             seq = distribution.get(muscle, [])
             tgt = seq[k] if k < len(seq) else 0
             if muscle in secondary:
@@ -320,7 +323,13 @@ def build_sessions(
             pool = _pool(muscle)
             if not pool:
                 return 0
-            ex = pool[0]
+            # 锚定动作（该肌群本节课第一个动作）永远取 pool[0]，保证双进阶 / 1RM 追踪；
+            # 之后的辅助动作按「跨中周期档位 + 本周该肌群第几次练」轮换到同肌群兄弟动作。
+            if muscle in delivered_session:
+                rot = exercise_offset + session_exposure.get(muscle, 0)
+                ex = pool[rot % len(pool)]
+            else:
+                ex = pool[0]
             cost = _set_seconds(prescribed_rest, ex.compound)
             fit_sets = (work_budget_sec - state["used_sec"]) // cost
             if fit_sets < 2:

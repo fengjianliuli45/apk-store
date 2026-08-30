@@ -4,6 +4,22 @@
 
 App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时先改本目录 Python，再同步 Dart。**
 
+## 2026-08-30 动作轮换（任务 D）
+
+证据：Kassiano 2022 系统综述（PMID 35438660）—— 有计划的轮换促进区域性增长 + 减关节劳损，
+随机 / 频繁轮换反而伤增肌（打断负荷进阶、没法追踪、疲劳堆积）。RP：主项固定，轮换辅助。
+
+- `session_builder`：每个肌群本节课的**第一个动作 = 锚定**，永远取 `pool[0]`，
+  保证双进阶 / 1RM 追踪；之后的辅助动作按 `exercise_offset + 本周该肌群第几次练`
+  轮换到 `pool[rot % len]`（同 `library.query` 池，按 movement_pattern + 肌群，非随机）。
+  · 同周内某肌群练 2 次 → 第 2 次辅助动作换变式
+  · 跨中周期 → `exercise_cycle_offset` 推进
+- `profile_validator` + `plan_output`：新增 `exercise_cycle_offset`（钳 0–12）。
+- `check_in_engine`：只在 `up_one_step`（= 阶段达成 advance）时 `exercise_cycle_offset += 1`；
+  `extend` / `deload_then_retry` 保持同一批动作再冲。
+- Python 167 / Flutter 78 测试；offset 0/1/2 三档 Python↔Dart 逐字一致。
+- 已知：动作库对零器械用户仍会轮到自重动作（池质量问题，非轮换引入）。
+
 ## 2026-08-30 深饮食：饮食进闭环 + 减脂 diet break（任务 E4）
 
 - `check_in_engine`：中周期边界按体重周变化率调热量 ±150 kcal（`_diet_adjust`）。

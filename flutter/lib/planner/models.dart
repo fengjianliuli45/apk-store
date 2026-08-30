@@ -55,6 +55,7 @@ class UserProfile {
     Map<String, dynamic>? strengthBaseline,
     this.volumeCycleOffset = 0,
     this.kcalAdjust = 0,
+    this.exerciseCycleOffset = 0,
     List<String>? warnings,
     List<String>? notes,
   }) : supplements = supplements ?? ['creatine'],
@@ -83,6 +84,7 @@ class UserProfile {
   final Map<String, dynamic> strengthBaseline; // {basis: {weight_kg,reps} | {one_rm_kg}}
   final int volumeCycleOffset; // check-in 产出：+1 往 MRV 推一档，-1 下调
   final int kcalAdjust; // check-in 产出：按体重趋势累计微调热量（钳在 ±500）
+  final int exerciseCycleOffset; // check-in 产出：阶段达成后 +1，辅助动作轮换
   final List<String> warnings;
   final List<String> notes;
 
@@ -116,6 +118,7 @@ class UserProfile {
     'strength_baseline': strengthBaseline,
     'volume_cycle_offset': volumeCycleOffset,
     'kcal_adjust': kcalAdjust,
+    'exercise_cycle_offset': exerciseCycleOffset,
     'warnings': warnings,
     'notes': notes,
   };
@@ -869,6 +872,8 @@ class GeneratedPlan {
         ),
         volumeCycleOffset: (profileJson['volume_cycle_offset'] as num?)?.toInt() ?? 0,
         kcalAdjust: (profileJson['kcal_adjust'] as num?)?.toInt() ?? 0,
+        exerciseCycleOffset:
+            (profileJson['exercise_cycle_offset'] as num?)?.toInt() ?? 0,
         injuries: List<String>.from(
           profileJson['injuries'] as List? ?? const [],
         ),

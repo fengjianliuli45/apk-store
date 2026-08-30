@@ -66,7 +66,7 @@ UserProfile _withDays(UserProfile p, int days) => UserProfile(
       equipment: p.equipment, daysPerWeek: days, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -76,7 +76,7 @@ UserProfile _withMinutes(UserProfile p, int minutes) => UserProfile(
       equipment: p.equipment, daysPerWeek: p.daysPerWeek, bodyFatPct: p.bodyFatPct,
       mealsPerDay: p.mealsPerDay, supplements: p.supplements,
       targetWeightKg: p.targetWeightKg, injuries: p.injuries,
-      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust,
+      dietaryRestrictions: p.dietaryRestrictions, cookingAccess: p.cookingAccess, strengthBaseline: p.strengthBaseline, volumeCycleOffset: p.volumeCycleOffset, kcalAdjust: p.kcalAdjust, exerciseCycleOffset: p.exerciseCycleOffset,
       warnings: p.warnings, notes: p.notes,
     );
 
@@ -198,7 +198,8 @@ FrequencyPlan planFrequency(UserProfile profile, ExerciseLibrary library) {
     cookingAccess: profile.cookingAccess,
     strengthBaseline: profile.strengthBaseline,
     volumeCycleOffset: profile.volumeCycleOffset,
-    kcalAdjust: profile.kcalAdjust, warnings: profile.warnings,
+    kcalAdjust: profile.kcalAdjust,
+    exerciseCycleOffset: profile.exerciseCycleOffset, warnings: profile.warnings,
     notes: notes,
   );
   return (resolved, fp);
