@@ -41,12 +41,13 @@ const mevWeekly = {
 };
 
 /// 按 level + goal 返回「最优训练量」(MAV) —— 每周每肌群组数的上限目标。
-Map<String, int> weeklyVolumeFor(String level, String goal) {
+Map<String, int> weeklyVolumeFor(String level, String goal, [int cycleOffset = 0]) {
   final base = _baseWeeklyVolume[level] ?? _baseWeeklyVolume['beginner']!;
   final scale = goalVolumeScale[goal] ?? 1.0;
+  final off = (1.0 + 0.08 * cycleOffset).clamp(0.8, 1.25);
   return {
     for (final e in base.entries)
-      e.key: (e.value * scale).round() < 2 ? 2 : (e.value * scale).round(),
+      e.key: (e.value * scale * off).round() < 2 ? 2 : (e.value * scale * off).round(),
   };
 }
 
@@ -152,7 +153,7 @@ List<SessionResult> buildSessions(
   final level = profile.level;
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
-  final volume = weeklyVolumeFor(level, goal);
+  final volume = weeklyVolumeFor(level, goal, profile.volumeCycleOffset);
   final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final prescribedRest = vars_['rest_sec'] as int;
@@ -370,7 +371,7 @@ Map<String, dynamic> analyzeVolume(
   List<SessionResult> sessions,
 ) {
   final level = profile.level;
-  final optimal = weeklyVolumeFor(level, profile.goal); // MAV 上限
+  final optimal = weeklyVolumeFor(level, profile.goal, profile.volumeCycleOffset); // MAV 上限
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final primaryFrequency =
       _actualMuscleFrequency(split.weeklySchedule, primaryOnly: true);

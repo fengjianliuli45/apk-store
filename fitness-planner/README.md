@@ -9,6 +9,24 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 闭环：训练日志 → 评估 → 调整（任务 A）
+
+- 新增 `engine/progress_tracker.py`：训练日志聚合成 `stage_assessor` / `response_profiler` 的输入。
+  - 日志契约：`LoggedSession{date, plan_day, session_type, planned_sets, exercises:[{exercise_id, planned_sets, sets:[{reps, weight_kg?, rir?}]}], aborted, pain_flag}` + `BodyEntry{date, weight_kg, waist_cm?}`。
+  - e1RM = Epley + RIR 修正（`w×(1+(reps+rir)/30)`，只信 RIR≤3 的组）；基准动作首末中位数 ≥2.5% = 提升。
+  - 身体趋势：减脂 ≥3 次称重、斜率为负且累计降 ≥0.5% 或腰围 −1cm；增肌 体重斜率 ≥0 且 +0.25%/周。
+  - 疼痛：最近 3 次训练有 `pain_flag` → 未解决。
+- 新增 `engine/check_in_engine.py`：`review_cycle(plan, workout_log, body_log, completed_cycles) -> CycleReview`。
+  - 判定：`address_safety`（疼痛）/ `advance`（达成）/ `extend`（缺勤 + 补训场次）/
+    `deload_then_retry`（出勤够但表现停滞）/ `extend`（接近达成）。
+  - 逐动作双进阶：所有组到次数上限 & RIR≤2 → +2.5/5kg；连续 2 次未达下限 或 e1RM 连降 → −10%。
+  - 产 `next_raw`：按主项比例更新 `strength_baseline`（估算 1RM）+ `volume_cycle_offset`
+    （`advance` +1 往 MRV 推、`deload_then_retry` −1）。
+- `session_builder.weekly_volume_for(level, goal, cycle_offset)`：offset 每档 ±8%，夹在 [0.8×, 1.25×MAV≈MRV]。
+- `pipeline.run_check_in(plan_json, workout_log, ...)` → `{review, next_plan}`；
+  Flutter `PlannerGateway.runCheckIn(...)`。
+- 规则层确定性：垂直大模型可解释 / 陪伴，但不改写这里的结果。
+
 ## 2026-08-30 中周期结构（任务 A / ④ 第 1 步）
 
 - 新增 `engine/mesocycle_planner.py`：把「一份周计划」展开成 4–6 周中周期。

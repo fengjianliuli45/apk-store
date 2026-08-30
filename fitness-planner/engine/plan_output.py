@@ -75,6 +75,7 @@ def generate_json(
             "minutes_per_session": profile.minutes_per_session,
             "equipment": profile.equipment,
             "injuries": profile.injuries,
+            "volume_cycle_offset": getattr(profile, "volume_cycle_offset", 0),
             "strength_baseline": getattr(profile, "strength_baseline", {}) or {},
             "one_rm_estimates": {b: {"kg": v, "name": BASELINE_CN.get(b, b)} for b, v in one_rm.items()},
             "warnings": profile.warnings,

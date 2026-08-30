@@ -140,6 +140,7 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
     dietaryRestrictions: dietaryRestrictions,
     cookingAccess: cookingAccess,
     strengthBaseline: strengthBaseline,
+    volumeCycleOffset: (raw['volume_cycle_offset'] as num?)?.toInt() ?? 0,
     warnings: warnings,
     notes: notes,
   );

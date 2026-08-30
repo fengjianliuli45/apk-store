@@ -25,6 +25,7 @@ OPTIONAL_WITH_DEFAULT = {
     "dietary_restrictions": [],
     "cooking_access": "home",
     "strength_baseline": {},     # {basis: {weight_kg, reps} 或 {one_rm_kg}}；缺 → 首周找重量
+    "volume_cycle_offset": 0,    # check-in 产出：+1 往 MRV 推一档，-1 下调
 }
 
 TRACKING_ONLY = (
@@ -58,6 +59,7 @@ class UserProfile:
     dietary_restrictions: list[str] = field(default_factory=list)
     cooking_access: str = "home"
     strength_baseline: dict = field(default_factory=dict)
+    volume_cycle_offset: int = 0
     # 校验时生成的元信息
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -249,6 +251,7 @@ def validate(raw: dict) -> UserProfile:
         dietary_restrictions=dietary_restrictions,
         cooking_access=cooking_access,
         strength_baseline=strength_baseline,
+        volume_cycle_offset=int(raw.get("volume_cycle_offset", 0) or 0),
         warnings=warnings,
         notes=notes,
     )

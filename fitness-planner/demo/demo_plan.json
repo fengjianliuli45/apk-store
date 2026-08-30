@@ -33,6 +33,7 @@
       "machine"
     ],
     "injuries": [],
+    "volume_cycle_offset": 0,
     "strength_baseline": {
       "squat": {
         "weight_kg": 100.0,

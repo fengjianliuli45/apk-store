@@ -46,6 +46,18 @@ class StageAssessment {
   final String confidence;
   final List<String> reasons;
   final String nextAction;
+
+  Map<String, dynamic> toJson() => {
+        'achieved': achieved,
+        'status': status,
+        'adherence_met': adherenceMet,
+        'data_quality_met': dataQualityMet,
+        'outcome_met': outcomeMet,
+        'safety_met': safetyMet,
+        'confidence': confidence,
+        'reasons': reasons,
+        'next_action': nextAction,
+      };
 }
 
 StageAssessment assessStage(StageGoal goal, StageEvidence evidence) {
