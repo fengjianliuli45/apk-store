@@ -28,9 +28,9 @@ class UserProfile {
     required this.weightKg,
     required this.level,
     required this.goal,
-    required this.daysPerWeek,
     required this.minutesPerSession,
     required this.equipment,
+    this.daysPerWeek,
     this.bodyFatPct,
     this.mealsPerDay = 4,
     List<String>? supplements,
@@ -52,7 +52,7 @@ class UserProfile {
   final double weightKg;
   final String level;
   final String goal;
-  final int daysPerWeek;
+  final int? daysPerWeek;   // null → 由 frequencyPlanner 推导
   final int minutesPerSession;
   final List<String> equipment;
   final double? bodyFatPct;
@@ -578,6 +578,7 @@ class GeneratedPlan {
     this.volumeCoveragePct = 100,
     this.volumeNotes = const [],
     this.capacityRecommendation = const {},
+    this.frequencyPlan = const {},
   });
 
   final DateTime generatedAt;
@@ -598,8 +599,11 @@ class GeneratedPlan {
   final List<String> volumeNotes;
   final Map<String, dynamic> capacityRecommendation;
 
+  /// 引擎定频率的结果（任务 ①.5）：天数、（可能上调的）时长、最低时长、说明。
+  final Map<String, dynamic> frequencyPlan;
+
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.2', 'generated_at': generatedAt.toIso8601String()},
+    'meta': {'version': '1.3', 'generated_at': generatedAt.toIso8601String()},
     'profile': profile.toJson(),
     'nutrition': {
       'tdee': tdee.toJson(),
@@ -614,6 +618,7 @@ class GeneratedPlan {
       'volume_coverage_pct': volumeCoveragePct,
       'volume_notes': volumeNotes,
       'capacity_recommendation': capacityRecommendation,
+      'frequency_plan': frequencyPlan.isEmpty ? null : frequencyPlan,
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
@@ -641,7 +646,7 @@ class GeneratedPlan {
         weightKg: (profileJson['weight_kg'] as num).toDouble(),
         level: profileJson['level'] as String,
         goal: profileJson['goal'] as String,
-        daysPerWeek: profileJson['days_per_week'] as int,
+        daysPerWeek: (profileJson['days_per_week'] as num?)?.toInt(),
         minutesPerSession: profileJson['minutes_per_session'] as int,
         equipment: List<String>.from(profileJson['equipment'] as List),
         bodyFatPct: (profileJson['body_fat_pct'] as num?)?.toDouble(),
@@ -781,6 +786,9 @@ class GeneratedPlan {
       ),
       capacityRecommendation: Map<String, dynamic>.from(
         training['capacity_recommendation'] as Map? ?? const {},
+      ),
+      frequencyPlan: Map<String, dynamic>.from(
+        training['frequency_plan'] as Map? ?? const {},
       ),
       stageGoal: json['stage_goal'] == null
           ? null

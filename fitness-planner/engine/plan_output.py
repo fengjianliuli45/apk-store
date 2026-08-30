@@ -43,17 +43,18 @@ def generate_json(
     progression: ProgressionResult,
     meal_plan: MealPlan,
     supplements: SupplementResult,
+    frequency_plan=None,
 ) -> dict:
     """生成完整的 JSON 计划。"""
 
     # 每肌群每周总组数（目标）+ 实际排出容量的诚实对账
-    from .session_builder import WEEKLY_VOLUME, analyze_volume
-    weekly_volume = WEEKLY_VOLUME.get(profile.level, WEEKLY_VOLUME["beginner"])
+    from .session_builder import weekly_volume_for, analyze_volume
+    weekly_volume = weekly_volume_for(profile.level, profile.goal)
     volume_report = analyze_volume(profile, split, sessions)
 
     return {
         "meta": {
-            "version": "1.2",
+            "version": "1.3",
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "evidence_basis": EVIDENCE_BASIS,
         },
@@ -86,6 +87,7 @@ def generate_json(
             "volume_coverage_pct": volume_report["coverage_pct"],
             "volume_notes": volume_report["notes"],
             "capacity_recommendation": volume_report["recommendation"],
+            "frequency_plan": frequency_plan.to_dict() if frequency_plan is not None else None,
             "schedule": [s.to_dict() for s in sessions],
             "progression": progression.to_dict(),
             "split_warnings": split.warnings,

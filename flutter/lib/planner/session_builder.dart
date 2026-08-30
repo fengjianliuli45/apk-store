@@ -7,7 +7,8 @@ import 'models.dart';
 /// - 课时预算：先扣显式热身时间，再按「按动作类型区分的单组真实耗时」两遍填充
 ///   （先每个主肌群保底 1 个动作，再补深度，最后补次要肌群）。
 /// - 时间/频率不够兑现周目标时不静默截断——由 [analyzeVolume] 产出诚实对账。
-const weeklyVolume = {
+/// 基准表 = 增肌目标。其他目标按 [goalVolumeScale] 缩放。
+const _baseWeeklyVolume = {
   'beginner': {
     'chest': 10, 'back': 12, 'quads': 10, 'hamstrings': 6, 'shoulders': 8,
     'biceps': 6, 'triceps': 6, 'calves': 4, 'core': 4,
@@ -17,21 +18,41 @@ const weeklyVolume = {
     'biceps': 8, 'triceps': 8, 'calves': 6, 'core': 6,
   },
   'advanced': {
-    'chest': 18, 'back': 20, 'quads': 18, 'hamstrings': 10, 'shoulders': 16,
+    'chest': 16, 'back': 18, 'quads': 16, 'hamstrings': 10, 'shoulders': 14,
     'biceps': 10, 'triceps': 10, 'calves': 8, 'core': 8,
   },
 };
+
+const goalVolumeScale = {
+  'hypertrophy': 1.0,
+  'recomposition': 0.9,
+  'fat_loss': 0.85,
+  'strength': 0.85,
+};
+
+/// 兼容旧引用：增肌基准表
+const weeklyVolume = _baseWeeklyVolume;
+
+/// 按 level + goal 返回缩放后的每周每肌群组数。
+Map<String, int> weeklyVolumeFor(String level, String goal) {
+  final base = _baseWeeklyVolume[level] ?? _baseWeeklyVolume['beginner']!;
+  final scale = goalVolumeScale[goal] ?? 1.0;
+  return {
+    for (final e in base.entries)
+      e.key: (e.value * scale).round() < 2 ? 2 : (e.value * scale).round(),
+  };
+}
 
 /// 单次训练单肌群组数上限（证据：每肌群每次 6–8 组最优，>10–12 收益骤降）。
 const maxSetsPerMuscleSession = {
   'beginner': 6,
   'intermediate': 9,
-  'advanced': 10,
+  'advanced': 12,
 };
 
 const _trainingVars = {
   'hypertrophy': {'load_pct': '65-80% 1RM', 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
-  'strength': {'load_pct': '≥80% 1RM', 'reps': '3-6', 'sets_range': [4, 5], 'rest_sec': 150, 'rpe': 8.0, 'tempo': '受控', 'rir': '1-2'},
+  'strength': {'load_pct': '≥80% 1RM', 'reps': '3-6', 'sets_range': [3, 5], 'rest_sec': 150, 'rpe': 8.0, 'tempo': '受控', 'rir': '1-2'},
   'fat_loss': {'load_pct': '60-75% 1RM', 'reps': '10-15', 'sets_range': [3, 4], 'rest_sec': 45, 'rpe': 7.0, 'tempo': '3-1-2-0', 'rir': '2-3'},
   'recomposition': {'load_pct': '65-80% 1RM', 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
 };
@@ -120,7 +141,7 @@ List<SessionResult> buildSessions(
   final level = profile.level;
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
-  final volume = weeklyVolume[level] ?? weeklyVolume['beginner']!;
+  final volume = weeklyVolumeFor(level, goal);
   final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final prescribedRest = vars_['rest_sec'] as int;
@@ -307,12 +328,12 @@ Map<String, dynamic> _recommendCapacity(UserProfile profile, int coveragePct) {
   final ratio = 100 / (coveragePct < 1 ? 1 : coveragePct);
   var recMinutes = ((profile.minutesPerSession * ratio) / 5).round() * 5;
   if (recMinutes > 120) recMinutes = 120;
-  final recDays = profile.daysPerWeek + 1 > 6 ? 6 : profile.daysPerWeek + 1;
+  final recDays = (profile.daysPerWeek ?? 3) + 1 > 6 ? 6 : (profile.daysPerWeek ?? 3) + 1;
   final options = <String>[];
   if (recMinutes > profile.minutesPerSession) {
     options.add('每节练到约 $recMinutes 分钟');
   }
-  if (recDays > profile.daysPerWeek) {
+  if (recDays > (profile.daysPerWeek ?? 3)) {
     options.add('训练日加到 $recDays 天');
   }
   if (options.isEmpty) return const {};
@@ -332,9 +353,7 @@ Map<String, dynamic> analyzeVolume(
   List<SessionResult> sessions,
 ) {
   final level = profile.level;
-  final weeklyTarget = Map<String, int>.from(
-    weeklyVolume[level] ?? weeklyVolume['beginner']!,
-  );
+  final weeklyTarget = weeklyVolumeFor(level, profile.goal);
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final primaryFrequency =
       _actualMuscleFrequency(split.weeklySchedule, primaryOnly: true);

@@ -12,10 +12,11 @@ from typing import Optional
 
 REQUIRED_FIELDS = (
     "gender", "age", "height_cm", "weight_kg",
-    "level", "goal", "days_per_week", "minutes_per_session", "equipment",
+    "level", "goal", "minutes_per_session", "equipment",
 )
 
 OPTIONAL_WITH_DEFAULT = {
+    "days_per_week": None,       # None → 由 frequency_planner 按时长/目标/水平推导
     "body_fat_pct": None,        # None → 走 Mifflin-St Jeor
     "meals_per_day": 4,
     "supplements": ["creatine"], # 默认建议肌酸
@@ -44,10 +45,10 @@ class UserProfile:
     weight_kg: float
     level: str
     goal: str
-    days_per_week: int
     minutes_per_session: int
     equipment: list[str]
     # optional
+    days_per_week: Optional[int] = None   # None → 由 frequency_planner 推导
     body_fat_pct: Optional[float] = None
     meals_per_day: int = 4
     supplements: list[str] = field(default_factory=lambda: ["creatine"])
@@ -133,9 +134,15 @@ def validate(raw: dict) -> UserProfile:
     if goal not in VALID_GOALS:
         errors.append(f"goal 必须是 {VALID_GOALS}，得到: {goal}")
 
-    days_per_week = int(raw["days_per_week"])
-    if not (0 <= days_per_week <= 7):
-        errors.append(f"days_per_week 范围应为 0-7，得到: {days_per_week}")
+    # days_per_week 可选：不填 → None，交给 frequency_planner 按时长/目标/水平推导
+    raw_days = raw.get("days_per_week")
+    if raw_days is None:
+        days_per_week = None
+        notes.append("未指定训练天数，将按每次时长/目标/水平自动安排")
+    else:
+        days_per_week = int(raw_days)
+        if not (0 <= days_per_week <= 7):
+            errors.append(f"days_per_week 范围应为 0-7，得到: {days_per_week}")
 
     minutes_per_session = int(raw["minutes_per_session"])
     if not (0 <= minutes_per_session <= 180):

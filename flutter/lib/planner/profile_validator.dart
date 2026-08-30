@@ -4,7 +4,7 @@ import 'models.dart';
 UserProfile validateProfile(Map<String, dynamic> raw) {
   const requiredFields = [
     'gender', 'age', 'height_cm', 'weight_kg',
-    'level', 'goal', 'days_per_week', 'minutes_per_session', 'equipment',
+    'level', 'goal', 'minutes_per_session', 'equipment',
   ];
 
   final errors = <String>[];
@@ -40,8 +40,13 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
   final goal = (raw['goal'] as String).toLowerCase();
   if (!validGoals.contains(goal)) errors.add('goal 必须是 $validGoals，得到: $goal');
 
-  final daysPerWeek = (raw['days_per_week'] as num).toInt();
-  if (daysPerWeek < 0 || daysPerWeek > 7) errors.add('days_per_week 范围应为 0-7，得到: $daysPerWeek');
+  // days_per_week 可选：不填 → null，交给 frequencyPlanner 按时长/目标/水平推导
+  final int? daysPerWeek = (raw['days_per_week'] as num?)?.toInt();
+  if (daysPerWeek == null) {
+    notes.add('未指定训练天数，将按每次时长/目标/水平自动安排');
+  } else if (daysPerWeek < 0 || daysPerWeek > 7) {
+    errors.add('days_per_week 范围应为 0-7，得到: $daysPerWeek');
+  }
 
   final minutesPerSession = (raw['minutes_per_session'] as num).toInt();
   if (minutesPerSession < 0 || minutesPerSession > 180) {

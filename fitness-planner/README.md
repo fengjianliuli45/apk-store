@@ -9,6 +9,22 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 引擎决定训练频率（任务 ①.5）
+
+- `days_per_week` 不再是必填输入。用户只填「每次能练多久」，频率是结果：
+  `frequency_planner.plan_frequency()` 在该水平允许的天数范围内（新手 3–4、
+  中级 3–5、高级 3–6），挑**最少的、覆盖率 ≥ 92% 的天数**。
+- 低于「最低训练时长」→ 自动上调时长（科学优先：先保证周训练量）。
+  最低时长按 (水平, 目标, 器械) 用真实引擎搜索得出，例：增肌 新手 ~50–65 / 中级 ~65–70 分钟。
+- `WEEKLY_VOLUME` 按目标缩放（`weekly_volume_for(level, goal)`）：
+  增肌 1.0 / 增肌减脂 0.9 / 减脂 0.85 / 力量 0.85。高级基准容量下调一档，
+  高级单次上限 10→12，力量 `sets_range` (4,5)→(3,5)。
+- 新增 `split_selector` 的 `full_body_4` 模板：新手 4 天仍走全身。
+- 新增 `engine/pipeline.generate_plan(raw, library)` 一站式编排入口，
+  内含 `frequency_planner.resolve`。测试与 Flutter `PlannerGateway` 对齐此顺序。
+- 计划 JSON `1.2 → 1.3`：`training.frequency_plan`（天数 / 上调后的时长 /
+  最低时长 / 覆盖率 / 说明）。`profile.days_per_week` 可为 null（未解析时）。
+
 ## 2026-08-30 容量↔课时一致性（任务 ①：科学健身优先）
 
 - `session_builder` 重写容量与排课：

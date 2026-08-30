@@ -3,7 +3,7 @@ import 'models.dart';
 /// Port of fitness-planner's `tdee_calculator.py`.
 /// Mifflin-St Jeor (no body fat) or Katch-McArdle (with body fat).
 (double, String) _selectActivityLevel(UserProfile p) {
-  final d = p.daysPerWeek;
+  final d = p.daysPerWeek ?? 3;
   final m = p.minutesPerSession;
   if (d == 0) return (1.20, 'sedentary');
   if (d <= 2 || m <= 30) return (1.375, 'light');

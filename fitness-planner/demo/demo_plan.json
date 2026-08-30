@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.2",
+    "version": "1.3",
     "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
@@ -25,7 +25,7 @@
     "level": "intermediate",
     "goal": "hypertrophy",
     "days_per_week": 4,
-    "minutes_per_session": 60,
+    "minutes_per_session": 75,
     "equipment": [
       "barbell",
       "dumbbell",
@@ -34,7 +34,10 @@
     ],
     "injuries": [],
     "warnings": [],
-    "notes": []
+    "notes": [
+      "未指定训练天数，将按每次时长/目标/水平自动安排",
+      "按你每次 75 分钟，安排每周 4 天即可兑现目标训练量。"
+    ]
   },
   "nutrition": {
     "tdee": {
@@ -135,26 +138,33 @@
     },
     "weekly_volume_delivered": {
       "chest": 14,
-      "back": 14,
+      "back": 16,
       "quads": 14,
       "hamstrings": 8,
-      "shoulders": 8,
-      "biceps": 0,
+      "shoulders": 12,
+      "biceps": 4,
       "triceps": 0,
       "calves": 6,
       "core": 0
     },
-    "volume_coverage_pct": 91,
+    "volume_coverage_pct": 100,
     "volume_notes": [
-      "肩：本周训练量略欠，每节 +10 分钟 或 +1 训练日可补。",
       "二头/三头/核心：当前分肢不单独安排，靠复合动作间接带到；想直接练需加训练日或换分肢。"
     ],
     "capacity_recommendation": {},
+    "frequency_plan": {
+      "days_per_week": 4,
+      "minutes_per_session": 75,
+      "min_session_minutes": 65,
+      "coverage_pct": 100,
+      "minutes_raised": false,
+      "note": "按你每次 75 分钟，安排每周 4 天即可兑现目标训练量。"
+    },
     "schedule": [
       {
         "day": "周一",
         "type": "upper",
-        "duration_min": 59,
+        "duration_min": 74,
         "exercises": [
           {
             "name": "杠铃卧推",
@@ -253,7 +263,7 @@
             "name": "坐姿绳索划船",
             "name_en": "Seated Cable Row",
             "exercise_id": "seated_cable_row",
-            "sets": 3,
+            "sets": 4,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -271,9 +281,56 @@
               "肩胛后缩"
             ],
             "target_muscle": "back"
+          },
+          {
+            "name": "坐姿哑铃推举",
+            "name_en": "Seated Dumbbell Press",
+            "exercise_id": "seated_dumbbell_press",
+            "sets": 2,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 6,
+            "primary_muscles": [
+              "shoulders"
+            ],
+            "compound": true,
+            "form_cues": [
+              "靠背支撑",
+              "下降至肩齐",
+              "推过头顶"
+            ],
+            "target_muscle": "shoulders"
+          },
+          {
+            "name": "反握引体向上",
+            "name_en": "Chin-Up",
+            "exercise_id": "chin_up",
+            "sets": 2,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 7,
+            "primary_muscles": [
+              "back",
+              "biceps"
+            ],
+            "compound": true,
+            "form_cues": [
+              "反握肩宽",
+              "拉至下巴过杠",
+              "肩胛下沉"
+            ],
+            "target_muscle": "biceps"
           }
         ],
-        "total_sets": 18
+        "total_sets": 23
       },
       {
         "day": "周二",
@@ -410,7 +467,7 @@
       {
         "day": "周四",
         "type": "upper",
-        "duration_min": 59,
+        "duration_min": 74,
         "exercises": [
           {
             "name": "杠铃卧推",
@@ -509,7 +566,7 @@
             "name": "坐姿绳索划船",
             "name_en": "Seated Cable Row",
             "exercise_id": "seated_cable_row",
-            "sets": 3,
+            "sets": 4,
             "reps": "8-12",
             "load": "65-80% 1RM",
             "rest_sec": 90,
@@ -527,9 +584,56 @@
               "肩胛后缩"
             ],
             "target_muscle": "back"
+          },
+          {
+            "name": "坐姿哑铃推举",
+            "name_en": "Seated Dumbbell Press",
+            "exercise_id": "seated_dumbbell_press",
+            "sets": 2,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 6,
+            "primary_muscles": [
+              "shoulders"
+            ],
+            "compound": true,
+            "form_cues": [
+              "靠背支撑",
+              "下降至肩齐",
+              "推过头顶"
+            ],
+            "target_muscle": "shoulders"
+          },
+          {
+            "name": "反握引体向上",
+            "name_en": "Chin-Up",
+            "exercise_id": "chin_up",
+            "sets": 2,
+            "reps": "8-12",
+            "load": "65-80% 1RM",
+            "rest_sec": 90,
+            "rpe": 7.5,
+            "tempo": "3-1-2-0",
+            "notes": "RIR 1-3",
+            "order": 7,
+            "primary_muscles": [
+              "back",
+              "biceps"
+            ],
+            "compound": true,
+            "form_cues": [
+              "反握肩宽",
+              "拉至下巴过杠",
+              "肩胛下沉"
+            ],
+            "target_muscle": "biceps"
           }
         ],
-        "total_sets": 18
+        "total_sets": 23
       },
       {
         "day": "周五",

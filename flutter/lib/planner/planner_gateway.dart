@@ -1,4 +1,5 @@
 import 'exercise_library.dart';
+import 'frequency_planner.dart';
 import 'macro_allocator.dart';
 import 'meal_distributor.dart';
 import 'models.dart';
@@ -27,11 +28,12 @@ class PlannerGateway {
     return _instance ??= PlannerGateway._(await ExerciseLibrary.load());
   }
 
-  /// Runs the full pipeline: validate → TDEE → macros → split → sessions →
-  /// progression → meals → supplements → assembled plan. Throws
+  /// Runs the full pipeline: validate → frequency → TDEE → macros → split →
+  /// sessions → progression → meals → supplements → assembled plan. Throws
   /// [ValidationError] if `raw` is missing/out-of-range required fields.
   GeneratedPlan generate(Map<String, dynamic> raw) {
-    final profile = validateProfile(raw);
+    final validated = validateProfile(raw);
+    final (profile, freqPlan) = resolveFrequency(validated, _library);
     final tdee = calculateTdee(profile);
     final macros = allocateMacros(profile, tdee);
     final split = selectSplit(profile);
@@ -39,7 +41,7 @@ class PlannerGateway {
     final progression = planProgression(profile);
     final mealPlan = distributeMeals(profile, macros);
     final supplements = adviseSupplements(profile, macros);
-    final volume = weeklyVolume[profile.level] ?? weeklyVolume['beginner']!;
+    final volume = weeklyVolumeFor(profile.level, profile.goal);
     final stageGoal = planStageGoal(profile, progression, sessions);
     final volumeReport = analyzeVolume(profile, split, sessions);
 
@@ -61,6 +63,7 @@ class PlannerGateway {
       volumeNotes: List<String>.from(volumeReport['notes'] as List),
       capacityRecommendation:
           Map<String, dynamic>.from(volumeReport['recommendation'] as Map),
+      frequencyPlan: freqPlan.toJson(),
     );
   }
 }

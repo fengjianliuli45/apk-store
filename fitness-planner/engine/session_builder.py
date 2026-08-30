@@ -21,20 +21,38 @@ from .split_selector import SplitResult
 from .exercise_library import ExerciseLibrary
 
 
-# ── 每周总组数（按 level） ─────────────────────────────────
-
-WEEKLY_VOLUME = {
+# ── 每周总组数 ────────────────────────────────────────────
+# 基准表 = 增肌目标。其他目标按 GOAL_VOLUME_SCALE 缩放：
+# 力量走低容量高强度（组间 2–3 分钟），减脂受热量缺口影响恢复略降。
+_BASE_WEEKLY_VOLUME = {
     "beginner":     {"chest": 10, "back": 12, "quads": 10, "hamstrings": 6, "shoulders": 8, "biceps": 6, "triceps": 6, "calves": 4, "core": 4},
     "intermediate": {"chest": 14, "back": 16, "quads": 14, "hamstrings": 8, "shoulders": 12, "biceps": 8, "triceps": 8, "calves": 6, "core": 6},
-    "advanced":     {"chest": 18, "back": 20, "quads": 18, "hamstrings": 10, "shoulders": 16, "biceps": 10, "triceps": 10, "calves": 8, "core": 8},
+    "advanced":     {"chest": 16, "back": 18, "quads": 16, "hamstrings": 10, "shoulders": 14, "biceps": 10, "triceps": 10, "calves": 8, "core": 8},
 }
+
+GOAL_VOLUME_SCALE = {
+    "hypertrophy": 1.0,
+    "recomposition": 0.9,
+    "fat_loss": 0.85,
+    "strength": 0.85,
+}
+
+# 兼容旧引用：WEEKLY_VOLUME 仍指增肌基准表
+WEEKLY_VOLUME = _BASE_WEEKLY_VOLUME
+
+
+def weekly_volume_for(level: str, goal: str) -> dict[str, int]:
+    """按 level + goal 返回缩放后的每周每肌群组数。"""
+    base = _BASE_WEEKLY_VOLUME.get(level, _BASE_WEEKLY_VOLUME["beginner"])
+    scale = GOAL_VOLUME_SCALE.get(goal, 1.0)
+    return {m: max(2, round(v * scale)) for m, v in base.items()}
 
 # 单次训练单肌群组数上限。证据：每肌群每次 6–8 个有效组最优，>10–12 组疲劳拖累、
 # 收益骤降（Schoenfeld 剂量反应 / 容量地标 MEV-MAV-MRV）。
 MAX_SETS_PER_MUSCLE_SESSION = {
     "beginner": 6,
     "intermediate": 9,
-    "advanced": 10,
+    "advanced": 12,
 }
 
 # 周目标铺到每次暴露：整除 + 余数摊到靠前的场次（前重后轻各差 1 组），
@@ -44,7 +62,7 @@ MAX_SETS_PER_MUSCLE_SESSION = {
 
 TRAINING_VARS = {
     "hypertrophy":     {"load_pct": "65-80% 1RM", "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
-    "strength":        {"load_pct": "≥80% 1RM",   "reps": "3-6",  "sets_range": (4, 5), "rest_sec": 150, "rpe": 8.0, "tempo": "受控",   "rir": "1-2"},
+    "strength":        {"load_pct": "≥80% 1RM",   "reps": "3-6",  "sets_range": (3, 5), "rest_sec": 150, "rpe": 8.0, "tempo": "受控",   "rir": "1-2"},
     "fat_loss":        {"load_pct": "60-75% 1RM", "reps": "10-15","sets_range": (3, 4), "rest_sec": 45,  "rpe": 7.0, "tempo": "3-1-2-0", "rir": "2-3"},
     "recomposition":   {"load_pct": "65-80% 1RM", "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
 }
@@ -200,7 +218,7 @@ def build_sessions(
     level = profile.level
     goal = profile.goal
     vars_ = TRAINING_VARS.get(goal, TRAINING_VARS["hypertrophy"])
-    weekly_volume = WEEKLY_VOLUME.get(level, WEEKLY_VOLUME["beginner"])
+    weekly_volume = weekly_volume_for(level, goal)
     cap = MAX_SETS_PER_MUSCLE_SESSION.get(level, 8)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
@@ -362,7 +380,7 @@ def _recommend_capacity(profile: UserProfile, coverage_pct: int) -> dict:
         return {}
     ratio = 100 / max(coverage_pct, 1)
     rec_minutes = min(120, int(round(profile.minutes_per_session * ratio / 5)) * 5)
-    rec_days = min(6, profile.days_per_week + 1)
+    rec_days = min(6, (profile.days_per_week or 3) + 1)
     options = []
     if rec_minutes > profile.minutes_per_session:
         options.append(f"每节练到约 {rec_minutes} 分钟")
@@ -390,7 +408,7 @@ def analyze_volume(
     返回 {target, delivered, frequency, coverage_pct, notes, recommendation}。
     """
     level = profile.level
-    weekly_target = dict(WEEKLY_VOLUME.get(level, WEEKLY_VOLUME["beginner"]))
+    weekly_target = weekly_volume_for(level, profile.goal)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     primary_frequency = _actual_muscle_frequency(split.weekly_schedule, primary_only=True)
 
