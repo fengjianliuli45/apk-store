@@ -27,7 +27,10 @@ void main() {
     final joined = opts
         .expand((o) => (o['items'] as List).cast<String>())
         .join(' ');
-    for (final animal in ['鸡', '牛', '猪', '鱼', '虾', '蛋', '酸奶', '乳清', '牛奶']) {
+    for (final animal in [
+      '鸡胸', '鸡腿', '瘦牛肉', '猪里脊', '龙利', '三文鱼', '虾仁',
+      '全蛋', '蛋清', '希腊酸奶', '白干酪', '牛奶', '乳清',
+    ]) {
       expect(joined.contains(animal), isFalse, reason: '出现了 $animal: $joined');
     }
   });

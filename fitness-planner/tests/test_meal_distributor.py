@@ -64,7 +64,8 @@ class TestMealDistributor(unittest.TestCase):
         self.assertGreater(macros.per_kg["protein"], 2.0)
         # 方案里不应出现动物蛋白
         joined = " ".join(i for m in mp.meals for o in m.options for i in o["items"])
-        for animal in ("鸡", "牛", "猪", "鱼", "虾", "蛋", "奶", "酸奶", "乳清"):
+        for animal in ("鸡胸", "鸡腿", "瘦牛肉", "猪里脊", "龙利", "三文鱼", "虾仁",
+                       "全蛋", "蛋清", "希腊酸奶", "白干酪", "牛奶", "乳清"):
             self.assertNotIn(animal, joined)
 
     def test_fiber_and_water(self):

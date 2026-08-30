@@ -41,6 +41,7 @@ class SupplementResult:
 def advise(profile: UserProfile, macros: MacroResult) -> SupplementResult:
     """根据用户情况生成补剂建议。"""
     results: list[Supplement] = []
+    restrictions = normalize_restrictions(profile.dietary_restrictions)
 
     # 肌酸：只要不明确拒绝
     user_supps = [s.lower() for s in profile.supplements]
@@ -62,12 +63,14 @@ def advise(profile: UserProfile, macros: MacroResult) -> SupplementResult:
     diet_protein_est = profile.weight_kg * 1.0
     if daily_protein > diet_protein_est:
         deficit = round(daily_protein - diet_protein_est, 1)
+        vegan = "vegan" in restrictions
         results.append(Supplement(
-            name="乳清蛋白粉",
-            name_en="Whey Protein",
+            name="大豆分离蛋白粉" if vegan else "乳清蛋白粉",
+            name_en="Soy Protein Isolate" if vegan else "Whey Protein",
             dose=f"补足差额约 {deficit}g 蛋白",
             condition="饮食蛋白不足时",
-            note="优先从食物摄取，不足部分用蛋白粉补足。",
+            note="优先从食物摄取，不足部分用蛋白粉补足。"
+                 + ("大豆分离蛋白亮氨酸接近乳清。" if vegan else ""),
             pmid="28698222",
         ))
 
@@ -83,7 +86,6 @@ def advise(profile: UserProfile, macros: MacroResult) -> SupplementResult:
         ))
 
     # 素食相关：Omega-3；纯素再加 B12（必补）+ 铁
-    restrictions = normalize_restrictions(profile.dietary_restrictions)
     if "vegetarian" in restrictions:
         results.append(Supplement(
             name="鱼油 / 藻油",

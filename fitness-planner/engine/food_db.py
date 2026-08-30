@@ -196,7 +196,9 @@ def suggest_meal(
     rotate：按餐次错开选材，让一天各餐不重样。
     """
     canteen = cooking_access in ("canteen", "none")
-    proteins = _pool("protein", restrictions, canteen, prefer_leucine=True)
+    # 主蛋白源：排除牛奶 / 豆浆这类稀释饮品（否则要 1kg 才够一餐蛋白）
+    proteins = [p for p in _pool("protein", restrictions, canteen, prefer_leucine=True)
+                if p["per100"]["p"] >= 8]
     staples = _pool("staple", restrictions, canteen)
     veg = _pool("veg", restrictions, canteen)
     fats = _pool("fat", restrictions, canteen)

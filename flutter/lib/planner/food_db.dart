@@ -170,7 +170,10 @@ List<Map<String, dynamic>> suggestMeal(Map<String, double> meal,
     Set<String> restrictions, String cookingAccess, bool isPostWorkout,
     {int nOptions = 2, int rotate = 0}) {
   final canteen = cookingAccess == 'canteen' || cookingAccess == 'none';
-  final proteins = _pool(_proteins, restrictions, canteen, preferLeucine: true);
+  // 主蛋白源：排除牛奶 / 豆浆这类稀释饮品（否则要 1kg 才够一餐蛋白）
+  final proteins = _pool(_proteins, restrictions, canteen, preferLeucine: true)
+      .where((p) => p.p >= 8)
+      .toList();
   final staples = _pool(_staples, restrictions, canteen);
   final veg = _pool(_veg, restrictions, canteen);
   final fats = _pool(_fats, restrictions, canteen);

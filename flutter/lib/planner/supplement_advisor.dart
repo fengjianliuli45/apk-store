@@ -4,6 +4,7 @@ import 'models.dart';
 /// Port of fitness-planner's `supplement_advisor.py`.
 SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
   final results = <Supplement>[];
+  final restrictions = normalizeRestrictions(profile.dietaryRestrictions);
 
   final userSupps = profile.supplements.map((s) => s.toLowerCase()).toList();
   final explicitlyRejected = userSupps.any((s) => s.contains('no') || s.contains('不') || s.contains('拒绝'));
@@ -23,12 +24,14 @@ SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
   final dietProteinEst = profile.weightKg * 1.0;
   if (dailyProtein > dietProteinEst) {
     final deficit = double.parse((dailyProtein - dietProteinEst).toStringAsFixed(1));
+    final vegan = restrictions.contains('vegan');
     results.add(Supplement(
-      name: '乳清蛋白粉',
-      nameEn: 'Whey Protein',
+      name: vegan ? '大豆分离蛋白粉' : '乳清蛋白粉',
+      nameEn: vegan ? 'Soy Protein Isolate' : 'Whey Protein',
       dose: '补足差额约 ${deficit}g 蛋白',
       condition: '饮食蛋白不足时',
-      note: '优先从食物摄取，不足部分用蛋白粉补足。',
+      note: '优先从食物摄取，不足部分用蛋白粉补足。'
+          '${vegan ? '大豆分离蛋白亮氨酸接近乳清。' : ''}',
       pmid: '28698222',
     ));
   }
@@ -43,7 +46,6 @@ SupplementResult adviseSupplements(UserProfile profile, MacroResult macros) {
     ));
   }
 
-  final restrictions = normalizeRestrictions(profile.dietaryRestrictions);
   if (restrictions.contains('vegetarian')) {
     results.add(Supplement(
       name: '鱼油 / 藻油',
