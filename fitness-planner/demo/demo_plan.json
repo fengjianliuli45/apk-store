@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.5",
+    "version": "1.6",
     "generated_at": "2026-08-30T00:00:00+00:00",
     "evidence_basis": [
       "41843416",
@@ -33,6 +33,42 @@
       "machine"
     ],
     "injuries": [],
+    "strength_baseline": {
+      "squat": {
+        "weight_kg": 100.0,
+        "reps": 5
+      },
+      "bench": {
+        "weight_kg": 72.5,
+        "reps": 6
+      },
+      "hinge": {
+        "weight_kg": 120.0,
+        "reps": 5
+      },
+      "row": {
+        "weight_kg": 60.0,
+        "reps": 8
+      }
+    },
+    "one_rm_estimates": {
+      "squat": {
+        "kg": 116.7,
+        "name": "深蹲"
+      },
+      "bench": {
+        "kg": 87.0,
+        "name": "卧推"
+      },
+      "hinge": {
+        "kg": 140.0,
+        "name": "硬拉/罗马尼亚硬拉"
+      },
+      "row": {
+        "kg": 76.0,
+        "name": "划船"
+      }
+    },
     "warnings": [],
     "notes": [
       "未指定训练天数，将按每次时长/目标/水平自动安排",
@@ -230,7 +266,8 @@
             "exercise_id": "barbell_bench_press",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "62.5 kg（65-80% 1RM）",
+            "load_kg": 62.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -254,7 +291,8 @@
             "exercise_id": "dumbbell_row",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "25 kg/只（65-80% 1RM）",
+            "load_kg": 25.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -277,7 +315,8 @@
             "exercise_id": "dumbbell_shoulder_press",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "17.5 kg/只（65-80% 1RM）",
+            "load_kg": 17.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -300,7 +339,8 @@
             "exercise_id": "dumbbell_bench_press",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "27.5 kg/只（65-80% 1RM）",
+            "load_kg": 27.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -323,7 +363,8 @@
             "exercise_id": "seated_cable_row",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "55 kg（65-80% 1RM）",
+            "load_kg": 55.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -346,7 +387,8 @@
             "exercise_id": "seated_dumbbell_press",
             "sets": 2,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "17.5 kg/只（65-80% 1RM）",
+            "load_kg": 17.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -369,7 +411,8 @@
             "exercise_id": "chin_up",
             "sets": 2,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "自重（按次数 / 难度递进）",
+            "load_kg": null,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -401,7 +444,8 @@
             "exercise_id": "goblet_squat",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "30 kg/只（65-80% 1RM）",
+            "load_kg": 30.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -424,7 +468,8 @@
             "exercise_id": "dumbbell_rdl",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "37.5 kg/只（65-80% 1RM）",
+            "load_kg": 37.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -448,7 +493,8 @@
             "exercise_id": "walking_lunges",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "22.5 kg/只（65-80% 1RM）",
+            "load_kg": 22.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -472,7 +518,8 @@
             "exercise_id": "standing_calf_raise",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "45 kg（65-80% 1RM）",
+            "load_kg": 45.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -495,7 +542,8 @@
             "exercise_id": "bodyweight_squat",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "自重（按次数 / 难度递进）",
+            "load_kg": null,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -533,7 +581,8 @@
             "exercise_id": "barbell_bench_press",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "62.5 kg（65-80% 1RM）",
+            "load_kg": 62.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -557,7 +606,8 @@
             "exercise_id": "dumbbell_row",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "25 kg/只（65-80% 1RM）",
+            "load_kg": 25.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -580,7 +630,8 @@
             "exercise_id": "dumbbell_shoulder_press",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "17.5 kg/只（65-80% 1RM）",
+            "load_kg": 17.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -603,7 +654,8 @@
             "exercise_id": "dumbbell_bench_press",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "27.5 kg/只（65-80% 1RM）",
+            "load_kg": 27.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -626,7 +678,8 @@
             "exercise_id": "seated_cable_row",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "55 kg（65-80% 1RM）",
+            "load_kg": 55.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -649,7 +702,8 @@
             "exercise_id": "seated_dumbbell_press",
             "sets": 2,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "17.5 kg/只（65-80% 1RM）",
+            "load_kg": 17.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -672,7 +726,8 @@
             "exercise_id": "chin_up",
             "sets": 2,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "自重（按次数 / 难度递进）",
+            "load_kg": null,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -704,7 +759,8 @@
             "exercise_id": "goblet_squat",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "30 kg/只（65-80% 1RM）",
+            "load_kg": 30.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -727,7 +783,8 @@
             "exercise_id": "dumbbell_rdl",
             "sets": 4,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "37.5 kg/只（65-80% 1RM）",
+            "load_kg": 37.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -751,7 +808,8 @@
             "exercise_id": "walking_lunges",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "22.5 kg/只（65-80% 1RM）",
+            "load_kg": 22.5,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -775,7 +833,8 @@
             "exercise_id": "standing_calf_raise",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "45 kg（65-80% 1RM）",
+            "load_kg": 45.0,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -798,7 +857,8 @@
             "exercise_id": "bodyweight_squat",
             "sets": 3,
             "reps": "8-12",
-            "load": "65-80% 1RM",
+            "load": "自重（按次数 / 难度递进）",
+            "load_kg": null,
             "rest_sec": 90,
             "rpe": 7.5,
             "tempo": "3-1-2-0",
@@ -916,6 +976,32 @@
       }
     ],
     "completion_rule": "完成执行与数据质量门槛，并满足至少一个能力或身体趋势结果；百分比表现提升必须由两次可比较训练确认；存在未处理安全问题时不得自动达成",
-    "unlock_reward": "pet_hatchling"
+    "unlock_reward": "pet_hatchling",
+    "baseline_lifts": [
+      {
+        "exercise_id": "barbell_bench_press",
+        "name": "杠铃卧推",
+        "start_load_kg": 62.5,
+        "record": "首周记录：相同负荷下的规范次数"
+      },
+      {
+        "exercise_id": "dumbbell_row",
+        "name": "单臂哑铃划船",
+        "start_load_kg": 25.0,
+        "record": "首周记录：相同负荷下的规范次数"
+      },
+      {
+        "exercise_id": "dumbbell_shoulder_press",
+        "name": "哑铃推举",
+        "start_load_kg": 17.5,
+        "record": "首周记录：相同负荷下的规范次数"
+      },
+      {
+        "exercise_id": "dumbbell_bench_press",
+        "name": "哑铃卧推",
+        "start_load_kg": 27.5,
+        "record": "首周记录：相同负荷下的规范次数"
+      }
+    ]
   }
 }

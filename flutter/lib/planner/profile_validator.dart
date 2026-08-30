@@ -86,6 +86,27 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
     cookingAccess = 'home';
   }
 
+  // 起始力量：{basis: {weight_kg, reps} | {one_rm_kg}}，只收 4 个基准动作
+  final strengthBaseline = <String, dynamic>{};
+  final rawSb = raw['strength_baseline'];
+  if (rawSb is Map) {
+    for (final basis in const ['squat', 'bench', 'hinge', 'row']) {
+      final v = rawSb[basis];
+      if (v is! Map) continue;
+      if (v['one_rm_kg'] != null) {
+        strengthBaseline[basis] = {'one_rm_kg': (v['one_rm_kg'] as num).toDouble()};
+      } else if (v['weight_kg'] != null && v['reps'] != null) {
+        strengthBaseline[basis] = {
+          'weight_kg': (v['weight_kg'] as num).toDouble(),
+          'reps': (v['reps'] as num).toInt(),
+        };
+      }
+    }
+  }
+  if (strengthBaseline.isEmpty) {
+    notes.add('未提供起始重量，前几次训练按 RPE / RIR 找重量，之后据实调整');
+  }
+
   if (errors.isNotEmpty) throw ValidationError(errors);
 
   final bmi = weightKg / ((heightCm / 100) * (heightCm / 100));
@@ -118,6 +139,7 @@ UserProfile validateProfile(Map<String, dynamic> raw) {
     injuries: injuries,
     dietaryRestrictions: dietaryRestrictions,
     cookingAccess: cookingAccess,
+    strengthBaseline: strengthBaseline,
     warnings: warnings,
     notes: notes,
   );

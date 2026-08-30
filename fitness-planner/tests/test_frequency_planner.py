@@ -104,7 +104,7 @@ class TestPipeline(unittest.TestCase):
             "minutes_per_session": 60, "equipment": ["dumbbell", "bodyweight"],
         }
         plan = generate_plan(raw, self.lib)
-        self.assertEqual(plan["meta"]["version"], "1.5")
+        self.assertEqual(plan["meta"]["version"], "1.6")
         self.assertEqual(len(plan["training"]["schedule"]), 7)
         fp = plan["training"]["frequency_plan"]
         self.assertIsNotNone(fp)

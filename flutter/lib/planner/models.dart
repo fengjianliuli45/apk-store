@@ -38,11 +38,13 @@ class UserProfile {
     List<String>? injuries,
     List<String>? dietaryRestrictions,
     this.cookingAccess = 'home',
+    Map<String, dynamic>? strengthBaseline,
     List<String>? warnings,
     List<String>? notes,
   }) : supplements = supplements ?? ['creatine'],
        injuries = injuries ?? [],
        dietaryRestrictions = dietaryRestrictions ?? [],
+       strengthBaseline = strengthBaseline ?? {},
        warnings = warnings ?? [],
        notes = notes ?? [];
 
@@ -62,6 +64,7 @@ class UserProfile {
   final List<String> injuries;
   final List<String> dietaryRestrictions;
   final String cookingAccess;
+  final Map<String, dynamic> strengthBaseline; // {basis: {weight_kg,reps} | {one_rm_kg}}
   final List<String> warnings;
   final List<String> notes;
 
@@ -89,6 +92,7 @@ class UserProfile {
     'equipment': equipment,
     'meals_per_day': mealsPerDay,
     'target_weight_kg': targetWeightKg,
+    'strength_baseline': strengthBaseline,
     'injuries': injuries,
     'warnings': warnings,
     'notes': notes,
@@ -254,6 +258,7 @@ class ExerciseEntry {
     this.compound = false,
     this.formCues = const [],
     this.targetMuscle = '',
+    this.loadKg,
   });
 
   final String name;
@@ -262,6 +267,7 @@ class ExerciseEntry {
   final int sets;
   final String reps;
   final String load;
+  final double? loadKg; // 有起始 1RM 时算出的建议重量；否则 null（首周找）
   final int restSec;
   final double rpe;
   final String tempo;
@@ -279,6 +285,7 @@ class ExerciseEntry {
     'sets': sets,
     'reps': reps,
     'load': load,
+    'load_kg': loadKg,
     'rest_sec': restSec,
     'rpe': rpe,
     'tempo': tempo,
@@ -460,6 +467,7 @@ class StageGoal {
     required this.outcomeTargets,
     required this.completionRule,
     this.unlockReward = 'pet_hatchling',
+    this.baselineLifts = const [],
   });
 
   final String stageType;
@@ -473,6 +481,7 @@ class StageGoal {
   final List<OutcomeTarget> outcomeTargets;
   final String completionRule;
   final String unlockReward;
+  final List<Map<String, dynamic>> baselineLifts;
 
   Map<String, dynamic> toJson() => {
     'stage_type': stageType,
@@ -486,6 +495,7 @@ class StageGoal {
     'outcome_targets': outcomeTargets.map((target) => target.toJson()).toList(),
     'completion_rule': completionRule,
     'unlock_reward': unlockReward,
+    'baseline_lifts': baselineLifts,
   };
 
   factory StageGoal.fromJson(Map<String, dynamic> json) => StageGoal(
@@ -501,6 +511,10 @@ class StageGoal {
     outcomeTargets: (json['outcome_targets'] as List? ?? const [])
         .map((target) => OutcomeTarget.fromJson(target as Map<String, dynamic>))
         .toList(),
+    baselineLifts: [
+      for (final b in (json['baseline_lifts'] as List? ?? const []))
+        Map<String, dynamic>.from(b as Map),
+    ],
     completionRule: (json['completion_rule'] as String?) ?? '',
     unlockReward: (json['unlock_reward'] as String?) ?? 'pet_hatchling',
   );
@@ -620,6 +634,7 @@ class GeneratedPlan {
     this.capacityRecommendation = const {},
     this.frequencyPlan = const {},
     this.recoveryDays = const [],
+    this.oneRmEstimates = const {},
   });
 
   final DateTime generatedAt;
@@ -650,9 +665,15 @@ class GeneratedPlan {
   /// 休息日的轻日安排（交付 2）：mobility / cardio / pump / rest。
   final List<RecoveryDay> recoveryDays;
 
+  /// 起始 1RM 估计（任务 ②）：{basis: {kg, name}}。
+  final Map<String, dynamic> oneRmEstimates;
+
   Map<String, dynamic> toJson() => {
-    'meta': {'version': '1.5', 'generated_at': generatedAt.toIso8601String()},
-    'profile': profile.toJson(),
+    'meta': {'version': '1.6', 'generated_at': generatedAt.toIso8601String()},
+    'profile': {
+      ...profile.toJson(),
+      'one_rm_estimates': oneRmEstimates,
+    },
     'nutrition': {
       'tdee': tdee.toJson(),
       'macros': macros.toJson(),
@@ -704,6 +725,9 @@ class GeneratedPlan {
         bodyFatPct: (profileJson['body_fat_pct'] as num?)?.toDouble(),
         mealsPerDay: (profileJson['meals_per_day'] as num?)?.toInt() ?? 4,
         targetWeightKg: (profileJson['target_weight_kg'] as num?)?.toDouble(),
+        strengthBaseline: Map<String, dynamic>.from(
+          profileJson['strength_baseline'] as Map? ?? const {},
+        ),
         injuries: List<String>.from(
           profileJson['injuries'] as List? ?? const [],
         ),
@@ -755,6 +779,7 @@ class GeneratedPlan {
               sets: ex['sets'] as int,
               reps: ex['reps'] as String,
               load: ex['load'] as String,
+              loadKg: (ex['load_kg'] as num?)?.toDouble(),
               restSec: ex['rest_sec'] as int,
               rpe: (ex['rpe'] as num).toDouble(),
               tempo: ex['tempo'] as String,

@@ -24,6 +24,7 @@ OPTIONAL_WITH_DEFAULT = {
     "injuries": [],
     "dietary_restrictions": [],
     "cooking_access": "home",
+    "strength_baseline": {},     # {basis: {weight_kg, reps} 或 {one_rm_kg}}；缺 → 首周找重量
 }
 
 TRACKING_ONLY = (
@@ -56,6 +57,7 @@ class UserProfile:
     injuries: list[str] = field(default_factory=list)
     dietary_restrictions: list[str] = field(default_factory=list)
     cooking_access: str = "home"
+    strength_baseline: dict = field(default_factory=dict)
     # 校验时生成的元信息
     warnings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -194,6 +196,24 @@ def validate(raw: dict) -> UserProfile:
         warnings.append(f"cooking_access={cooking_access} 不在 {VALID_COOKING}，默认 home")
         cooking_access = "home"
 
+    # 起始力量：{basis: {weight_kg, reps} 或 {one_rm_kg}}，只收 4 个基准动作的合法项
+    strength_baseline: dict = {}
+    raw_sb = raw.get("strength_baseline") or {}
+    if isinstance(raw_sb, dict):
+        for basis in ("squat", "bench", "hinge", "row"):
+            v = raw_sb.get(basis)
+            if not isinstance(v, dict):
+                continue
+            if v.get("one_rm_kg"):
+                strength_baseline[basis] = {"one_rm_kg": float(v["one_rm_kg"])}
+            elif v.get("weight_kg") and v.get("reps"):
+                strength_baseline[basis] = {
+                    "weight_kg": float(v["weight_kg"]),
+                    "reps": int(v["reps"]),
+                }
+    if not strength_baseline:
+        notes.append("未提供起始重量，前几次训练按 RPE / RIR 找重量，之后据实调整")
+
     if errors:
         raise ValidationError(errors)
 
@@ -228,6 +248,7 @@ def validate(raw: dict) -> UserProfile:
         injuries=injuries,
         dietary_restrictions=dietary_restrictions,
         cooking_access=cooking_access,
+        strength_baseline=strength_baseline,
         warnings=warnings,
         notes=notes,
     )

@@ -9,6 +9,21 @@ App 运行时用的是 `flutter/lib/planner/`（Dart 移植）。**改算法时�
 - `session_builder`：按真实周日程肌群频次回算组数 + 单次肌群上限 + 课时预算
 - `progression_planner`：每 4 周减载（容量 60%）
 
+## 2026-08-30 起始重量 / 1RM（任务 ②）
+
+- 新增 `engine/load_planner.py`：把「65-80% 1RM」转成具体重量。
+  - onboarding 混合采集：`strength_baseline = {squat|bench|hinge|row: {weight_kg, reps} 或 {one_rm_kg}}`。
+    有器械填一组估测 → Epley 反推 1RM；做不了/不确定/徒手 → 留空，首周按 RPE 找重量。
+  - 每个动作标「基准 + 系数」（`_PATTERN_BASIS` + `_EXERCISE_COEF`，哑铃按每只手）：
+    建议重量 = 基准 1RM × 系数 × 目标 %1RM，取整 2.5kg。
+  - `ExerciseEntry.load` 从「65-80% 1RM」变「52.5 kg（65-80% 1RM）」/「27.5 kg/只（…）」/
+    「首周按 RPE 找重量」/「自重（按次数 / 难度递进）」；新增数值字段 `load_kg`。
+- `profile.strength_baseline` + `profile.one_rm_estimates`（Epley 结果）进 JSON。
+- `stage_goal.baseline_lifts`：挑计划里前几个复合动作作为「标准化测试动作」，
+  带首周基线负荷，供阶段达成对比。
+- 徒手用户的渐进（加次数 → 换更难变式）是单独子任务，本次未做。
+- 计划 JSON `1.5 → 1.6`。
+
 ## 2026-08-30 自适应训练量 + 按恢复排日历（交付 2b）
 
 - **训练量目标自适应**（`analyze_volume`）：目标不再是固定表，而是「用户这个时长/天数

@@ -39,6 +39,27 @@ List<OutcomeTarget> _targetsFor(String goal) {
   return targets;
 }
 
+List<Map<String, dynamic>> _baselineLifts(List<SessionResult> sessions) {
+  final seen = <String>{};
+  final out = <Map<String, dynamic>>[];
+  for (final s in sessions) {
+    for (final ex in s.exercises) {
+      if (!ex.compound || seen.contains(ex.exerciseId)) continue;
+      seen.add(ex.exerciseId);
+      out.add({
+        'exercise_id': ex.exerciseId,
+        'name': ex.name,
+        'start_load_kg': ex.loadKg,
+        'record': ex.loadKg != null
+            ? '首周记录：相同负荷下的规范次数'
+            : '首周记录：动作 + 完成的规范次数',
+      });
+      if (out.length >= 4) return out;
+    }
+  }
+  return out;
+}
+
 StageGoal planStageGoal(
   UserProfile profile,
   ProgressionResult progression,
@@ -49,6 +70,7 @@ StageGoal planStageGoal(
   final plannedSessions = weeklySessions * cycleWeeks;
   final requiredSessions = (plannedSessions * 0.8).ceil();
   return StageGoal(
+    baselineLifts: _baselineLifts(sessions),
     stageType: 'adaptation',
     goalType: profile.goal,
     cycleWeeks: cycleWeeks,

@@ -1,4 +1,5 @@
 import 'exercise_library.dart';
+import 'load_planner.dart';
 import 'models.dart';
 
 /// Port of fitness-planner's `session_builder.py` (2026-08-30 容量↔课时重构).
@@ -57,10 +58,10 @@ const maxSetsPerMuscleSession = {
 };
 
 const _trainingVars = {
-  'hypertrophy': {'load_pct': '65-80% 1RM', 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
-  'strength': {'load_pct': '≥80% 1RM', 'reps': '3-6', 'sets_range': [3, 5], 'rest_sec': 150, 'rpe': 8.0, 'tempo': '受控', 'rir': '1-2'},
-  'fat_loss': {'load_pct': '60-75% 1RM', 'reps': '10-15', 'sets_range': [3, 4], 'rest_sec': 45, 'rpe': 7.0, 'tempo': '3-1-2-0', 'rir': '2-3'},
-  'recomposition': {'load_pct': '65-80% 1RM', 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
+  'hypertrophy': {'load_pct': '65-80% 1RM', 'load_pct_mid': 0.72, 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
+  'strength': {'load_pct': '≥80% 1RM', 'load_pct_mid': 0.85, 'reps': '3-6', 'sets_range': [3, 5], 'rest_sec': 150, 'rpe': 8.0, 'tempo': '受控', 'rir': '1-2'},
+  'fat_loss': {'load_pct': '60-75% 1RM', 'load_pct_mid': 0.68, 'reps': '10-15', 'sets_range': [3, 4], 'rest_sec': 45, 'rpe': 7.0, 'tempo': '3-1-2-0', 'rir': '2-3'},
+  'recomposition': {'load_pct': '65-80% 1RM', 'load_pct_mid': 0.72, 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
 };
 
 // 时间估算常量（只用于估时，不改动作的处方参数）。
@@ -156,6 +157,9 @@ List<SessionResult> buildSessions(
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
   final prescribedRest = vars_['rest_sec'] as int;
   final setsRange = (vars_['sets_range'] as List).cast<int>();
+  final oneRmMap = buildOneRmMap(profile.strengthBaseline);
+  final loadMid = (vars_['load_pct_mid'] as num?)?.toDouble() ?? 0.72;
+  final loadLabel = vars_['load_pct'] as String;
 
   final totalBudgetSec =
       (profile.minutesPerSession * 60).clamp(15 * 60, 1 << 30).toInt();
@@ -260,13 +264,16 @@ List<SessionResult> buildSessions(
       if (sets > setsRange[1]) sets = setsRange[1];
       if (sets > fitSets) sets = fitSets;
       if (sets < 2) return 0;
+      final (loadText, loadKg) =
+          suggestLoad(ex, oneRmMap, loadMid, loadLabel);
       sessionExercises.add(ExerciseEntry(
         name: ex.name,
         nameEn: ex.nameEn,
         exerciseId: ex.id,
         sets: sets,
         reps: vars_['reps'] as String,
-        load: vars_['load_pct'] as String,
+        load: loadText,
+        loadKg: loadKg == 0 ? null : loadKg,
         restSec: vars_['rest_sec'] as int,
         rpe: vars_['rpe'] as double,
         tempo: vars_['tempo'] as String,
