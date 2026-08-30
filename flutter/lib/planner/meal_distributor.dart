@@ -98,17 +98,20 @@ MealPlan distributeMeals(UserProfile profile, MacroResult macros) {
   final waterTraining = waterRest + waterMlTrainingBonus;
 
   final dietNotes = <String>[...macros.notes];
+  // 每餐 0.4 g/kg 为最优刺激（Schoenfeld & Aragon 2018），0.3 g/kg 为触发阈值下限
   final proteinFloor =
       double.parse((0.3 * profile.weightKg).toStringAsFixed(1));
+  final proteinTarget =
+      double.parse((0.4 * profile.weightKg).toStringAsFixed(1));
   final lowMeals = meals
       .where((m) => m.proteinG + 1e-6 < proteinFloor)
       .map((m) => m.name)
       .toList();
   if (lowMeals.isNotEmpty) {
-    dietNotes.add('每餐蛋白建议 ≥${proteinFloor}g（0.3 g/kg）以充分刺激肌肉合成；'
-        '偏低的餐：${lowMeals.join('、')}——可把蛋白挪一些过去或加一份');
+    dietNotes.add('每餐蛋白最优 ~${proteinTarget}g（0.4 g/kg），下限 ${proteinFloor}g（0.3 g/kg）；'
+        '偏低的餐：${lowMeals.join('、')}——把蛋白挪一些过去或加一份');
   }
-  dietNotes.add('蛋白尽量均分到各餐，相邻 3–4 小时一次');
+  dietNotes.add('蛋白尽量均分到各餐，相邻 3–4 小时一次（MPS 窗口 ~2–3h）');
   dietNotes.add('膳食纤维 ≥${fiberG}g/天：每餐一拳蔬菜 + 主食尽量选糙米/燕麦/薯类');
   dietNotes.add('饮水：非训练日约 ${waterRest}ml，训练日约 ${waterTraining}ml');
   if (restrictions.contains('vegan')) {

@@ -151,14 +151,16 @@ def distribute(profile: UserProfile, macros: MacroResult) -> MealPlan:
 
     # 膳食提示
     diet_notes: list[str] = list(macros.notes)
+    # 每餐 0.4 g/kg 为最优刺激（Schoenfeld & Aragon 2018），0.3 g/kg 为触发阈值下限
     protein_floor = round(0.3 * profile.weight_kg, 1)
+    protein_target = round(0.4 * profile.weight_kg, 1)
     low_meals = [m.name for m in meals if m.protein_g + 1e-6 < protein_floor]
     if low_meals:
         diet_notes.append(
-            f"每餐蛋白建议 ≥{protein_floor}g（0.3 g/kg）以充分刺激肌肉合成；"
-            f"偏低的餐：{'、'.join(low_meals)}——可把蛋白挪一些过去或加一份"
+            f"每餐蛋白最优 ~{protein_target}g（0.4 g/kg），下限 {protein_floor}g（0.3 g/kg）；"
+            f"偏低的餐：{'、'.join(low_meals)}——把蛋白挪一些过去或加一份"
         )
-    diet_notes.append("蛋白尽量均分到各餐，相邻 3–4 小时一次")
+    diet_notes.append("蛋白尽量均分到各餐，相邻 3–4 小时一次（MPS 窗口 ~2–3h）")
     diet_notes.append(f"膳食纤维 ≥{fiber_g}g/天：每餐一拳蔬菜 + 主食尽量选糙米/燕麦/薯类")
     diet_notes.append(f"饮水：非训练日约 {water_rest}ml，训练日约 {water_training}ml")
     if "vegan" in restrictions:
