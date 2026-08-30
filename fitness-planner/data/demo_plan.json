@@ -1266,7 +1266,13 @@
         }
       ]
     },
-    "split_warnings": []
+    "split_warnings": [],
+    "injury_accommodations": {
+      "injuries": [],
+      "notes": [],
+      "under_covered_muscles": [],
+      "pain_free_range_exercises": []
+    }
   },
   "stage_goal": {
     "stage_type": "adaptation",

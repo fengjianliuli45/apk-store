@@ -50,6 +50,7 @@ def generate_plan(raw: dict, library: Optional[ExerciseLibrary] = None) -> dict:
         frequency_plan=freq_plan,
         recovery_days=recovery_days,
         mesocycle=mesocycle,
+        library=library,
     )
 
 

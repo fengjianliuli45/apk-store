@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'injury_planner.dart';
 import 'models.dart';
 
 /// Port of fitness-planner's `exercise_library.py`. Loads
@@ -63,30 +64,31 @@ class ExerciseLibrary {
     final patterns = _typePatterns[exerciseType] ?? const [];
     if (patterns.isEmpty) return [];
 
+    final inj = normalizeInjuries(injuries);
     final expandedEquip = _expandedEquipment(equipment);
 
     final results = <Exercise>[];
     for (final ex in _exercises) {
       if (!patterns.contains(ex.movementPattern)) continue;
       if (!ex.equipmentRequired.every(expandedEquip.contains)) continue;
-
-      if (injuries.isNotEmpty) {
-        var skip = false;
-        for (final inj in injuries) {
-          for (final contraind in ex.injuryContraindications) {
-            if (inj.toLowerCase().contains(contraind.toLowerCase()) ||
-                contraind.toLowerCase().contains(inj.toLowerCase())) {
-              skip = true;
-              break;
-            }
-          }
-          if (skip) break;
-        }
-        if (skip) continue;
-      }
-
+      if (inj.isNotEmpty && isContraindicated(ex, inj)) continue;
       if (level == 'beginner' && ex.skillLevel == 'advanced') continue;
+      results.add(ex);
+    }
+    return results;
+  }
 
+  List<Exercise> queryByMuscle(String muscle, List<String> equipment,
+      {String level = 'beginner', List<String> injuries = const []}) {
+    final inj = normalizeInjuries(injuries);
+    final expandedEquip = _expandedEquipment(equipment);
+    final results = <Exercise>[];
+    for (final ex in _exercises) {
+      if (!ex.primaryMuscles.contains(muscle) &&
+          !ex.secondaryMuscles.contains(muscle)) continue;
+      if (!ex.equipmentRequired.every(expandedEquip.contains)) continue;
+      if (level == 'beginner' && ex.skillLevel == 'advanced') continue;
+      if (inj.isNotEmpty && isContraindicated(ex, inj)) continue;
       results.add(ex);
     }
     return results;
@@ -95,6 +97,11 @@ class ExerciseLibrary {
   List<Exercise> findAlternatives(String exerciseId, List<String> injuries) {
     final ex = getById(exerciseId);
     if (ex == null) return [];
-    return ex.alternativesIfInjured.map((id) => _index[id]).whereType<Exercise>().toList();
+    final inj = normalizeInjuries(injuries);
+    return ex.alternativesIfInjured
+        .map((id) => _index[id])
+        .whereType<Exercise>()
+        .where((a) => !isContraindicated(a, inj))
+        .toList();
   }
 }

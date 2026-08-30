@@ -782,6 +782,7 @@ class GeneratedPlan {
     this.recoveryDays = const [],
     this.oneRmEstimates = const {},
     this.mesocycle,
+    this.injuryAccommodations = const {},
   });
 
   final DateTime generatedAt;
@@ -814,6 +815,9 @@ class GeneratedPlan {
 
   /// 中周期（任务 A/④）：积累期 + 减载周。
   final Mesocycle? mesocycle;
+
+  /// 伤病适配（任务 P0 #3）：{injuries, notes, under_covered_muscles, pain_free_range_exercises}
+  final Map<String, dynamic> injuryAccommodations;
 
   /// 起始 1RM 估计（任务 ②）：{basis: {kg, name}}。
   final Map<String, dynamic> oneRmEstimates;
@@ -850,6 +854,7 @@ class GeneratedPlan {
       'schedule': sessions.map((s) => s.toJson()).toList(),
       'progression': progression.toJson(),
       'split_warnings': split.warnings,
+      'injury_accommodations': injuryAccommodations,
     },
     if (stageGoal != null) 'stage_goal': stageGoal!.toJson(),
   };
@@ -1052,6 +1057,9 @@ class GeneratedPlan {
         for (final r in (training['recovery_days'] as List? ?? const []))
           RecoveryDay.fromJson(r as Map<String, dynamic>),
       ],
+      injuryAccommodations: Map<String, dynamic>.from(
+        training['injury_accommodations'] as Map? ?? const {},
+      ),
       stageGoal: json['stage_goal'] == null
           ? null
           : StageGoal.fromJson(json['stage_goal'] as Map<String, dynamic>),

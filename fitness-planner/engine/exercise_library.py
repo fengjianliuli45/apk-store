@@ -143,7 +143,8 @@ class ExerciseLibrary:
         injuries: 用户伤病列表（过滤不适动作）
         level: 技能等级（beginner 过滤 advanced 动作）
         """
-        injuries = injuries or []
+        from .injury_planner import normalize_injuries, is_contraindicated
+        _inj = normalize_injuries(injuries or [])
         patterns = TYPE_PATTERNS.get(exercise_type, [])
         if not patterns:
             return []
@@ -160,19 +161,9 @@ class ExerciseLibrary:
             if not all(eq in expanded_equip for eq in ex.equipment_required):
                 continue
 
-            # 伤病过滤
-            if injuries:
-                skip = False
-                for inj in injuries:
-                    # 模糊匹配：如果伤病关键词出现在 contraindications 中
-                    for contraind in ex.injury_contraindications:
-                        if inj.lower() in contraind.lower() or contraind.lower() in inj.lower():
-                            skip = True
-                            break
-                    if skip:
-                        break
-                if skip:
-                    continue
+            # 伤病过滤：规范化后按 injury_planner 的规则（避开模式 / 动作 / 自带禁忌）
+            if _inj and is_contraindicated(ex, _inj):
+                continue
 
             # 等级过滤：beginner 不做 advanced 动作
             if level == "beginner" and ex.skill_level == "advanced":
@@ -182,8 +173,11 @@ class ExerciseLibrary:
 
         return results
 
-    def query_by_muscle(self, muscle: str, equipment: list[str], level: str = "beginner") -> list[Exercise]:
+    def query_by_muscle(self, muscle: str, equipment: list[str], level: str = "beginner",
+                        injuries: Optional[list[str]] = None) -> list[Exercise]:
         """按主肌群筛选。"""
+        from .injury_planner import normalize_injuries, is_contraindicated
+        _inj = normalize_injuries(injuries or [])
         expanded_equip = _expand_equipment(equipment)
 
         results = []
@@ -194,14 +188,18 @@ class ExerciseLibrary:
                 continue
             if level == "beginner" and ex.skill_level == "advanced":
                 continue
+            if _inj and is_contraindicated(ex, _inj):
+                continue
             results.append(ex)
 
         return results
 
     def find_alternatives(self, exercise_id: str, injuries: list[str]) -> list[Exercise]:
-        """查找替代动作（当原动作因伤病被排除时）。"""
+        """查找替代动作（当原动作因伤病被排除时），本身对该伤病不适的替代也剔掉。"""
+        from .injury_planner import normalize_injuries, is_contraindicated
         ex = self.get_by_id(exercise_id)
         if not ex:
             return []
-        alt_ids = ex.alternatives_if_injured
-        return [self._index[aid] for aid in alt_ids if aid in self._index]
+        _inj = normalize_injuries(injuries or [])
+        alts = [self._index[aid] for aid in ex.alternatives_if_injured if aid in self._index]
+        return [a for a in alts if not is_contraindicated(a, _inj)]

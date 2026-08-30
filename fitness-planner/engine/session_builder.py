@@ -249,6 +249,8 @@ def build_sessions(
     weekly_volume = weekly_volume_for(level, goal, getattr(profile, "volume_cycle_offset", 0))
     exercise_offset = max(0, int(getattr(profile, "exercise_cycle_offset", 0) or 0))
     bw_progress = getattr(profile, "bodyweight_progress", {}) or {}
+    from .injury_planner import normalize_injuries, is_cautioned
+    _inj = normalize_injuries(getattr(profile, "injuries", []) or [])
     cap = MAX_SETS_PER_MUSCLE_SESSION.get(level, 8)
     frequency = _actual_muscle_frequency(split.weekly_schedule)
     prescribed_rest = vars_["rest_sec"]
@@ -319,8 +321,13 @@ def build_sessions(
         def _bodyweight_demoted(e) -> int:
             return 1 if (has_loaded_gear and e.equipment_required == ["bodyweight"]) else 0
 
+        # 伤病"软提示"动作排到最后：有干净替代就不用它，没有才兜底
+        def _injury_cautioned(e) -> int:
+            return 1 if (_inj and is_cautioned(e, _inj)) else 0
+
         exercises.sort(key=lambda e: (
-            _bodyweight_demoted(e), not e.compound, e.skill_level != "beginner"))
+            _injury_cautioned(e), _bodyweight_demoted(e),
+            not e.compound, e.skill_level != "beginner"))
 
         # 徒手进阶：同 movement_pattern 的自重变式按 progression_rank 排成阶梯
         def _bw_ladder(pattern: str) -> list:

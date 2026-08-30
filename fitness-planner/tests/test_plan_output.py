@@ -98,6 +98,30 @@ class TestPlanOutput(unittest.TestCase):
         for pmid in plan_json["meta"]["evidence_basis"]:
             self.assertIsInstance(pmid, str)
 
+    def test_injury_accommodations_empty_without_injuries(self):
+        ib = self._generate()["training"]["injury_accommodations"]
+        self.assertEqual(ib["injuries"], [])
+        self.assertEqual(ib["notes"], [])
+
+    def test_injury_accommodations_with_injury(self):
+        from engine.pipeline import generate_plan
+        p = generate_plan({
+            "gender": "M", "age": 30, "height_cm": 178.0, "weight_kg": 80.0,
+            "level": "intermediate", "goal": "hypertrophy", "minutes_per_session": 75,
+            "equipment": ["barbell", "dumbbell", "cable", "machine"],
+            "injuries": ["左膝盖疼", "shoulder impingement"],
+        })
+        ib = p["training"]["injury_accommodations"]
+        self.assertEqual(sorted(ib["injuries"]), ["knee", "shoulder"])
+        self.assertEqual(len(ib["notes"]), 2)
+        # 计划没被删空：腿日仍有动作
+        legs = [s for s in p["training"]["schedule"]
+                if s["type"] in ("lower", "legs", "full_body") and s["exercises"]]
+        self.assertTrue(legs)
+        ids = {e["exercise_id"] for s in p["training"]["schedule"] for e in s["exercises"]}
+        self.assertNotIn("walking_lunges", ids)      # 膝：硬禁
+        self.assertNotIn("overhead_press", ids)      # 肩：硬禁
+
 
 if __name__ == "__main__":
     unittest.main()
