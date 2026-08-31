@@ -123,7 +123,8 @@ backend/
 1. ✅ **地基**（PR #11）：clone boilerplate → 砍 Mongoose/facebook → postgis 镜像 → redis 到 compose →
    UUIDv7 生成器 + 游标分页 + Idempotency 拦截器（文件就绪，未全局挂）。OpenAPI 导出待做。
 2. ✅ **认证**（PR #12）：`auth-phone`（console SMS driver + Redis OTP + 三层限流）+ `auth-wechat`（mock/http driver）+ `user_identities` 多身份表 + `AuthService.validateIdentityLogin`。未接真实短信/微信密钥。
-3. **核心域**：`profiles` → `plans`（+ planner_version / 输入快照）→ `workouts` → `sync`（Outbox + cursor）。← 下一步
+3. ✅ **核心域**（PR #13–#16）：`profiles`（#13）→ `plans` + 版本快照（#14）→ `workouts`（#15）→ `sync`（#16，协议见 `backend/packages/contracts/sync.md`）。
+4. **媒体 + 通知** ← 下一步（见下）。
 4. **媒体 + 通知**：`media`（预签名直传）+ `notifications`（FCM/APNs stub）。
 5. **社交 + 聊天**：`social` + `chat`（WebSocket gateway）。
 6. **接 planner**：worker 里 check-in 结果脱敏转投 `/v1/cohort/submit`；`plans` 复现调用。

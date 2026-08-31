@@ -47,8 +47,11 @@ import { TrainingPlansModule } from './training-plans/training-plans.module';
 
 import { WorkoutSessionsModule } from './workout-sessions/workout-sessions.module';
 
+import { SyncModule } from './sync/sync.module';
+
 @Module({
   imports: [
+    SyncModule,
     WorkoutSessionsModule,
     TrainingPlansModule,
     ProfilesModule,

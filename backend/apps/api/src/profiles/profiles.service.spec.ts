@@ -2,6 +2,12 @@ import { NotFoundException } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { Profile } from './domain/profile';
 import { ProfileRepository } from './infrastructure/persistence/profile.repository';
+import { SyncEmitterService } from '../sync-events/sync-emitter.service';
+
+const fakeSync = {
+  emit: () => Promise.resolve(null),
+  cursor: () => Promise.resolve(0),
+} as unknown as SyncEmitterService;
 
 class FakeProfileRepository implements ProfileRepository {
   rows: Profile[] = [];
@@ -40,7 +46,7 @@ describe('ProfilesService', () => {
 
   beforeEach(() => {
     repo = new FakeProfileRepository();
-    service = new ProfilesService(repo);
+    service = new ProfilesService(repo, fakeSync);
   });
 
   it('should create a profile on first upsert', async () => {
