@@ -45,8 +45,11 @@ import { ProfilesModule } from './profiles/profiles.module';
 
 import { TrainingPlansModule } from './training-plans/training-plans.module';
 
+import { WorkoutSessionsModule } from './workout-sessions/workout-sessions.module';
+
 @Module({
   imports: [
+    WorkoutSessionsModule,
     TrainingPlansModule,
     ProfilesModule,
     UserIdentitiesModule,
