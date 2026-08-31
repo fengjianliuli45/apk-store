@@ -61,10 +61,20 @@
 
 单测：`src/training-plans`（7）—— `npx jest` 33 通过。build + lint 通过。
 
+## 已做（阶段 3-c：workouts）
+
+| 改动 | 文件 |
+|---|---|
+| `workout_session`（UUIDv7 PK，`userId` FK，`(userId, createdAt)` 索引，关联 `planVersionId` + `planDayIndex` 可空） | `src/workout-sessions/` + 迁移 `1756600300000-CreateWorkouts.ts` |
+| `workout_set`（UUIDv7 PK，`sessionId` FK CASCADE，exerciseKey / exerciseName / setIndex / reps / weightKg / rir / isWarmup / completedAt） | `src/workout-sets/`（只保留持久化层） |
+| 端点（都过 `AuthGuard('jwt')` + 逐条 ownership 校验，越权按 404）：<br>`POST /api/v1/workouts/sessions`（默认 in_progress，打 startedAt）<br>`GET /api/v1/workouts/sessions`（游标分页）<br>`GET /api/v1/workouts/sessions/:id`（含 sets）<br>`PATCH /api/v1/workouts/sessions/:id`（改 status / notes；→ completed 打 completedAt）<br>`POST /api/v1/workouts/sessions/:id/sets`（批量追加）<br>`PATCH /api/v1/workouts/sets/:setId`（修正）<br>`DELETE /api/v1/workouts/sets/:setId` | `workout-sessions.controller.ts` |
+
+单测：`src/workout-sessions`（6）—— `npx jest` 39 通过。build + lint 通过。
+
 ## 还没做（下一步）
 
-- 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。`POST /plans` 目前靠"已有 active 就追加"天然幂等（不会重复建计划），但同一份计划连点两次会产生两个相邻版本——挂上幂等拦截器后用 Idempotency-Key 去重。
-- 阶段 3-c/d：`workouts` / `sync`。
+- 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
+- 阶段 3-d：`sync`（Outbox + cursor 增量同步，§9.1）。workout 写操作接进 outbox 也在那一步。
 - 账号合并：现在同一个人用手机号 + 微信会得到两个 user 行。合并流程（老账号验证后 link 新 identity）待排期。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：后续加 `publicId uuid` 列，不动 PK。
