@@ -41,8 +41,11 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
 
 import { UserIdentitiesModule } from './user-identities/user-identities.module';
 
+import { ProfilesModule } from './profiles/profiles.module';
+
 @Module({
   imports: [
+    ProfilesModule,
     UserIdentitiesModule,
     ConfigModule.forRoot({
       isGlobal: true,

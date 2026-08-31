@@ -37,14 +37,26 @@
 
 **未接真实渠道**：短信只有 console driver；微信只有 mock driver + 未实测的 http driver。接阿里云/腾讯云短信、微信开放平台密钥时补 driver 实现（配置位已就绪）。
 
+## 已做（阶段 3-a：profiles）
+
+| 改动 | 文件 |
+|---|---|
+| `profile` 表（UUIDv7 PK，`userId` 唯一，1:1 到 user，ON DELETE CASCADE） | `src/profiles/` + 迁移 `1756600100000-CreateProfile.ts` |
+| 问卷稳定字段：sex / birthdate / heightCm / goal / experienceLevel / minutesPerSession / mealsPerDay / cookingAccess / targetWeightKg / injuriesText / equipment[] / dietaryRestrictions[] | `profile.entity.ts`（equipment / dietaryRestrictions 用 jsonb） |
+| 身体数据同意（§9.6）：`bodyDataConsentAt` + `bodyDataConsentVersion`，`bodyDataConsent:true` 时打时间戳 | `profiles.service.ts` |
+| `GET /api/v1/profile/me`（未建 → 404）+ `PUT /api/v1/profile/me`（upsert，省略字段不当作清空） | `profiles.controller.ts`（`AuthGuard('jwt')`） |
+
+单测：`src/profiles`（6）—— `npx jest` 26 通过。build + lint 通过。
+
+变会随时间的体重 / 体脂 / 围度不在 profile，走后面的 body log。
+
 ## 还没做（下一步）
 
-- **主键策略**：boilerplate 核心表（`user` / `session` / `role` / `status`）保持自增 int，减少与 upstream 的分叉（ADAPTATION_PLAN §9.9 已按此修订）。
-  Stopwatch 自有领域表一律 UUIDv7（`user_identity` 已是）。`user` 对外若要防枚举，后续加 `publicId uuid` 列，不动 PK。
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
-- 阶段 3：`profiles` / `plans`（+ planner_version + 输入快照）/ `workouts` / `sync`。
-- 账号合并：现在同一个人用手机号 + 微信会得到两个 user 行。合并 UI/流程（老账号验证后 link 新 identity）留到 `profiles` 之后。
+- 阶段 3-b/c/d：`plans`（+ planner_version + 输入快照）/ `workouts` / `sync`。
+- 账号合并：现在同一个人用手机号 + 微信会得到两个 user 行。合并流程（老账号验证后 link 新 identity）待排期。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
+- `user` 防枚举：后续加 `publicId uuid` 列，不动 PK。
 
 ## 上游跟进流程（ADAPTATION_PLAN §9.11）
 
