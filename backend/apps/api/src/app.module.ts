@@ -13,6 +13,7 @@ import redisConfig from './redis/config/redis.config';
 import smsConfig from './common/sms/config/sms.config';
 import authPhoneConfig from './auth-phone/config/auth-phone.config';
 import wechatConfig from './auth-wechat/config/wechat.config';
+import mediaConfig from './media-objects/config/media.config';
 import { RedisModule } from './redis/redis.module';
 import { OtpModule } from './common/otp/otp.module';
 import { SmsModule } from './common/sms/sms.module';
@@ -49,8 +50,11 @@ import { WorkoutSessionsModule } from './workout-sessions/workout-sessions.modul
 
 import { SyncModule } from './sync/sync.module';
 
+import { MediaObjectsModule } from './media-objects/media-objects.module';
+
 @Module({
   imports: [
+    MediaObjectsModule,
     SyncModule,
     WorkoutSessionsModule,
     TrainingPlansModule,
@@ -70,6 +74,7 @@ import { SyncModule } from './sync/sync.module';
         smsConfig,
         authPhoneConfig,
         wechatConfig,
+        mediaConfig,
       ],
       envFilePath: ['.env'],
     }),
