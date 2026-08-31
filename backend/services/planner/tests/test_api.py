@@ -30,13 +30,15 @@ def client(tmp_path):
 
 
 def _submit(client, device, age=27, bmi=23.5, bench=None):
-    return client.post("/v1/cohort/submit", json={
+    r = client.post("/v1/cohort/submit", json={
         "device_id": device, "weeks_elapsed": 8, "planner_version": "1.8",
         "profile": {"sex": "M", "age": age, "bmi": bmi, "level": "beginner",
                     "goal": "hypertrophy", "equipment": ["dumbbell"]},
         "metrics": {"bench_e1rm_pct": bench if bench is not None else 12.0,
                     "adherence_pct": 80.0},
     })
+    assert r.status_code == 200, r.text
+    return r
 
 
 def test_health(client):
@@ -72,7 +74,7 @@ def test_benchmark_k_anonymity_and_percentiles(client):
 def test_benchmark_widens_when_bmi_bucket_thin(client):
     # 25 人同 cohort 但 bmi 各异 → 精确桶不足，放宽掉 bmi_band 后够
     for i in range(25):
-        _submit(client, f"w-{i:03d}", bmi=18.0 + i * 0.4, bench=float(i))
+        _submit(client, f"wide-{i:03d}", bmi=18.0 + i * 0.4, bench=float(i))
     b = client.get("/v1/cohort/benchmark", params={
         "sex": "M", "age": 27, "bmi": 23.5, "level": "beginner",
         "goal": "hypertrophy", "weeks_elapsed": 8, "equipment": ["dumbbell"]}).json()

@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,10 +8,21 @@ from .routers import cohort
 
 settings = get_settings()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 生产用 alembic；sqlite（本地/测试）直接建表
+    if settings.database_url.startswith("sqlite"):
+        from .db import init_db
+        init_db()
+    yield
+
+
 app = FastAPI(
     title="Stopwatch Planner Service",
     version=settings.planner_version,
     description="服务端计划引擎 + 同类对标（统计聚合）。见 backend/services/planner/README.md",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -25,11 +38,3 @@ app.include_router(cohort.router)
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "planner_version": settings.planner_version}
-
-
-@app.on_event("startup")
-def _startup() -> None:
-    # 生产用 alembic；sqlite（本地/测试）直接建表
-    if settings.database_url.startswith("sqlite"):
-        from .db import init_db
-        init_db()
