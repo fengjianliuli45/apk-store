@@ -90,15 +90,29 @@
 - `serverSeq` = MAX+1 + 唯一约束重试，高并发有重试成本。
 - 没有 plan / body_log 同步；没有 WebSocket 主动推送；profile 冲突后写胜。
 
+## 已做（阶段 4-a：media — 用户上传媒体）
+
+| 改动 | 文件 |
+|---|---|
+| `media_object` 表（UUIDv7 PK，`userId` FK，`storageKey` 唯一，status pending/ready/rejected，moderationStatus） | `src/media-objects/` + 迁移 `1756600500000-CreateMediaObject.ts` |
+| `StorageService` 抽象：`fake`（开发/测试，内存）/ `s3`（S3 兼容 —— 阿里云 OSS / 腾讯云 COS / AWS S3，`endpoint` 可配） | `src/media-objects/storage/` + `MEDIA_DRIVER` |
+| 预签名直传（§9.13）：`POST /api/v1/media/upload-url` → 校验 content-type 白名单 + 按 purpose 的大小上限 → key 前缀 `userId/purpose/uuid.ext` + 短 TTL → 建 `media_object` pending → 返回 uploadUrl | `media-objects.service.ts` |
+| `POST /api/v1/media/:id/complete` → HEAD 核对实际大小 / 类型（超限 / 不符 → rejected）→ status ready。幂等 | 同上 |
+| `GET /api/v1/media/:id` → 元数据 + 读 URL（有 CDN 前缀走 CDN，否则预签名 GET） | 同上 |
+| `assertUsable(userId, mediaId)` 供 social / chat 确认 media 属于该用户且 ready | 同上 |
+
+单测：`src/media-objects`（10，用 FakeStorage 跑通请求→直传→complete→越权 全流程）—— `npx jest` 55 通过。build + lint 通过。
+
+**未做**：内容审核（§9.5）—— `completeUpload` 里留了 TODO，要向 worker 投审核任务、回写 `moderationStatus`。缩略图 / 视频也没做（只图片）。
+
 ## 还没做（下一步）
 
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：加 `publicId uuid` 列。
-- 阶段 4+：media / notifications / social / chat（见 ADAPTATION_PLAN §8）。
-- 账号合并：现在同一个人用手机号 + 微信会得到两个 user 行。合并流程（老账号验证后 link 新 identity）待排期。
-- OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
-- `user` 防枚举：后续加 `publicId uuid` 列，不动 PK。
+- 阶段 4-b：`notifications`（多通道 push，含国内厂商）。阶段 5：`social` / `chat`。
+- 内容审核接入（阿里云 / 腾讯云内容安全 API），media + social + chat 都要。
+- 账号合并：手机号 + 微信同一人 = 两个 user 行，合并流程待排期。
 
 ## 上游跟进流程（ADAPTATION_PLAN §9.11）
 
