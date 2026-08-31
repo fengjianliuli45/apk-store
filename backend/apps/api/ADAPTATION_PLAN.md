@@ -228,7 +228,7 @@ backend/
 | 模块 | 现成方案 | 状态 |
 |---|---|---|
 | **通知** | `Novu`（MIT，FCM/APNs/SMS 多渠道 + 工作流编排，Docker 自托管） | ✅ 接。国内厂商推送 / 微信自己加 provider |
-| **聊天 / 消息** | `OpenIM`（Go，国内团队，SDK 全，K8s）或 `Tinode` | ✅ 接。OpenIM 更贴国内 |
+| **聊天 / 消息** | `OpenIM`（Apache 2.0，Go，国内团队，SDK 全，REST + Webhook 接入）| ✅ 接（见 §9.15 调研）。Tinode GPL 别用 |
 | **媒体存储** | `MinIO`（S3 兼容自托管） | ✅ 接。预签名直传标准做法 |
 | **内容审核** | 阿里云 / 腾讯云内容安全（云 API，非开源项目） | ✅ 接 |
 | **条码 / 营养库** | `Open Food Facts`（DB + API，可自托管 Product Opener + 每日导出） | ✅ 接 |
@@ -238,7 +238,7 @@ backend/
 | **认证 · 邮箱/Google/Apple** | boilerplate 自带 | ✅ 留用 |
 | **认证 · 手机 OTP** | 逻辑简单（Redis 存码 + 限流），自己写；短信走阿里/腾讯 SDK | 🟡 自己写 |
 | **认证 · 微信登录** | 没有可直接用的"微信登录模块"；阿里有 SDK，`code→openid/unionid` 自己接 | 🟡 自己写 |
-| **社交动态流** | `Stream-Framework`（GetStream 开源版，要 Cassandra、维护弱）。中小体量直接 Postgres + 扇出表自己写更省 | 🟡 建议自己写 |
+| **社交动态流** | 没有成熟开源方案（见 §9.15）。`Stream-Framework` 要 Cassandra + 多年没维护 | 🔴 自己写（Postgres + 扇出） |
 | **异步队列** | `BullMQ`（现成库） | ✅ 接 |
 | **离线同步协议** | 没有能直接套的（Yjs/Automerge 是文档协同，不适合训练记录 / 计划版本）。见 §9.1 自己定协议 | 🔴 自己写 |
 | **计划 / 训练记录**（问卷快照 / 计划版本 / 组数场次） | Stopwatch 独有领域，没现成的。用 boilerplate 生成器出 CRUD 骨架，逻辑自己写 | 🔴 自己写 |
@@ -266,6 +266,39 @@ backend/
 | `Stream-Framework`（动态流） | BSD-3 | ✅ | 但不推荐（Cassandra + 维护弱），建议 Postgres 自写 |
 
 **要改的**：`media` 模块的存储 driver 直接对接**阿里云 OSS / 腾讯云 COS**，不引 MinIO（`dev.compose` 里本地开发可保留一个 SeaweedFS 或 MinIO 容器仅供开发，生产走云 OSS）。
+
+## 9.15 阶段 5（social + chat）现成方案调研（2026-08-31）
+
+用户要求："优先调研有没有已经成熟的解决方案"。结论：**聊天有，社交流没有。**
+
+### 聊天 / IM
+
+| 方案 | 授权 / 商用 | 形态 | 适不适合 |
+|---|---|---|---|
+| **OpenIM**（open-im-server） | **Apache 2.0，✅ 商用免费** | Go 微服务，自托管，客户端 SDK 全（含 Flutter）。前微信技术团队，贴国内合规 | ✅ **成熟、对口**。有 REST API（后端建用户 / 发 IM token）+ Webhook（消息 / 关系 / 推送 前后回调 → 接我们的审核 + notifications）。用户系统保留在 `apps/api`，OpenIM 只管消息 |
+| Tinode | GPL-3.0 | Go 自托管 | ❌ copyleft，商用别碰 |
+| Rocket.Chat / Mattermost / Matrix-Synapse | 各异（RC 社区版限 100 并发 + MongoDB；Matrix 偏联邦、重） | 团队协作聊天产品 | ❌ 形态不对（要的是 App 内嵌 1:1 私信，不是 Slack） |
+| Sendbird / CometChat / GetStream Chat / MirrorFly | 商业 SaaS 或付费自托管授权 | 托管 | ❌ 付费 / 数据不在自己手 |
+| 自己在 NestJS 写 | —— | `@nestjs/websockets` + `socket.io` + `@socket.io/redis-adapter` | 🟡 全控但要自己写会话 / 消息序号 / 回执 / 未读 / 在线 / 离线投递 / 推送联动，工作量大、后期维护 |
+
+**OpenIM 的代价**：它是一整个独立服务，自带 MongoDB + Kafka + Redis + MinIO（对象存储那块可换云 OSS）。用户单服务器现在扛这一套偏重。
+
+**两条路，要用户拍板：**
+- **A（推荐，若服务器扛得住）**：现在就接 OpenIM 独立服务（像 planner 一样）。`apps/api` 登录后调 OpenIM REST 建用户 + 发 token；OpenIM 的消息前置回调 → 内容审核；推送回调 → 我们的 `NotificationsService`。聊天完全不在 NestJS 写。
+- **B（轻起步）**：先在 NestJS 写**最小 1:1 私信**（`conversation` / `conversation_member` / `message`〔会话内单调序号，§9.1〕/ `message_receipt` + socket.io + redis-adapter），群聊 / 富功能不做，以后量大了整体换 OpenIM。
+
+### 社交动态流
+
+**没有可直接用的成熟开源方案。**
+- `Stream-Framework`（BSD-3，GetStream 的开源版）—— 要 Cassandra，多年基本没维护，不建议。
+- 其它（GetStream / Social+ / Weavy …）全是商业 SaaS。
+- 行业共识（10K–1M 用户量级）：**单 Postgres + 后台任务（BullMQ）扇出**即可。正常用户 fan-out-on-write 到每用户 feed 表 / Redis sorted set；大 V（>50 万粉）fan-out-on-read，混合。
+
+**结论**：social 自己在 Postgres 写（约 5 张表：`social_post` / `post_comment` / `post_like`〔唯一约束〕/ `follow` / `block` / `report`）。MVP 直接 **fan-out-on-read**（查关注列表的帖子合并排序），feed 延迟成问题了再上 BullMQ 扇出 + Redis。social 帖子跟 Stopwatch 的训练 / 计划强绑，本来也没现成的。
+
+来源：
+- OpenIM 文档 https://docs.openim.io/ ・ LICENSE https://github.com/openimsdk/open-im-server/blob/main/LICENSE
+- 社交流架构 https://getstream.io/blog/build-a-social-media-app/ ・ https://www.calibreos.com/learn/hld-news-feed
 
 ## 10. 首期最小闭环（建议 MVP 边界）
 
