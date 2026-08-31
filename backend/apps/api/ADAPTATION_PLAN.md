@@ -125,7 +125,7 @@ backend/
 2. ✅ **认证**（PR #12）：`auth-phone`（console SMS driver + Redis OTP + 三层限流）+ `auth-wechat`（mock/http driver）+ `user_identities` 多身份表 + `AuthService.validateIdentityLogin`。未接真实短信/微信密钥。
 3. ✅ **核心域**（PR #13–#16）：`profiles`（#13）→ `plans` + 版本快照（#14）→ `workouts`（#15）→ `sync`（#16，协议见 `backend/packages/contracts/sync.md`）。
 4. ✅ **媒体 + 通知**：`media`（#18）+ `notifications`（#19：站内通知 + 偏好/免打扰 + device_token + PushService 抽象；真实 APNs/FCM/厂商待接）。
-5. **社交 + 聊天**：`social`（Postgres 自写）+ `chat`（见 §9.15 / §11：小服务器上 OpenIM 不可行，聊天先延后或最小 1:1）← 下一步，**先看 §11**。
+5. ✅ **社交**（PR #22）：`social`（Postgres 自写：post/comment/like/follow/block/report + fan-out-on-read feed + 互动通知）。`chat` **延后**到升配后接 OpenIM（§9.15 / §11）。
 6. **接 planner**：check-in 结果脱敏转投 `/v1/cohort/submit`；`plans` 复现调用。planner 服务本身按 §11 **延后部署**。
 
 每一步：迁移 + 种子 + E2E 测试 + 更新 `packages/contracts` 的 OpenAPI。

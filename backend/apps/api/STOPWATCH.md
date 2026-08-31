@@ -118,16 +118,38 @@
 
 单测：`src/notifications`（7，内存 repo：推送/关推送/关分类/免打扰/未读计数/token upsert/推送失败不炸）—— `npx jest` 62 通过。build + lint 通过。
 
-**未做**：真实推送通道（APNs / FCM / 国内厂商）；其它模块（workouts 提醒、plans 完成、social 互动）还没调 `notify()`——那是各模块自己接的事。
+**未做**：真实推送通道（APNs / FCM / 国内厂商）；训练提醒 / 计划就绪还没调 `notify()`（各模块自己接）。social 互动已接（见下）。
+
+## 已做（阶段 5：social）
+
+`chat` 按 ADAPTATION_PLAN §11 **延后**（小机器上 OpenIM 不可行）。本阶段只做 social，Postgres 自写，fan-out-on-read。
+
+| 改动 | 文件 |
+|---|---|
+| 6 张表：`social_post`（软删 tombstone + like/comment 计数 + moderationStatus）/ `post_comment` / `post_like`〔unique(postId,userId)〕/ `follow`〔unique(followerId,followeeId)〕/ `block`〔unique〕/ `report` | `src/{social-posts,post-comments,post-likes,follows,blocks,reports}/` + 迁移 `1756600700000-CreateSocial.ts` |
+| 一个 `SocialModule` + `SocialService` 编排全部 6 个 repo + `MediaObjectsService.assertUsable` + `NotificationsService.notify` | `src/social/` |
+| 关注流 = 作者 ∈（我关注的 ∪ 我），排除拉黑双向。`liked` 标记回填 | `social.service.ts` `getFeed` |
+| 点赞 / 评论幂等 + 计数增减 + 通知作者（非自己）。关注 → 通知对方。拉黑 → 互相取关 | 同上 |
+| `followers`-可见帖对非粉丝按 404。删帖 = 软删（tombstone，同步要）。举报每日上限 20 | 同上 |
+
+端点（`AuthGuard('jwt')`）：
+`POST/GET/DELETE /api/v1/social/posts[/:id]`、`GET /social/feed`、`GET /social/users/:userId/posts`、
+`POST/DELETE /social/posts/:id/like`、`GET/POST /social/posts/:id/comments` + `DELETE /social/comments/:id`、
+`POST/DELETE /social/follow/:userId`、`GET /social/users/:userId/{followers,following,stats}`、
+`POST/DELETE /social/block/:userId`、`POST /social/reports`。
+
+单测：`src/social`（10，内存 repo：关注流 / 拉黑隐藏+取关 / 点赞幂等+计数+通知 / 自赞不通知 / 评论计数+通知 / 粉丝可见 / 关注自己拒绝 / 删帖鉴权 / 楼主删他人评论 / feed liked 回填）—— `npx jest` 72 通过。build + lint 通过。
+
+**未做**：内容审核（`createPost`/`addComment` 里留 TODO，§9.5）；feed 现在 fan-out-on-read，量大再上 BullMQ 扇出 + Redis；`refId` 归属校验（分享的 workout/plan 是不是自己的）；admin 审核后台。
 
 ## 还没做（下一步）
 
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：加 `publicId uuid` 列。
-- 阶段 5：`social` / `chat`（WebSocket gateway）。
-- 内容审核接入（阿里云 / 腾讯云内容安全 API），media + social + chat 都要。
-- 各模块接 `NotificationsService.notify()`（训练提醒、计划就绪、互动）。
+- `chat`：升配后接 OpenIM（ADAPTATION_PLAN §9.15 / §11）。
+- 内容审核接入（阿里云 / 腾讯云内容安全 API），media + social 都要。
+- 训练提醒 / 计划就绪接 `NotificationsService.notify()`。
 - 账号合并：手机号 + 微信同一人 = 两个 user 行，合并流程待排期。
 
 ## 上游跟进流程（ADAPTATION_PLAN §9.11）
