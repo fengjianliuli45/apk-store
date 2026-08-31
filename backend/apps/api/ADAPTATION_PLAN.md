@@ -216,6 +216,30 @@ backend/
 
 ---
 
+## 9.14 各模块的现成方案（能接就别自己写）
+
+| 模块 | 现成方案 | 状态 |
+|---|---|---|
+| **通知** | `Novu`（MIT，FCM/APNs/SMS 多渠道 + 工作流编排，Docker 自托管） | ✅ 接。国内厂商推送 / 微信自己加 provider |
+| **聊天 / 消息** | `OpenIM`（Go，国内团队，SDK 全，K8s）或 `Tinode` | ✅ 接。OpenIM 更贴国内 |
+| **媒体存储** | `MinIO`（S3 兼容自托管） | ✅ 接。预签名直传标准做法 |
+| **内容审核** | 阿里云 / 腾讯云内容安全（云 API，非开源项目） | ✅ 接 |
+| **条码 / 营养库** | `Open Food Facts`（DB + API，可自托管 Product Opener + 每日导出） | ✅ 接 |
+| **管理后台** | `AdminJS` / `react-admin` / `Refine`（接 NestJS + Postgres 自动 CRUD） | ✅ 接 |
+| **监控** | Prometheus + Grafana + Loki + Tempo（架构文档 §2.3 已列） | ✅ 标准栈 |
+| **附近的人** | PostGIS（Postgres 扩展，dev.compose 已用 postgis 镜像） | ✅ 不用单独项目 |
+| **认证 · 邮箱/Google/Apple** | boilerplate 自带 | ✅ 留用 |
+| **认证 · 手机 OTP** | 逻辑简单（Redis 存码 + 限流），自己写；短信走阿里/腾讯 SDK | 🟡 自己写 |
+| **认证 · 微信登录** | 没有可直接用的"微信登录模块"；阿里有 SDK，`code→openid/unionid` 自己接 | 🟡 自己写 |
+| **社交动态流** | `Stream-Framework`（GetStream 开源版，要 Cassandra、维护弱）。中小体量直接 Postgres + 扇出表自己写更省 | 🟡 建议自己写 |
+| **异步队列** | `BullMQ`（现成库） | ✅ 接 |
+| **离线同步协议** | 没有能直接套的（Yjs/Automerge 是文档协同，不适合训练记录 / 计划版本）。见 §9.1 自己定协议 | 🔴 自己写 |
+| **计划 / 训练记录**（问卷快照 / 计划版本 / 组数场次） | Stopwatch 独有领域，没现成的。用 boilerplate 生成器出 CRUD 骨架，逻辑自己写 | 🔴 自己写 |
+| **拍照识别食物** | 模型用现成（云 API / 开源模型 + nutrition5k 类数据集），业务串联自己写 | 🔴 串联自己写 |
+
+**结论**：能接的都接现成的（通知 / 聊天 / 存储 / 审核 / 条码 / 后台 / 监控）。真正要自己写的是
+**「计划 + 训练记录 + 离线同步」** —— 正好是 Stopwatch 的核心，也是别人替不了的。
+
 ## 10. 首期最小闭环（建议 MVP 边界）
 
 避免摊子铺太大。首个可用版本 = **登录 → 填问卷出计划 → 跟练打卡 → check-in 调整 → 多设备同步**：
