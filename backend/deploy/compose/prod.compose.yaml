@@ -1,0 +1,92 @@
+# Stopwatch 后端 —— 小机器（1c2t / 2G / 40G）生产 / 内测拓扑。
+# 见 backend/apps/api/ADAPTATION_PLAN.md §11。
+#   docker compose -f backend/deploy/compose/prod.compose.yaml --env-file .env up -d --build
+#
+# 不含：Python planner / 独立 worker / Kafka / MinIO / 监控栈 —— 升配后再加。
+# 媒体走阿里云 OSS，短信走阿里云/腾讯云 SMS，监控走阿里云云监控。
+name: stopwatch
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=192MB"
+      - "-c"
+      - "effective_cache_size=512MB"
+      - "-c"
+      - "work_mem=4MB"
+      - "-c"
+      - "maintenance_work_mem=64MB"
+      - "-c"
+      - "max_connections=20"
+      - "-c"
+      - "wal_compression=on"
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:?set in .env}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?set in .env}
+      POSTGRES_DB: ${DATABASE_NAME:-stopwatch}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME}"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 420M
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redisdata:/data
+    deploy:
+      resources:
+        limits:
+          memory: 160M
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    build:
+      context: ../../apps/api
+      dockerfile: relational.e2e.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - ../../apps/api/.env
+    environment:
+      NODE_ENV: production
+      NODE_OPTIONS: "--max-old-space-size=384"
+      DATABASE_HOST: postgres
+      DATABASE_MAX_CONNECTIONS: "10"
+      REDIS_URL: redis://redis:6379/0
+      WORKER_HOST: redis://redis:6379/1
+    ports:
+      - "${APP_PORT:-3001}:${APP_PORT:-3001}"
+    deploy:
+      resources:
+        limits:
+          memory: 560M
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  pgdata:
+  redisdata:

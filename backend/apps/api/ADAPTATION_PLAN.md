@@ -125,10 +125,8 @@ backend/
 2. ✅ **认证**（PR #12）：`auth-phone`（console SMS driver + Redis OTP + 三层限流）+ `auth-wechat`（mock/http driver）+ `user_identities` 多身份表 + `AuthService.validateIdentityLogin`。未接真实短信/微信密钥。
 3. ✅ **核心域**（PR #13–#16）：`profiles`（#13）→ `plans` + 版本快照（#14）→ `workouts`（#15）→ `sync`（#16，协议见 `backend/packages/contracts/sync.md`）。
 4. ✅ **媒体 + 通知**：`media`（#18）+ `notifications`（#19：站内通知 + 偏好/免打扰 + device_token + PushService 抽象；真实 APNs/FCM/厂商待接）。
-5. **社交 + 聊天**：`social` + `chat`（WebSocket gateway）← 下一步。
-4. **媒体 + 通知**：`media`（预签名直传）+ `notifications`（FCM/APNs stub）。
-5. **社交 + 聊天**：`social` + `chat`（WebSocket gateway）。
-6. **接 planner**：worker 里 check-in 结果脱敏转投 `/v1/cohort/submit`；`plans` 复现调用。
+5. **社交 + 聊天**：`social`（Postgres 自写）+ `chat`（见 §9.15 / §11：小服务器上 OpenIM 不可行，聊天先延后或最小 1:1）← 下一步，**先看 §11**。
+6. **接 planner**：check-in 结果脱敏转投 `/v1/cohort/submit`；`plans` 复现调用。planner 服务本身按 §11 **延后部署**。
 
 每一步：迁移 + 种子 + E2E 测试 + 更新 `packages/contracts` 的 OpenAPI。
 
@@ -274,3 +272,72 @@ backend/
 避免摊子铺太大。首个可用版本 = **登录 → 填问卷出计划 → 跟练打卡 → check-in 调整 → 多设备同步**：
 `auth-phone` + `auth-wechat` + `profiles` + `plans` + `workouts` + `sync` + `notifications`(最简)。
 社交 / 聊天 / 饮食识别 / 附近的人 / 同类对标软提示 —— 都是第二批。
+
+---
+
+## 11. 资源约束下的架构修订（2026-08-31）
+
+**服务器实况**：阿里云 1 核 2 线程 / 2.5GHz / **2GB 内存** / 40GB 磁盘。原架构文档假设的多服务拓扑（NestJS + Python + Postgres + Redis + Kafka/RabbitMQ + MinIO + OpenIM + Prometheus/Grafana）在这台机器上**跑不起来**。
+
+### 11.1 这台机器能装什么
+
+2GB 内存共租（api + db + redis 同机）的现实预算：
+
+| 组件 | 常驻内存 | 说明 |
+|---|---|---|
+| OS + dockerd | 200–350MB | |
+| PostgreSQL（调过参） | 250–350MB | `shared_buffers=192MB` / `work_mem=4MB` / `max_connections=20` / `effective_cache_size=512MB` |
+| Redis | 20–40MB | `maxmemory 128mb` + `allkeys-lru` |
+| NestJS `apps/api`（限堆） | 250–380MB | `NODE_OPTIONS=--max-old-space-size=384`，单实例，`mem_limit: 512m` |
+| **合计基线** | **~750MB–1.1GB** | 留 ~900MB–1.3GB 给负载峰值 + 页缓存 |
+
+**能扛**：MVP / 软启动，粗估几十到几百日活做核心闭环。
+**扛不住**：真实增长前必须升配（**建议 2c4g，进一步 4c8g**）。这台不是长期生产机。
+
+### 11.2 装不了的东西（从原方案里砍掉 / 延后）
+
+| 原计划 | 结论 |
+|---|---|
+| **OpenIM**（聊天）| ❌ 不可行。自带 MongoDB + Kafka + Redis + MinIO，光 Kafka 就要 1GB+。聊天先延后，或退到「NestJS 里最小 1:1 私信」（§9.15 B 路） |
+| **Kafka / RabbitMQ** | ❌ 不上。异步任务 = BullMQ 跑在现有 Redis 上 |
+| 独立 `worker` 进程 | ❌ 合并。BullMQ worker **在 api 进程内跑**（`@nestjs/bullmq` 同进程消费）。CPU 密集型任务（图片处理）真拖慢了再拆 |
+| **MinIO / SeaweedFS** 自托管对象存储 | ❌ 不上。媒体存 **阿里云 OSS**（已定，`media` 模块 driver 就绪）|
+| **Prometheus + Grafana + Loki** | ❌ 不上（这套 300MB+）。监控 = 阿里云云监控（agent 轻）+ 结构化日志落文件 + 日志轮转。要看板等升配 |
+| Elasticsearch | ❌ 不上。搜索用 Postgres 全文 / `pg_trgm` |
+| **独立 Python `services/planner`** | 🟡 **延后部署**。Dart 引擎在端上出计划，MVP 服务端不生成计划；同类对标要每桶 ≥20 人才有输出，冷启动期是空的；服务端复现（`/v1/plan/replay`）也非 MVP。等真需要了再上这个服务（~120–180MB，本身很轻）|
+| `postgis/postgis` 镜像 | 🟡 换回 `postgres:16-alpine`。「附近的人」是 v1.1/v2，等做那个功能再换 postgis（省镜像体积 + 一点内存）|
+| PgBouncer | 🟡 先不上（少一个进程）。Node pg pool `max: 10` 够用，连接数爬上来再加 |
+
+### 11.3 MVP 实际运行拓扑
+
+```
+阿里云 1c2t/2G/40G ── docker compose：
+  postgres:16-alpine   （调过参 + 命名卷）
+  redis:7-alpine       （maxmemory 128mb）
+  api                  （NestJS，单实例，BullMQ worker 同进程，堆限 384MB）
+外部：
+  阿里云 OSS            （媒体）
+  阿里云 / 腾讯云 SMS    （短信 OTP）
+  APNs / FCM / 厂商推送  （通知，待接）
+  阿里云云监控 + 日志     （监控）
+```
+
+Python planner / 社交流扇出 worker / OpenIM —— 升配后再进拓扑。
+
+### 11.4 磁盘（40GB）
+
+- OS ~6–8GB，Docker 镜像 ~1GB（都用 alpine + 多阶段构建），Postgres 数据增长要盯。
+- Docker 日志驱动锁 `json-file` `max-size=10m max-file=3`（否则日志能把盘写满）。
+- DB 备份：**每晚 `pg_dump` 直传 OSS**，不留本地。
+- 盘用到 70% 告警。用户上传全走 OSS，不落本地盘。
+
+### 11.5 已写代码要不要改？
+
+**不用**。已合并的 7 个模块（auth / profiles / plans / workouts / sync / media / notifications）都是轻量 CRUD + Postgres，没有内存大户。本次修订改的是**部署拓扑 + 不再往上加什么**，不是重写代码。
+唯一动代码的点：BullMQ 接进 api 进程（做异步任务时）、`dev.compose` / 新 `prod.compose` 换 postgres-alpine + 去掉 planner。
+
+### 11.6 建议
+
+1. 这台机器定位为 **MVP / 内测机**，上线前升 2c4g（或直接用阿里云 RDS 托管 Postgres 把 DB 内存压力挪走）。
+2. 阶段 5：`social` 照常自写（Postgres，轻）；`chat` **延后**到升配后接 OpenIM，或本期只做「文字 1:1 私信」最小实现（socket.io + redis-adapter，同 api 进程）。
+3. planner 服务先不部署，`plans` 模块存快照的能力已经够 MVP。
