@@ -63,3 +63,24 @@ WORKER_HOST=redis://redis:6379/1
 
 # Redis（OTP / 限流 / Idempotency / 在线状态 / WebSocket 广播）
 REDIS_URL=redis://redis:6379/0
+
+# 手机号登录（短信 OTP）
+# SMS_DRIVER: console（开发，验证码打日志）| aliyun | tencent
+SMS_DRIVER=console
+SMS_ALIYUN_ACCESS_KEY_ID=
+SMS_ALIYUN_ACCESS_KEY_SECRET=
+SMS_ALIYUN_SIGN_NAME=
+SMS_ALIYUN_TEMPLATE_CODE=
+SMS_TENCENT_SECRET_ID=
+SMS_TENCENT_SECRET_KEY=
+SMS_TENCENT_SDK_APP_ID=
+SMS_TENCENT_SIGN_NAME=
+SMS_TENCENT_TEMPLATE_ID=
+# 开发环境把验证码直接回传到 send-code 响应（生产必须 false / 不设）
+AUTH_PHONE_EXPOSE_CODE=true
+
+# 微信登录
+# WECHAT_DRIVER: mock（开发）| http（真实 code2Session）
+WECHAT_DRIVER=mock
+WECHAT_APP_ID=
+WECHAT_APP_SECRET=
