@@ -55,8 +55,11 @@ import { MediaObjectsModule } from './media-objects/media-objects.module';
 
 import { NotificationsModule } from './notifications/notifications.module';
 
+import { SocialModule } from './social/social.module';
+
 @Module({
   imports: [
+    SocialModule,
     NotificationsModule,
     MediaObjectsModule,
     SyncModule,
