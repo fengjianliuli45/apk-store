@@ -3,4 +3,6 @@ export enum AuthProvidersEnum {
   facebook = 'facebook',
   google = 'google',
   apple = 'apple',
+  phone = 'phone',
+  wechat = 'wechat',
 }

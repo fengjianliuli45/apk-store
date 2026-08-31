@@ -6,6 +6,9 @@ import { FileConfig } from '../files/config/file-config.type';
 import { GoogleConfig } from '../auth-google/config/google-config.type';
 import { MailConfig } from '../mail/config/mail-config.type';
 import { RedisConfig } from '../redis/config/redis-config.type';
+import { SmsConfig } from '../common/sms/config/sms-config.type';
+import { AuthPhoneConfig } from '../auth-phone/config/auth-phone-config.type';
+import { WechatConfig } from '../auth-wechat/config/wechat-config.type';
 
 export type AllConfigType = {
   app: AppConfig;
@@ -16,4 +19,7 @@ export type AllConfigType = {
   google: GoogleConfig;
   mail: MailConfig;
   redis: RedisConfig;
+  sms: SmsConfig;
+  authPhone: AuthPhoneConfig;
+  wechat: WechatConfig;
 };

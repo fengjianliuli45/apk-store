@@ -12,8 +12,11 @@ document / all-db 生成器已删，不要用。
 
 ## Stopwatch 约定（见 ADAPTATION_PLAN §5 / §9）
 
-- 主键用 **UUIDv7**（`src/common/id/uuid.ts` 的 `newId()`），不用自增 int。
-  生成器出来的 entity 记得把 `@PrimaryGeneratedColumn()` 换成 `@PrimaryColumn('uuid')` + `newId()`。
+- **新领域表主键用 UUIDv7**（`src/common/id/uuid.ts` 的 `newId()`）。生成器出来的 entity 把
+  `@PrimaryGeneratedColumn('uuid')` 换成 `@PrimaryColumn({ type: 'uuid' })` + `@BeforeInsert` 里 `this.id ??= newId()`
+  （参考 `src/user-identities/.../user-identity.entity.ts`）。
+- **boilerplate 核心表（`user` / `session` / `role` / `status`）保持自增 int**，不要改（ADAPTATION_PLAN §9.9）。
+  领域表引用用户就存 `userId: number` 外键 + `@ManyToOne(() => UserEntity)`。
 - 列表端点用 **游标分页**（`src/common/pagination/cursor.ts`），禁 deep OFFSET。
 - 写端点默认走 `IdempotencyInterceptor`（`src/common/idempotency/`）。
 - 跨模块不直接改别的模块的表，走服务接口 / 领域事件。

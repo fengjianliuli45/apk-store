@@ -10,7 +10,14 @@ import fileConfig from './files/config/file.config';
 import googleConfig from './auth-google/config/google.config';
 import appleConfig from './auth-apple/config/apple.config';
 import redisConfig from './redis/config/redis.config';
+import smsConfig from './common/sms/config/sms.config';
+import authPhoneConfig from './auth-phone/config/auth-phone.config';
+import wechatConfig from './auth-wechat/config/wechat.config';
 import { RedisModule } from './redis/redis.module';
+import { OtpModule } from './common/otp/otp.module';
+import { SmsModule } from './common/sms/sms.module';
+import { AuthPhoneModule } from './auth-phone/auth-phone.module';
+import { AuthWechatModule } from './auth-wechat/auth-wechat.module';
 import path from 'path';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -32,8 +39,11 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
   },
 });
 
+import { UserIdentitiesModule } from './user-identities/user-identities.module';
+
 @Module({
   imports: [
+    UserIdentitiesModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [
@@ -45,10 +55,15 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
         googleConfig,
         appleConfig,
         redisConfig,
+        smsConfig,
+        authPhoneConfig,
+        wechatConfig,
       ],
       envFilePath: ['.env'],
     }),
     RedisModule,
+    OtpModule,
+    SmsModule,
     infrastructureDatabaseModule,
     I18nModule.forRootAsync({
       useFactory: (configService: ConfigService<AllConfigType>) => ({
@@ -78,6 +93,8 @@ const infrastructureDatabaseModule = TypeOrmModule.forRootAsync({
     AuthModule,
     AuthGoogleModule,
     AuthAppleModule,
+    AuthPhoneModule,
+    AuthWechatModule,
     SessionModule,
     MailModule,
     MailerModule,

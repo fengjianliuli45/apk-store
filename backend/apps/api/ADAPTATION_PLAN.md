@@ -120,10 +120,10 @@ backend/
 
 ## 8. 分阶段（对齐架构文档 §8，我能做的部分）
 
-1. **地基**：clone boilerplate → 砍 Mongoose/facebook → 换 postgis 镜像 → 加 redis/rabbitmq 到 compose →
-   UUIDv7 + 游标分页 + Idempotency 中间件 → OpenAPI 3.1 导出。
-2. **认证**：`auth-phone`（console driver）+ `auth-wechat`（stub + 真实 code 交换）+ `user_identities` 多身份。
-3. **核心域**：`profiles` → `plans`（+ planner_version / 输入快照）→ `workouts` → `sync`（Outbox + cursor）。
+1. ✅ **地基**（PR #11）：clone boilerplate → 砍 Mongoose/facebook → postgis 镜像 → redis 到 compose →
+   UUIDv7 生成器 + 游标分页 + Idempotency 拦截器（文件就绪，未全局挂）。OpenAPI 导出待做。
+2. ✅ **认证**（PR #12）：`auth-phone`（console SMS driver + Redis OTP + 三层限流）+ `auth-wechat`（mock/http driver）+ `user_identities` 多身份表 + `AuthService.validateIdentityLogin`。未接真实短信/微信密钥。
+3. **核心域**：`profiles` → `plans`（+ planner_version / 输入快照）→ `workouts` → `sync`（Outbox + cursor）。← 下一步
 4. **媒体 + 通知**：`media`（预签名直传）+ `notifications`（FCM/APNs stub）。
 5. **社交 + 聊天**：`social` + `chat`（WebSocket gateway）。
 6. **接 planner**：worker 里 check-in 结果脱敏转投 `/v1/cohort/submit`；`plans` 复现调用。
@@ -195,9 +195,16 @@ backend/
 - **问题**：单实例能跑通，加副本后跨实例的在线状态 / 未读推送就断了。
 - **现在要做**：WebSocket gateway 一开始就挂 **Redis adapter**（`@socket.io/redis-adapter` 或等价），本地也用 Redis 跑，别等扩容才加。
 
-### 9.9 UUIDv7 / 主键策略
-- **问题**：boilerplate 默认 UUID v4，有数据之后换主键生成策略几乎不可能。
-- **现在要做**：地基阶段就把所有实体 PK 换成 **UUIDv7（时间有序，索引友好）**，`common/` 里放一个生成器，`.hygen` 模板也改。
+### 9.9 UUIDv7 / 主键策略 —— 已修订（2026-08-31，阶段 2）
+- **问题**：boilerplate 默认 `user` / `session` 自增 int，`file` 是 uuid v4；有数据后换 PK 策略几乎不可能。
+- **原计划**：地基阶段把所有实体 PK 换成 UUIDv7。
+- **实际决定**：boilerplate 核心表（`user` / `session` / `role` / `status`）**保持自增 int**。
+  换 `user.id` 类型会波及几十处 `User['id']: number` + mapper + DTO + seed，且大幅偏离 upstream，跟 §9.11 冲突。
+  取舍：
+  - Stopwatch **自有领域表一律 UUIDv7**（`src/common/id/uuid.ts` 的 `newId()` + `@PrimaryColumn('uuid')` + `@BeforeInsert`）。`user_identity` 已按此。
+  - 领域表的 `userId` 外键就存 int（指向 `user.id`），只在内部用，不对外暴露。
+  - `user.id` 若要防枚举（增长速率 / 遍历），后续加 `publicId uuid` 唯一列对外，不动 PK。成本低（加列 + 响应映射），且现在没客户端缓存 id。
+- `.hygen` 生成器出的 entity 默认还是 `@PrimaryGeneratedColumn('uuid')`（DB 端 uuid v4）——**手动改成** `@PrimaryColumn('uuid')` + `newId()`（见 CLAUDE.md）。
 
 ### 9.10 Flutter 本地存储迁移
 - **问题**：架构文档 §7 提到业务数据要从 SharedPreferences 迁到 SQLite/Drift。上线后带着 SharedPreferences 数据的用户，迁移有风险。

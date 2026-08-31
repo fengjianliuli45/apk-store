@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtRefreshPayloadType } from './strategies/types/jwt-refresh-payload.type';
 import { JwtPayloadType } from './strategies/types/jwt-payload.type';
 import { UsersService } from '../users/users.service';
+import { UserIdentitiesService } from '../user-identities/user-identities.service';
 import { AllConfigType } from '../config/config.type';
 import { MailService } from '../mail/mail.service';
 import { RoleEnum } from '../roles/roles.enum';
@@ -36,8 +37,78 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly sessionService: SessionService,
     private readonly mailService: MailService,
+    private readonly userIdentitiesService: UserIdentitiesService,
     private readonly configService: ConfigService<AllConfigType>,
   ) {}
+
+  /**
+   * 手机号 / 微信等「一个身份键唯一确定一个账号」的登录：
+   * 命中 user_identities → 登录既有账号；否则建号 + 建 identity（ADAPTATION_PLAN §3）。
+   */
+  async validateIdentityLogin(
+    provider: string,
+    providerUid: string,
+  ): Promise<LoginResponseDto> {
+    const identity = await this.userIdentitiesService.findByProviderAndUid(
+      provider,
+      providerUid,
+    );
+
+    let user: NullableType<User> = null;
+
+    if (identity) {
+      user = await this.usersService.findById(identity.userId);
+    }
+
+    if (!user) {
+      const created = await this.usersService.create({
+        email: null,
+        firstName: null,
+        lastName: null,
+        provider,
+        socialId: providerUid,
+        role: { id: RoleEnum.user },
+        status: { id: StatusEnum.active },
+      });
+
+      user = await this.usersService.findById(created.id);
+
+      if (!user) {
+        throw new UnprocessableEntityException({
+          status: HttpStatus.UNPROCESSABLE_ENTITY,
+          errors: { user: 'userNotFound' },
+        });
+      }
+
+      if (typeof user.id === 'number') {
+        await this.userIdentitiesService.link({
+          provider,
+          providerUid,
+          userId: user.id,
+        });
+      }
+    }
+
+    return this.issueSession(user);
+  }
+
+  private async issueSession(user: User): Promise<LoginResponseDto> {
+    const hash = crypto
+      .createHash('sha256')
+      .update(randomStringGenerator())
+      .digest('hex');
+
+    const session = await this.sessionService.create({ user, hash });
+
+    const { token, refreshToken, tokenExpires } = await this.getTokensData({
+      id: user.id,
+      role: user.role,
+      sessionId: session.id,
+      hash,
+    });
+
+    return { refreshToken, token, tokenExpires, user };
+  }
 
   async validateLogin(loginDto: AuthEmailLoginDto): Promise<LoginResponseDto> {
     const user = await this.usersService.findByEmail(loginDto.email);
