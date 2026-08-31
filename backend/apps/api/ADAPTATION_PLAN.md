@@ -240,6 +240,26 @@ backend/
 **结论**：能接的都接现成的（通知 / 聊天 / 存储 / 审核 / 条码 / 后台 / 监控）。真正要自己写的是
 **「计划 + 训练记录 + 离线同步」** —— 正好是 Stopwatch 的核心，也是别人替不了的。
 
+### 授权（商用能不能用）—— 必查
+
+| 组件 | 授权 | 商用 | 备注 |
+|---|---|---|---|
+| `brocoders/nestjs-boilerplate` | MIT | ✅ | |
+| `Novu`（通知） | MIT 核心 | ✅ | 企业版 SAML/审计要付费，我们用的通知功能 MIT |
+| `OpenIM`（聊天） | Apache 2.0 | ✅ | **首选** |
+| `Tinode`（聊天备选） | GPL-3.0 | ❌ | copyleft，别用，用 OpenIM |
+| `AdminJS` / `react-admin` / `Refine` | MIT | ✅ | |
+| `BullMQ` | MIT | ✅ | |
+| `Prometheus` | Apache 2.0 | ✅ | |
+| `Grafana` / `Loki` / `Tempo` | **AGPLv3** | ⚠️ | 内部监控用（不面向 App 用户）风险低；保守用 `VictoriaMetrics`（Apache 2.0） |
+| **`MinIO`（对象存储）** | **AGPLv3** | ⚠️ | 跟 wger 一样。**改用阿里云 OSS / 腾讯云 COS**（S3 接口 + 境内合规），自托管则 `SeaweedFS`（Apache 2.0） |
+| `Open Food Facts` | 数据 ODbL / 软件 AGPL | ⚠️ | 用它的 **API 查营养** OK；别自托管 Product Opener、别二次分发改过的数据库 |
+| PostgreSQL | PostgreSQL License | ✅ | |
+| PostGIS | GPL-2.0 | ✅ | 作为 DB 扩展跑，商用 SaaS 标准做法 |
+| `Stream-Framework`（动态流） | BSD-3 | ✅ | 但不推荐（Cassandra + 维护弱），建议 Postgres 自写 |
+
+**要改的**：`media` 模块的存储 driver 直接对接**阿里云 OSS / 腾讯云 COS**，不引 MinIO（`dev.compose` 里本地开发可保留一个 SeaweedFS 或 MinIO 容器仅供开发，生产走云 OSS）。
+
 ## 10. 首期最小闭环（建议 MVP 边界）
 
 避免摊子铺太大。首个可用版本 = **登录 → 填问卷出计划 → 跟练打卡 → check-in 调整 → 多设备同步**：
