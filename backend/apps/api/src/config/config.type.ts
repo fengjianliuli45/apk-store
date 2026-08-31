@@ -10,6 +10,7 @@ import { SmsConfig } from '../common/sms/config/sms-config.type';
 import { AuthPhoneConfig } from '../auth-phone/config/auth-phone-config.type';
 import { WechatConfig } from '../auth-wechat/config/wechat-config.type';
 import { MediaConfig } from '../media-objects/config/media-config.type';
+import { NotificationsConfig } from '../notifications/config/notifications-config.type';
 
 export type AllConfigType = {
   app: AppConfig;
@@ -24,4 +25,5 @@ export type AllConfigType = {
   authPhone: AuthPhoneConfig;
   wechat: WechatConfig;
   media: MediaConfig;
+  notifications: NotificationsConfig;
 };

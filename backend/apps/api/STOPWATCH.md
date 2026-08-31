@@ -105,13 +105,29 @@
 
 **未做**：内容审核（§9.5）—— `completeUpload` 里留了 TODO，要向 worker 投审核任务、回写 `moderationStatus`。缩略图 / 视频也没做（只图片）。
 
+## 已做（阶段 4-b：notifications）
+
+| 改动 | 文件 |
+|---|---|
+| `notification`（站内通知，UUIDv7 PK，`(userId, createdAt)` 索引，`data` jsonb deep-link）| `src/notifications/` + 迁移 `1756600600000-CreateNotifications.ts` |
+| `notification_preference`（每用户一条，`pushEnabled` + `categories` jsonb opt-out + `quietHours`）| `src/notification-preferences/`（持久化 + service） |
+| `device_token`（`(userId, token)` upsert，`platform` ios/android_fcm/android_vendor + `vendorChannel`）| `src/device-tokens/` |
+| `PushService` 抽象：`console`（打日志）/ `off`。真实 APNs/FCM/厂商按 `platform` 分发，配置位留好（§9.4） | `src/notifications/push/` + `NOTIFICATIONS_PUSH_DRIVER` |
+| `NotificationsService.notify(userId, {type, category, title, body, data})` —— 其它模块调它：落站内通知 + 按偏好 / 免打扰决定推送。推送 best-effort | `notifications.service.ts` |
+| 端点（`AuthGuard('jwt')`）：`GET /api/v1/notifications`（游标，`unreadOnly`）/ `GET .../unread-count` / `POST .../read`（ids 或 all）/ `GET,PUT .../preferences` / `GET,POST .../devices` / `DELETE .../devices/:token` | `notifications.controller.ts` |
+
+单测：`src/notifications`（7，内存 repo：推送/关推送/关分类/免打扰/未读计数/token upsert/推送失败不炸）—— `npx jest` 62 通过。build + lint 通过。
+
+**未做**：真实推送通道（APNs / FCM / 国内厂商）；其它模块（workouts 提醒、plans 完成、social 互动）还没调 `notify()`——那是各模块自己接的事。
+
 ## 还没做（下一步）
 
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：加 `publicId uuid` 列。
-- 阶段 4-b：`notifications`（多通道 push，含国内厂商）。阶段 5：`social` / `chat`。
+- 阶段 5：`social` / `chat`（WebSocket gateway）。
 - 内容审核接入（阿里云 / 腾讯云内容安全 API），media + social + chat 都要。
+- 各模块接 `NotificationsService.notify()`（训练提醒、计划就绪、互动）。
 - 账号合并：手机号 + 微信同一人 = 两个 user 行，合并流程待排期。
 
 ## 上游跟进流程（ADAPTATION_PLAN §9.11）
