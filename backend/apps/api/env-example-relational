@@ -98,3 +98,8 @@ MEDIA_S3_FORCE_PATH_STYLE=false
 MEDIA_PUBLIC_BASE_URL=
 MEDIA_UPLOAD_URL_TTL=300
 MEDIA_READ_URL_TTL=3600
+
+# 通知推送
+# NOTIFICATIONS_PUSH_DRIVER: console（开发，打日志）| off（不推）
+# 真实通道（APNs / FCM / 小米华为OPPO vivo / 个推极光）按 device_token.platform 分发，待接
+NOTIFICATIONS_PUSH_DRIVER=console
