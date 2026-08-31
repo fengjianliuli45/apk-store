@@ -5,6 +5,12 @@ import { WorkoutSessionRepository } from './infrastructure/persistence/workout-s
 import { WorkoutSet } from '../workout-sets/domain/workout-set';
 import { WorkoutSetRepository } from '../workout-sets/infrastructure/persistence/workout-set.repository';
 import { CursorPage } from '../common/pagination/cursor';
+import { SyncEmitterService } from '../sync-events/sync-emitter.service';
+
+const fakeSync = {
+  emit: () => Promise.resolve(null),
+  cursor: () => Promise.resolve(0),
+} as unknown as SyncEmitterService;
 
 class FakeSessionRepo implements WorkoutSessionRepository {
   rows: WorkoutSession[] = [];
@@ -72,7 +78,7 @@ describe('WorkoutSessionsService', () => {
   beforeEach(() => {
     sessions = new FakeSessionRepo();
     sets = new FakeSetRepo();
-    service = new WorkoutSessionsService(sessions, sets);
+    service = new WorkoutSessionsService(sessions, sets, fakeSync);
   });
 
   it('should stamp startedAt when a session starts in_progress', async () => {

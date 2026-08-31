@@ -7,24 +7,34 @@ import {
 } from './domain/workout-session';
 import { WorkoutSet } from '../workout-sets/domain/workout-set';
 import { CursorPage } from '../common/pagination/cursor';
+import { SyncEmitterService } from '../sync-events/sync-emitter.service';
+import { SyncOp } from '../sync-events/domain/sync-event';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddSetsDto } from './dto/add-sets.dto';
 import { UpdateSetDto } from './dto/update-set.dto';
+
+/** 通过 /sync/batch 进来的写操作带上客户端事件上下文，用于幂等 + 保留原始时间。 */
+export type WriteContext = {
+  clientEventId?: string | null;
+  occurredAt?: Date;
+};
 
 @Injectable()
 export class WorkoutSessionsService {
   constructor(
     private readonly sessionRepository: WorkoutSessionRepository,
     private readonly setRepository: WorkoutSetRepository,
+    private readonly sync: SyncEmitterService,
   ) {}
 
   async createSession(
     userId: number,
     dto: CreateWorkoutSessionDto,
+    ctx?: WriteContext,
   ): Promise<WorkoutSession> {
     const status = dto.status ?? 'in_progress';
-    return this.sessionRepository.create({
+    const session = await this.sessionRepository.create({
       userId,
       planVersionId: dto.planVersionId ?? null,
       planDayIndex: dto.planDayIndex ?? null,
@@ -35,6 +45,15 @@ export class WorkoutSessionsService {
       completedAt: status === 'completed' ? new Date() : null,
       notes: null,
     });
+    await this.emit(
+      userId,
+      'workout_session',
+      session.id,
+      'create',
+      session,
+      ctx,
+    );
+    return session;
   }
 
   async getSession(
@@ -58,6 +77,7 @@ export class WorkoutSessionsService {
     userId: number,
     id: string,
     dto: UpdateWorkoutSessionDto,
+    ctx?: WriteContext,
   ): Promise<WorkoutSession> {
     const session = await this.ownedSessionOrFail(userId, id);
 
@@ -75,17 +95,19 @@ export class WorkoutSessionsService {
       }
     }
 
-    const updated = await this.sessionRepository.update(id, patch);
-    return updated ?? session;
+    const updated = (await this.sessionRepository.update(id, patch)) ?? session;
+    await this.emit(userId, 'workout_session', id, 'update', updated, ctx);
+    return updated;
   }
 
   async addSets(
     userId: number,
     sessionId: string,
     dto: AddSetsDto,
+    ctx?: WriteContext,
   ): Promise<WorkoutSet[]> {
     await this.ownedSessionOrFail(userId, sessionId);
-    return this.setRepository.createMany(
+    const created = await this.setRepository.createMany(
       dto.sets.map((s) => ({
         sessionId,
         exerciseKey: s.exerciseKey,
@@ -98,12 +120,22 @@ export class WorkoutSessionsService {
         completedAt: new Date(),
       })),
     );
+    await this.emit(
+      userId,
+      'workout_set',
+      sessionId,
+      'create',
+      { sessionId, sets: created },
+      ctx,
+    );
+    return created;
   }
 
   async updateSet(
     userId: number,
     setId: string,
     dto: UpdateSetDto,
+    ctx?: WriteContext,
   ): Promise<WorkoutSet> {
     const set = await this.ownedSetOrFail(userId, setId);
     const patch: Partial<WorkoutSet> = {};
@@ -112,13 +144,52 @@ export class WorkoutSessionsService {
         (patch as Record<string, unknown>)[key] = dto[key];
       }
     }
-    const updated = await this.setRepository.update(setId, patch);
-    return updated ?? set;
+    const updated = (await this.setRepository.update(setId, patch)) ?? set;
+    await this.emit(
+      userId,
+      'workout_set',
+      set.sessionId,
+      'update',
+      updated,
+      ctx,
+    );
+    return updated;
   }
 
-  async removeSet(userId: number, setId: string): Promise<void> {
-    await this.ownedSetOrFail(userId, setId);
+  async removeSet(
+    userId: number,
+    setId: string,
+    ctx?: WriteContext,
+  ): Promise<void> {
+    const set = await this.ownedSetOrFail(userId, setId);
     await this.setRepository.remove(setId);
+    await this.emit(
+      userId,
+      'workout_set',
+      set.sessionId,
+      'delete',
+      { id: setId, sessionId: set.sessionId },
+      ctx,
+    );
+  }
+
+  private emit(
+    userId: number,
+    entityType: string,
+    entityId: string | null,
+    op: SyncOp,
+    payload: unknown,
+    ctx?: WriteContext,
+  ) {
+    return this.sync.emit({
+      userId,
+      entityType,
+      entityId,
+      op,
+      payload: payload as Record<string, unknown>,
+      clientEventId: ctx?.clientEventId ?? null,
+      occurredAt: ctx?.occurredAt,
+    });
   }
 
   private async ownedSessionOrFail(

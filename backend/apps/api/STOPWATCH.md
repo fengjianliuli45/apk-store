@@ -71,10 +71,31 @@
 
 单测：`src/workout-sessions`（6）—— `npx jest` 39 通过。build + lint 通过。
 
+## 已做（阶段 3-d：sync — 离线增量同步）
+
+协议文档：`backend/packages/contracts/sync.md`（§9.1 的《同步协议 v1》）。
+
+| 改动 | 文件 |
+|---|---|
+| `sync_event` 变更流表（每用户单调 `serverSeq`，`(userId, clientEventId)` 部分唯一索引做幂等） | `src/sync-events/` + 迁移 `1756600400000-CreateSyncEvent.ts` |
+| `SyncEmitterService`：领域写成功后登记变更（best-effort，失败不回滚） | `src/sync-events/sync-emitter.service.ts` |
+| `profiles` / `workout-sessions` 的写方法接了 `SyncEmitterService` + 可选 `WriteContext`（clientEventId / occurredAt） | 各自 service |
+| `POST /api/v1/sync/batch`：逐条幂等（clientEventId 去重）→ 派发到领域 service → 返回逐条结果 + syncCursor | `src/sync/sync.service.ts` + controller |
+| `GET /api/v1/sync/changes?cursor=&limit=`：按 serverSeq 拉增量 | 同上 |
+
+单测：`src/sync`（6，内存 repo 全链路：apply / dedupe / reject / pull 分页 / 用户隔离）—— `npx jest` 45 通过。build + lint 通过。
+
+### v1 已知限制（写进了 sync.md §"v1 已知限制"）
+- 变更登记 best-effort，未和领域写同事务。
+- `serverSeq` = MAX+1 + 唯一约束重试，高并发有重试成本。
+- 没有 plan / body_log 同步；没有 WebSocket 主动推送；profile 冲突后写胜。
+
 ## 还没做（下一步）
 
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
-- 阶段 3-d：`sync`（Outbox + cursor 增量同步，§9.1）。workout 写操作接进 outbox 也在那一步。
+- OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
+- `user` 防枚举：加 `publicId uuid` 列。
+- 阶段 4+：media / notifications / social / chat（见 ADAPTATION_PLAN §8）。
 - 账号合并：现在同一个人用手机号 + 微信会得到两个 user 行。合并流程（老账号验证后 link 新 identity）待排期。
 - OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：后续加 `publicId uuid` 列，不动 PK。

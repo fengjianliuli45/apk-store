@@ -2,11 +2,20 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { NullableType } from '../utils/types/nullable.type';
 import { ProfileRepository } from './infrastructure/persistence/profile.repository';
 import { Profile } from './domain/profile';
+import { SyncEmitterService } from '../sync-events/sync-emitter.service';
 import { UpsertProfileDto } from './dto/upsert-profile.dto';
+
+export type WriteContext = {
+  clientEventId?: string | null;
+  occurredAt?: Date;
+};
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly profileRepository: ProfileRepository) {}
+  constructor(
+    private readonly profileRepository: ProfileRepository,
+    private readonly sync: SyncEmitterService,
+  ) {}
 
   findByUserId(userId: number): Promise<NullableType<Profile>> {
     return this.profileRepository.findByUserId(userId);
@@ -21,12 +30,17 @@ export class ProfilesService {
   }
 
   /** PUT 语义：没有就建，有就按传入字段部分更新。 */
-  async upsertForUser(userId: number, dto: UpsertProfileDto): Promise<Profile> {
+  async upsertForUser(
+    userId: number,
+    dto: UpsertProfileDto,
+    ctx?: WriteContext,
+  ): Promise<Profile> {
     const patch = this.toPatch(dto);
     const existing = await this.profileRepository.findByUserId(userId);
 
+    let result: Profile;
     if (!existing) {
-      return this.profileRepository.create({
+      result = await this.profileRepository.create({
         userId,
         sex: null,
         birthdate: null,
@@ -44,10 +58,22 @@ export class ProfilesService {
         bodyDataConsentVersion: null,
         ...patch,
       });
+    } else {
+      result =
+        (await this.profileRepository.update(existing.id, patch)) ?? existing;
     }
 
-    const updated = await this.profileRepository.update(existing.id, patch);
-    return updated ?? existing;
+    await this.sync.emit({
+      userId,
+      entityType: 'profile',
+      entityId: result.id,
+      op: existing ? 'update' : 'create',
+      payload: result as unknown as Record<string, unknown>,
+      clientEventId: ctx?.clientEventId ?? null,
+      occurredAt: ctx?.occurredAt,
+    });
+
+    return result;
   }
 
   remove(id: Profile['id']): Promise<void> {
