@@ -43,8 +43,11 @@ import { UserIdentitiesModule } from './user-identities/user-identities.module';
 
 import { ProfilesModule } from './profiles/profiles.module';
 
+import { TrainingPlansModule } from './training-plans/training-plans.module';
+
 @Module({
   imports: [
+    TrainingPlansModule,
     ProfilesModule,
     UserIdentitiesModule,
     ConfigModule.forRoot({
