@@ -6,6 +6,7 @@ import {
   WriteContext,
 } from '../workout-sessions/workout-sessions.service';
 import { ProfilesService } from '../profiles/profiles.service';
+import { BodyLogsService } from '../body-logs/body-logs.service';
 import { SyncBatchDto, SyncEventInputDto } from './dto/sync-batch.dto';
 
 export type BatchItemResult = {
@@ -39,6 +40,7 @@ export class SyncService {
     private readonly repo: SyncEventRepository,
     private readonly workouts: WorkoutSessionsService,
     private readonly profiles: ProfilesService,
+    private readonly bodyLogs: BodyLogsService,
   ) {}
 
   async pushBatch(userId: number, dto: SyncBatchDto): Promise<BatchResult> {
@@ -108,6 +110,13 @@ export class SyncService {
 
     if (ev.entityType === 'profile') {
       return this.profiles.upsertForUser(userId, p, ctx);
+    }
+
+    if (ev.entityType === 'body_log') {
+      if (ev.op === 'delete') {
+        return this.bodyLogs.remove(userId, String(p.id), ctx);
+      }
+      return this.bodyLogs.upsert(userId, p as never, ctx);
     }
 
     if (ev.entityType === 'workout_session') {

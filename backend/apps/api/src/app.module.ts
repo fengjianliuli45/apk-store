@@ -57,8 +57,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 
 import { SocialModule } from './social/social.module';
 
+import { BodyLogsModule } from './body-logs/body-logs.module';
+
 @Module({
   imports: [
+    BodyLogsModule,
     SocialModule,
     NotificationsModule,
     MediaObjectsModule,

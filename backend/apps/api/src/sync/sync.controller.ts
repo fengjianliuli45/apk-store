@@ -16,6 +16,7 @@ import type { JwtPayloadType } from '../auth/strategies/types/jwt-payload.type';
 import { BatchResult, PullResult, SyncService } from './sync.service';
 import { SyncBatchDto } from './dto/sync-batch.dto';
 import { PullChangesQueryDto } from './dto/pull-changes-query.dto';
+import { BatchResultDto, PullResultDto } from './dto/sync-response.dto';
 
 @ApiTags('Sync')
 @ApiBearerAuth()
@@ -33,7 +34,7 @@ export class SyncController {
 
   @Post('batch')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ description: '逐条结果 + 最新 syncCursor' })
+  @ApiOkResponse({ type: BatchResultDto })
   push(
     @Request() request: RequestWithUser<JwtPayloadType>,
     @Body() dto: SyncBatchDto,
@@ -43,6 +44,7 @@ export class SyncController {
 
   @Get('changes')
   @ApiOkResponse({
+    type: PullResultDto,
     description: 'serverSeq > cursor 的变更，按 serverSeq 升序',
   })
   changes(

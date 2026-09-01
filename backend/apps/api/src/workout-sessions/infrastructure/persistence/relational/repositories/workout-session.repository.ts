@@ -39,6 +39,12 @@ export class WorkoutSessionRelationalRepository implements WorkoutSessionReposit
     userId: number,
     limit: number,
     cursor?: string | null,
+    filters?: {
+      from?: string;
+      to?: string;
+      status?: string;
+      planVersionId?: string;
+    },
   ): Promise<CursorPage<WorkoutSession>> {
     const qb = this.repo
       .createQueryBuilder('s')
@@ -46,6 +52,19 @@ export class WorkoutSessionRelationalRepository implements WorkoutSessionReposit
       .orderBy('s.createdAt', 'DESC')
       .addOrderBy('s.id', 'DESC')
       .take(limit + 1);
+
+    if (filters?.from) {
+      qb.andWhere('s.scheduledDate >= :from', { from: filters.from });
+    }
+    if (filters?.to) {
+      qb.andWhere('s.scheduledDate <= :to', { to: filters.to });
+    }
+    if (filters?.status) {
+      qb.andWhere('s.status = :status', { status: filters.status });
+    }
+    if (filters?.planVersionId) {
+      qb.andWhere('s.planVersionId = :pv', { pv: filters.planVersionId });
+    }
 
     const decoded = decodeCursor(cursor);
     if (decoded) {

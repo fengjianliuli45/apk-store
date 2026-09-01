@@ -69,8 +69,14 @@ export class WorkoutSessionsService {
     userId: number,
     limit: number,
     cursor?: string | null,
+    filters?: {
+      from?: string;
+      to?: string;
+      status?: string;
+      planVersionId?: string;
+    },
   ): Promise<CursorPage<WorkoutSession>> {
-    return this.sessionRepository.listByUser(userId, limit, cursor);
+    return this.sessionRepository.listByUser(userId, limit, cursor, filters);
   }
 
   async updateSession(

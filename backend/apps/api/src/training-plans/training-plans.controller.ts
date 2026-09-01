@@ -18,6 +18,7 @@ import { TrainingPlansService } from './training-plans.service';
 import { TrainingPlan, TrainingPlanWithVersion } from './domain/training-plan';
 import { PlanVersion } from '../plan-versions/domain/plan-version';
 import { CursorPage } from '../common/pagination/cursor';
+import { cursorPage } from '../common/pagination/cursor-page.dto';
 import { SavePlanDto } from './dto/save-plan.dto';
 import { ListVersionsQueryDto } from './dto/list-versions-query.dto';
 
@@ -54,7 +55,7 @@ export class TrainingPlansController {
   }
 
   @Get('current/versions')
-  @ApiOkResponse({ type: PlanVersion, isArray: true })
+  @ApiOkResponse({ type: cursorPage(PlanVersion) })
   versions(
     @Request() request: RequestWithUser<JwtPayloadType>,
     @Query() query: ListVersionsQueryDto,
