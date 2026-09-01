@@ -163,7 +163,11 @@ describe('SyncService (integration with in-memory repos)', () => {
       emitter,
     );
     const profiles = new ProfilesService(new MemProfileRepo(), emitter);
-    service = new SyncService(eventRepo, workouts, profiles);
+    const bodyLogs = {
+      upsert: jest.fn().mockResolvedValue({ id: 'bl-1' }),
+      remove: jest.fn().mockResolvedValue(undefined),
+    } as unknown as import('../body-logs/body-logs.service').BodyLogsService;
+    service = new SyncService(eventRepo, workouts, profiles, bodyLogs);
   });
 
   it('should apply a batch and advance the cursor', async () => {

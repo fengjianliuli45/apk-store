@@ -25,6 +25,7 @@
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
+    "openapi:export": "ts-node -r tsconfig-paths/register scripts/generate-openapi.ts",
     "start:dev": "nest start --watch",
     "start:swc": "nest start -b swc -w",
     "start:debug": "nest start --debug --watch",

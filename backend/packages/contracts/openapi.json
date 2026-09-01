@@ -1,0 +1,4391 @@
+{
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/body-logs": {
+      "put": {
+        "operationId": "BodyLogsController_upsert_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertBodyLogDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyLog"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "BodyLogs"
+        ]
+      },
+      "get": {
+        "operationId": "BodyLogsController_list_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 200,
+              "default": 60,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "measuredOn >= from（ISO date）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "measuredOn <= to（ISO date）",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BodyLogCursorPage"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "BodyLogs"
+        ]
+      }
+    },
+    "/api/v1/body-logs/{id}": {
+      "delete": {
+        "operationId": "BodyLogsController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "BodyLogs"
+        ]
+      }
+    },
+    "/api/v1/social/posts": {
+      "post": {
+        "operationId": "SocialController_createPost_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePostDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPost"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/feed": {
+      "get": {
+        "operationId": "SocialController_feed_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SocialPost"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/posts/{id}": {
+      "get": {
+        "operationId": "SocialController_getPost_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SocialPost"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      },
+      "delete": {
+        "operationId": "SocialController_deletePost_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/users/{userId}/posts": {
+      "get": {
+        "operationId": "SocialController_userPosts_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SocialPost"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/posts/{id}/like": {
+      "post": {
+        "operationId": "SocialController_like_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      },
+      "delete": {
+        "operationId": "SocialController_unlike_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/posts/{id}/comments": {
+      "get": {
+        "operationId": "SocialController_listComments_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PostComment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      },
+      "post": {
+        "operationId": "SocialController_addComment_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostComment"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/comments/{commentId}": {
+      "delete": {
+        "operationId": "SocialController_deleteComment_v1",
+        "parameters": [
+          {
+            "name": "commentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/follow/{userId}": {
+      "post": {
+        "operationId": "SocialController_follow_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      },
+      "delete": {
+        "operationId": "SocialController_unfollow_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/users/{userId}/followers": {
+      "get": {
+        "operationId": "SocialController_followers_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Follow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/users/{userId}/following": {
+      "get": {
+        "operationId": "SocialController_following_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Follow"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/users/{userId}/stats": {
+      "get": {
+        "operationId": "SocialController_stats_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/block/{userId}": {
+      "post": {
+        "operationId": "SocialController_block_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      },
+      "delete": {
+        "operationId": "SocialController_unblock_v1",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/social/reports": {
+      "post": {
+        "operationId": "SocialController_report_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Social"
+        ]
+      }
+    },
+    "/api/v1/media/upload-url": {
+      "post": {
+        "operationId": "MediaObjectsController_requestUpload_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RequestUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "预签名直传 URL + mediaId"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/api/v1/media/{id}/complete": {
+      "post": {
+        "operationId": "MediaObjectsController_complete_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaObject"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/api/v1/media/{id}": {
+      "get": {
+        "operationId": "MediaObjectsController_get_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "元数据 + 读 URL"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "NotificationsController_list_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "unreadOnly",
+            "required": false,
+            "in": "query",
+            "description": "只看未读",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Notification"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/unread-count": {
+      "get": {
+        "operationId": "NotificationsController_unreadCount_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "count": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/read": {
+      "post": {
+        "operationId": "NotificationsController_markRead_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MarkReadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "updated": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/preferences": {
+      "get": {
+        "operationId": "NotificationsController_getPreferences_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      },
+      "put": {
+        "operationId": "NotificationsController_updatePreferences_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePreferencesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPreference"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/devices": {
+      "get": {
+        "operationId": "NotificationsController_listDevices_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeviceToken"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      },
+      "post": {
+        "operationId": "NotificationsController_registerDevice_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeviceToken"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/devices/{token}": {
+      "delete": {
+        "operationId": "NotificationsController_unregisterDevice_v1",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/api/v1/sync/batch": {
+      "post": {
+        "operationId": "SyncController_push_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyncBatchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/api/v1/sync/changes": {
+      "get": {
+        "operationId": "SyncController_changes_v1",
+        "parameters": [
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "上次的 syncCursor（serverSeq）",
+            "schema": {
+              "default": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 500,
+              "default": 200,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "serverSeq > cursor 的变更，按 serverSeq 升序",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PullResultDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Sync"
+        ]
+      }
+    },
+    "/api/v1/workouts/sessions": {
+      "post": {
+        "operationId": "WorkoutSessionsController_createSession_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkoutSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutSession"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      },
+      "get": {
+        "operationId": "WorkoutSessionsController_listSessions_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "scheduledDate >= from（ISO date），日历视图用",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "scheduledDate <= to（ISO date）",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "planned",
+                "in_progress",
+                "completed",
+                "skipped"
+              ]
+            }
+          },
+          {
+            "name": "planVersionId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutSessionCursorPage"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      }
+    },
+    "/api/v1/workouts/sessions/{id}": {
+      "get": {
+        "operationId": "WorkoutSessionsController_getSession_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutSessionWithSets"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      },
+      "patch": {
+        "operationId": "WorkoutSessionsController_updateSession_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkoutSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutSession"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      }
+    },
+    "/api/v1/workouts/sessions/{id}/sets": {
+      "post": {
+        "operationId": "WorkoutSessionsController_addSets_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddSetsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkoutSet"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      }
+    },
+    "/api/v1/workouts/sets/{setId}": {
+      "patch": {
+        "operationId": "WorkoutSessionsController_updateSet_v1",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkoutSet"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      },
+      "delete": {
+        "operationId": "WorkoutSessionsController_removeSet_v1",
+        "parameters": [
+          {
+            "name": "setId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Workouts"
+        ]
+      }
+    },
+    "/api/v1/profile/me": {
+      "get": {
+        "operationId": "ProfilesController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Profiles"
+        ]
+      },
+      "put": {
+        "operationId": "ProfilesController_upsert_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpsertProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Profiles"
+        ]
+      }
+    },
+    "/api/v1/plans": {
+      "post": {
+        "operationId": "TrainingPlansController_save_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePlanDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingPlanWithVersion"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Plans"
+        ]
+      }
+    },
+    "/api/v1/plans/current": {
+      "get": {
+        "operationId": "TrainingPlansController_current_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingPlanWithVersion"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Plans"
+        ]
+      }
+    },
+    "/api/v1/plans/current/versions": {
+      "get": {
+        "operationId": "TrainingPlansController_versions_v1",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maximum": 50,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "上一页返回的 nextCursor",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanVersionCursorPage"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Plans"
+        ]
+      }
+    },
+    "/api/v1/plans/versions/{id}": {
+      "get": {
+        "operationId": "TrainingPlansController_version_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanVersion"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Plans"
+        ]
+      }
+    },
+    "/api/v1/plans/current/archive": {
+      "post": {
+        "operationId": "TrainingPlansController_archive_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingPlan"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Plans"
+        ]
+      }
+    },
+    "/api/v1/users": {
+      "post": {
+        "operationId": "UsersController_create_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "operationId": "UsersController_findAll_v1",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "filters",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InfinityPaginationUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove_v1",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/api/v1/files/upload": {
+      "post": {
+        "operationId": "FilesLocalController_uploadFile_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Files"
+        ]
+      }
+    },
+    "/api/v1/auth/email/login": {
+      "post": {
+        "operationId": "AuthController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthEmailLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/email/register": {
+      "post": {
+        "operationId": "AuthController_register_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/email/confirm": {
+      "post": {
+        "operationId": "AuthController_confirmEmail_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthConfirmEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/email/confirm/new": {
+      "post": {
+        "operationId": "AuthController_confirmNewEmail_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthConfirmEmailDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/forgot/password": {
+      "post": {
+        "operationId": "AuthController_forgotPassword_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/reset/password": {
+      "post": {
+        "operationId": "AuthController_resetPassword_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "operationId": "AuthController_me_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      },
+      "patch": {
+        "operationId": "AuthController_update_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      },
+      "delete": {
+        "operationId": "AuthController_delete_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh_v1",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefreshResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "AuthController_logout_v1",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/google/login": {
+      "post": {
+        "operationId": "AuthGoogleController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthGoogleLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/apple/login": {
+      "post": {
+        "operationId": "AuthAppleController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthAppleLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/phone/send-code": {
+      "post": {
+        "operationId": "AuthPhoneController_sendCode_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthPhoneSendCodeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthPhoneSendCodeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/phone/login": {
+      "post": {
+        "operationId": "AuthPhoneController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthPhoneLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/api/v1/auth/wechat/login": {
+      "post": {
+        "operationId": "AuthWechatController_login_v1",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthWechatLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/": {
+      "get": {
+        "operationId": "HomeController_appInfo",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Home"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Stopwatch API",
+    "description": "Stopwatch 后端 API（阶段 1-5）。给 Flutter 前端对接。",
+    "version": "1",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "UpsertBodyLogDto": {
+        "type": "object",
+        "properties": {
+          "measuredOn": {
+            "type": "string",
+            "example": "2026-09-01",
+            "description": "ISO date"
+          },
+          "weightKg": {
+            "type": "number",
+            "example": 72.4
+          },
+          "bodyFatPct": {
+            "type": "number",
+            "example": 18.2
+          },
+          "waistCm": {
+            "type": "number",
+            "example": 80
+          },
+          "armCm": {
+            "type": "number",
+            "example": 40
+          },
+          "thighCm": {
+            "type": "number",
+            "example": 58
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "measuredOn"
+        ]
+      },
+      "BodyLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "measuredOn": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-09-01"
+          },
+          "weightKg": {
+            "type": "number",
+            "example": 72.4
+          },
+          "bodyFatPct": {
+            "type": "number",
+            "example": 18.2,
+            "description": "体脂率 %"
+          },
+          "waistCm": {
+            "type": "number",
+            "example": 80,
+            "description": "腰围 cm"
+          },
+          "armCm": {
+            "type": "number",
+            "example": 40,
+            "description": "臂围 cm"
+          },
+          "thighCm": {
+            "type": "number",
+            "example": 58,
+            "description": "大腿围 cm"
+          },
+          "note": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "measuredOn",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BodyLogCursorPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BodyLog"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "下一页游标；null = 没有更多"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "CreatePostDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "workout",
+              "plan",
+              "progress"
+            ],
+            "default": "text"
+          },
+          "body": {
+            "type": "string",
+            "example": "今天练腿，PR 了"
+          },
+          "mediaIds": {
+            "description": "media_object id（先传完 complete）",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "refType": {
+            "type": "string",
+            "enum": [
+              "workout_session",
+              "plan_version"
+            ]
+          },
+          "refId": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": [
+              "public",
+              "followers"
+            ],
+            "default": "public"
+          }
+        },
+        "required": [
+          "kind",
+          "body"
+        ]
+      },
+      "SocialPost": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "number"
+          },
+          "kind": {
+            "type": "string",
+            "example": "text"
+          },
+          "body": {
+            "type": "string"
+          },
+          "mediaIds": {
+            "description": "media_object id 列表",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "refType": {
+            "type": "string",
+            "example": "workout_session",
+            "description": "分享的训练 / 计划：workout_session | plan_version"
+          },
+          "refId": {
+            "type": "string"
+          },
+          "visibility": {
+            "type": "string",
+            "example": "public"
+          },
+          "likeCount": {
+            "type": "number"
+          },
+          "commentCount": {
+            "type": "number"
+          },
+          "moderationStatus": {
+            "type": "string",
+            "example": "pending"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "软删除（tombstone，同步要）"
+          }
+        },
+        "required": [
+          "id",
+          "authorId",
+          "kind",
+          "body",
+          "mediaIds",
+          "visibility",
+          "likeCount",
+          "commentCount",
+          "moderationStatus",
+          "createdAt"
+        ]
+      },
+      "PostComment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "postId": {
+            "type": "string"
+          },
+          "authorId": {
+            "type": "number"
+          },
+          "body": {
+            "type": "string"
+          },
+          "moderationStatus": {
+            "type": "string",
+            "example": "pending"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "postId",
+          "authorId",
+          "body",
+          "moderationStatus",
+          "createdAt"
+        ]
+      },
+      "AddCommentDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "example": "牛"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "Follow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "followerId": {
+            "type": "number"
+          },
+          "followeeId": {
+            "type": "number"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "followerId",
+          "followeeId",
+          "createdAt"
+        ]
+      },
+      "CreateReportDto": {
+        "type": "object",
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "post",
+              "comment",
+              "user"
+            ]
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "spam",
+              "harassment",
+              "nudity",
+              "violence",
+              "hate",
+              "illegal",
+              "other"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "targetType",
+          "targetId",
+          "reason"
+        ]
+      },
+      "RequestUploadDto": {
+        "type": "object",
+        "properties": {
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "avatar",
+              "post",
+              "chat",
+              "progress_photo"
+            ]
+          },
+          "contentType": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "declaredSize": {
+            "type": "number",
+            "example": 204800,
+            "description": "文件字节数"
+          }
+        },
+        "required": [
+          "purpose",
+          "contentType",
+          "declaredSize"
+        ]
+      },
+      "MediaObject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "purpose": {
+            "type": "string",
+            "example": "post"
+          },
+          "storageKey": {
+            "type": "string",
+            "description": "对象存储里的 key"
+          },
+          "contentType": {
+            "type": "string",
+            "example": "image/jpeg"
+          },
+          "declaredSize": {
+            "type": "number",
+            "description": "声明的字节数"
+          },
+          "actualSize": {
+            "type": "number",
+            "description": "complete 时 HEAD 到的实际字节数"
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "moderationStatus": {
+            "type": "string",
+            "example": "pending",
+            "description": "内容审核：pending | approved | rejected（异步）"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "purpose",
+          "storageKey",
+          "contentType",
+          "declaredSize",
+          "status",
+          "moderationStatus",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "example": "workout_reminder"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "readAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "type",
+          "title",
+          "body",
+          "data",
+          "createdAt"
+        ]
+      },
+      "MarkReadDto": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "description": "要标已读的通知 id",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "all": {
+            "type": "boolean",
+            "description": "true = 全部标已读（忽略 ids）"
+          }
+        }
+      },
+      "NotificationPreference": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "pushEnabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "categories": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "description": "按分类关推送；缺省 = 开"
+          },
+          "quietHoursStart": {
+            "type": "number",
+            "example": 22,
+            "description": "免打扰起点小时 0-23"
+          },
+          "quietHoursEnd": {
+            "type": "number",
+            "example": 8,
+            "description": "免打扰终点小时 0-23"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "pushEnabled",
+          "categories",
+          "updatedAt"
+        ]
+      },
+      "UpdatePreferencesDto": {
+        "type": "object",
+        "properties": {
+          "pushEnabled": {
+            "type": "boolean"
+          },
+          "categories": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "example": {
+              "social": false
+            }
+          },
+          "quietHoursStart": {
+            "type": "object",
+            "minimum": 0,
+            "maximum": 23
+          },
+          "quietHoursEnd": {
+            "type": "object",
+            "minimum": 0,
+            "maximum": 23
+          }
+        }
+      },
+      "DeviceToken": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android_fcm",
+              "android_vendor"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "vendorChannel": {
+            "type": "string",
+            "example": "xiaomi",
+            "description": "android_vendor 时的厂商 / 聚合通道：xiaomi|huawei|oppo|vivo|getui|jpush"
+          },
+          "lastSeenAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "platform",
+          "token",
+          "lastSeenAt",
+          "createdAt"
+        ]
+      },
+      "RegisterDeviceDto": {
+        "type": "object",
+        "properties": {
+          "platform": {
+            "type": "string",
+            "enum": [
+              "ios",
+              "android_fcm",
+              "android_vendor"
+            ]
+          },
+          "token": {
+            "type": "string"
+          },
+          "vendorChannel": {
+            "type": "string",
+            "example": "xiaomi",
+            "description": "android_vendor 时的厂商 / 聚合通道"
+          }
+        },
+        "required": [
+          "platform",
+          "token"
+        ]
+      },
+      "SyncEventInputDto": {
+        "type": "object",
+        "properties": {
+          "clientEventId": {
+            "type": "string",
+            "description": "客户端生成的幂等键（如 UUID）"
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "workout_session",
+              "workout_set",
+              "profile",
+              "body_log"
+            ]
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "occurredAt": {
+            "type": "string",
+            "description": "客户端记录该变更的时间（ISO）"
+          }
+        },
+        "required": [
+          "clientEventId",
+          "entityType",
+          "op",
+          "payload"
+        ]
+      },
+      "SyncBatchDto": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncEventInputDto"
+            }
+          }
+        },
+        "required": [
+          "events"
+        ]
+      },
+      "BatchItemResultDto": {
+        "type": "object",
+        "properties": {
+          "clientEventId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "duplicate",
+              "rejected"
+            ]
+          },
+          "serverSeq": {
+            "type": "number"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientEventId",
+          "status"
+        ]
+      },
+      "BatchResultDto": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchItemResultDto"
+            }
+          },
+          "syncCursor": {
+            "type": "number",
+            "description": "本用户当前最新 serverSeq"
+          }
+        },
+        "required": [
+          "results",
+          "syncCursor"
+        ]
+      },
+      "SyncEventDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "serverSeq": {
+            "type": "number"
+          },
+          "entityType": {
+            "type": "string",
+            "example": "workout_session"
+          },
+          "entityId": {
+            "type": "string"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "create",
+              "update",
+              "delete"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "clientEventId": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "serverSeq",
+          "entityType",
+          "op",
+          "payload",
+          "occurredAt",
+          "createdAt"
+        ]
+      },
+      "PullResultDto": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncEventDto"
+            }
+          },
+          "nextCursor": {
+            "type": "number"
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "events",
+          "nextCursor",
+          "hasMore"
+        ]
+      },
+      "CreateWorkoutSessionDto": {
+        "type": "object",
+        "properties": {
+          "planVersionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planDayIndex": {
+            "type": "number",
+            "example": 0
+          },
+          "sessionType": {
+            "type": "string",
+            "example": "strength"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "example": "2026-09-01"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "completed",
+              "skipped"
+            ],
+            "default": "in_progress"
+          }
+        },
+        "required": [
+          "sessionType"
+        ]
+      },
+      "WorkoutSession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "planVersionId": {
+            "type": "string"
+          },
+          "planDayIndex": {
+            "type": "number",
+            "example": 0
+          },
+          "sessionType": {
+            "type": "string",
+            "example": "strength"
+          },
+          "scheduledDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "example": "in_progress"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "sessionType",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "WorkoutSessionCursorPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutSession"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "下一页游标；null = 没有更多"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "WorkoutSet": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "exerciseKey": {
+            "type": "string",
+            "example": "horizontal_push"
+          },
+          "exerciseName": {
+            "type": "string",
+            "example": "杠铃卧推"
+          },
+          "setIndex": {
+            "type": "number",
+            "example": 1
+          },
+          "reps": {
+            "type": "number",
+            "example": 8
+          },
+          "weightKg": {
+            "type": "number",
+            "example": 60
+          },
+          "rir": {
+            "type": "number",
+            "example": 2,
+            "description": "reps in reserve"
+          },
+          "isWarmup": {
+            "type": "boolean",
+            "default": false
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "sessionId",
+          "exerciseKey",
+          "exerciseName",
+          "setIndex",
+          "isWarmup",
+          "createdAt"
+        ]
+      },
+      "WorkoutSessionWithSets": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/WorkoutSession"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutSet"
+            }
+          }
+        },
+        "required": [
+          "session",
+          "sets"
+        ]
+      },
+      "UpdateWorkoutSessionDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "planned",
+              "in_progress",
+              "completed",
+              "skipped"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkoutSetInputDto": {
+        "type": "object",
+        "properties": {
+          "exerciseKey": {
+            "type": "string",
+            "example": "horizontal_push"
+          },
+          "exerciseName": {
+            "type": "string",
+            "example": "杠铃卧推"
+          },
+          "setIndex": {
+            "type": "number",
+            "example": 1
+          },
+          "reps": {
+            "type": "number",
+            "example": 8
+          },
+          "weightKg": {
+            "type": "number",
+            "example": 60
+          },
+          "rir": {
+            "type": "number",
+            "example": 2
+          },
+          "isWarmup": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "exerciseKey",
+          "exerciseName",
+          "setIndex"
+        ]
+      },
+      "AddSetsDto": {
+        "type": "object",
+        "properties": {
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkoutSetInputDto"
+            }
+          }
+        },
+        "required": [
+          "sets"
+        ]
+      },
+      "UpdateSetDto": {
+        "type": "object",
+        "properties": {
+          "reps": {
+            "type": "number"
+          },
+          "weightKg": {
+            "type": "number"
+          },
+          "rir": {
+            "type": "number"
+          },
+          "isWarmup": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "sex": {
+            "type": "string",
+            "example": "male"
+          },
+          "birthdate": {
+            "type": "string",
+            "format": "date",
+            "example": "1995-06-01"
+          },
+          "heightCm": {
+            "type": "number",
+            "example": 175
+          },
+          "goal": {
+            "type": "string",
+            "example": "hypertrophy"
+          },
+          "experienceLevel": {
+            "type": "string",
+            "example": "beginner"
+          },
+          "minutesPerSession": {
+            "type": "number",
+            "example": 60
+          },
+          "mealsPerDay": {
+            "type": "number",
+            "example": 3
+          },
+          "cookingAccess": {
+            "type": "string",
+            "example": "full"
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "example": 72.5
+          },
+          "injuriesText": {
+            "type": "string",
+            "example": "右肩偶尔疼"
+          },
+          "equipment": {
+            "example": [
+              "dumbbell",
+              "bench"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dietaryRestrictions": {
+            "example": [
+              "vegetarian"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bodyDataConsentAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "bodyDataConsentVersion": {
+            "type": "string",
+            "example": "2026-01"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "equipment",
+          "dietaryRestrictions",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpsertProfileDto": {
+        "type": "object",
+        "properties": {
+          "sex": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female"
+            ]
+          },
+          "birthdate": {
+            "type": "string",
+            "example": "1995-06-01",
+            "description": "ISO date"
+          },
+          "heightCm": {
+            "type": "number",
+            "example": 175
+          },
+          "goal": {
+            "type": "string",
+            "enum": [
+              "hypertrophy",
+              "fat_loss",
+              "strength",
+              "recomposition"
+            ]
+          },
+          "experienceLevel": {
+            "type": "string",
+            "enum": [
+              "beginner",
+              "intermediate",
+              "advanced"
+            ]
+          },
+          "minutesPerSession": {
+            "type": "number",
+            "example": 60
+          },
+          "mealsPerDay": {
+            "type": "number",
+            "example": 3
+          },
+          "cookingAccess": {
+            "type": "string",
+            "enum": [
+              "full",
+              "limited",
+              "none"
+            ]
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "example": 72.5
+          },
+          "injuriesText": {
+            "type": "string",
+            "example": "右肩偶尔疼"
+          },
+          "equipment": {
+            "example": [
+              "dumbbell",
+              "bench"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "dietaryRestrictions": {
+            "example": [
+              "vegetarian"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "bodyDataConsent": {
+            "type": "boolean",
+            "description": "勾选同意收集身体数据；true 时记录同意时间戳",
+            "example": true
+          },
+          "bodyDataConsentVersion": {
+            "type": "string",
+            "example": "2026-01",
+            "description": "同意的条款版本"
+          }
+        }
+      },
+      "SavePlanDto": {
+        "type": "object",
+        "properties": {
+          "plannerVersion": {
+            "type": "string",
+            "example": "1.8"
+          },
+          "generatedBy": {
+            "type": "string",
+            "example": "dart",
+            "enum": [
+              "dart",
+              "python"
+            ]
+          },
+          "inputSnapshot": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "问卷原始输入（复现用）"
+          },
+          "planJson": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "引擎产出的完整计划 JSON"
+          },
+          "changeReason": {
+            "type": "string",
+            "example": "check-in: advance"
+          }
+        },
+        "required": [
+          "plannerVersion",
+          "generatedBy",
+          "inputSnapshot",
+          "planJson"
+        ]
+      },
+      "TrainingPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          },
+          "plannerVersion": {
+            "type": "string",
+            "example": "1.8"
+          },
+          "generatedBy": {
+            "type": "string",
+            "example": "dart"
+          },
+          "currentVersionNumber": {
+            "type": "number",
+            "example": 3
+          },
+          "currentVersionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "status",
+          "plannerVersion",
+          "generatedBy",
+          "currentVersionNumber",
+          "currentVersionId",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PlanVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "versionNumber": {
+            "type": "number",
+            "example": 1
+          },
+          "plannerVersion": {
+            "type": "string",
+            "example": "1.8"
+          },
+          "generatedBy": {
+            "type": "string",
+            "example": "dart",
+            "description": "dart | python"
+          },
+          "inputSnapshot": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "问卷原始输入快照（用于日后复现）"
+          },
+          "planJson": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "引擎产出的完整计划 JSON"
+          },
+          "changeReason": {
+            "type": "string",
+            "example": "check-in: advance"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "versionNumber",
+          "plannerVersion",
+          "generatedBy",
+          "inputSnapshot",
+          "planJson",
+          "createdAt"
+        ]
+      },
+      "TrainingPlanWithVersion": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "$ref": "#/components/schemas/TrainingPlan"
+          },
+          "currentVersion": {
+            "$ref": "#/components/schemas/PlanVersion"
+          }
+        },
+        "required": [
+          "plan",
+          "currentVersion"
+        ]
+      },
+      "PlanVersionCursorPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanVersion"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "下一页游标；null = 没有更多"
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "FileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "RoleDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "StatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "test1@example.com"
+          },
+          "password": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "photo": {
+            "$ref": "#/components/schemas/FileDto"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleDto"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusDto"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "firstName",
+          "lastName"
+        ]
+      },
+      "FileType": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "cbcfa8b8-3a25-4adb-a9c6-e325f0d0f3ae"
+          },
+          "path": {
+            "type": "string",
+            "example": "https://example.com/path/to/file.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "path"
+        ]
+      },
+      "Role": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "example": "admin"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Status": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string",
+            "example": "active"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string",
+            "example": "john.doe@example.com"
+          },
+          "provider": {
+            "type": "string",
+            "example": "email"
+          },
+          "socialId": {
+            "type": "string",
+            "example": "1234567890"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "photo": {
+            "$ref": "#/components/schemas/FileType"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Status"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deletedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "provider",
+          "socialId",
+          "firstName",
+          "lastName",
+          "photo",
+          "role",
+          "status",
+          "createdAt",
+          "updatedAt",
+          "deletedAt"
+        ]
+      },
+      "InfinityPaginationUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/User"
+            }
+          },
+          "hasNextPage": {
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "data",
+          "hasNextPage"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "test1@example.com"
+          },
+          "password": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "photo": {
+            "$ref": "#/components/schemas/FileDto"
+          },
+          "role": {
+            "$ref": "#/components/schemas/RoleDto"
+          },
+          "status": {
+            "$ref": "#/components/schemas/StatusDto"
+          }
+        }
+      },
+      "FileResponseDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileType"
+          }
+        },
+        "required": [
+          "file"
+        ]
+      },
+      "AuthEmailLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "test1@example.com"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "LoginResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "tokenExpires": {
+            "type": "number"
+          },
+          "user": {
+            "$ref": "#/components/schemas/User"
+          }
+        },
+        "required": [
+          "token",
+          "refreshToken",
+          "tokenExpires",
+          "user"
+        ]
+      },
+      "AuthRegisterLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "test1@example.com"
+          },
+          "password": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          }
+        },
+        "required": [
+          "email",
+          "password",
+          "firstName",
+          "lastName"
+        ]
+      },
+      "AuthConfirmEmailDto": {
+        "type": "object",
+        "properties": {
+          "hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "hash"
+        ]
+      },
+      "AuthForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "test1@example.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "AuthResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string"
+          },
+          "hash": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "password",
+          "hash"
+        ]
+      },
+      "RefreshResponseDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          },
+          "tokenExpires": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "token",
+          "refreshToken",
+          "tokenExpires"
+        ]
+      },
+      "AuthUpdateDto": {
+        "type": "object",
+        "properties": {
+          "photo": {
+            "$ref": "#/components/schemas/FileDto"
+          },
+          "firstName": {
+            "type": "string",
+            "example": "John"
+          },
+          "lastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "new.email@example.com"
+          },
+          "password": {
+            "type": "string"
+          },
+          "oldPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "AuthGoogleLoginDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "example": "abc"
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AuthAppleLoginDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "example": "abc"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "idToken"
+        ]
+      },
+      "AuthPhoneSendCodeDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "13800000000"
+          }
+        },
+        "required": [
+          "phone"
+        ]
+      },
+      "AuthPhoneSendCodeResponseDto": {
+        "type": "object",
+        "properties": {
+          "expiresIn": {
+            "type": "number",
+            "example": 300,
+            "description": "验证码有效期（秒）"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456",
+            "description": "仅当 AUTH_PHONE_EXPOSE_CODE=true（开发环境）时返回"
+          }
+        },
+        "required": [
+          "expiresIn"
+        ]
+      },
+      "AuthPhoneLoginDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "example": "13800000000"
+          },
+          "code": {
+            "type": "string",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ]
+      },
+      "AuthWechatLoginDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "081abc...",
+            "description": "微信 App 端下发的 code"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      }
+    }
+  }
+}

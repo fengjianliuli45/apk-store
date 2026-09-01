@@ -23,6 +23,7 @@ import {
 } from './domain/workout-session';
 import { WorkoutSet } from '../workout-sets/domain/workout-set';
 import { CursorPage } from '../common/pagination/cursor';
+import { cursorPage } from '../common/pagination/cursor-page.dto';
 import { CreateWorkoutSessionDto } from './dto/create-workout-session.dto';
 import { UpdateWorkoutSessionDto } from './dto/update-workout-session.dto';
 import { AddSetsDto } from './dto/add-sets.dto';
@@ -54,7 +55,7 @@ export class WorkoutSessionsController {
   }
 
   @Get('sessions')
-  @ApiOkResponse({ type: WorkoutSession, isArray: true })
+  @ApiOkResponse({ type: cursorPage(WorkoutSession) })
   listSessions(
     @Request() request: RequestWithUser<JwtPayloadType>,
     @Query() query: ListSessionsQueryDto,
@@ -63,6 +64,12 @@ export class WorkoutSessionsController {
       this.userId(request),
       query.limit ?? 20,
       query.cursor,
+      {
+        from: query.from,
+        to: query.to,
+        status: query.status,
+        planVersionId: query.planVersionId,
+      },
     );
   }
 

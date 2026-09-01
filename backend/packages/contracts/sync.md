@@ -43,7 +43,7 @@
 }
 ```
 
-- `entityType` ∈ `workout_session` | `workout_set` | `profile`（后续扩展）
+- `entityType` ∈ `workout_session` | `workout_set` | `profile` | `body_log`（后续扩展）
 - `op` ∈ `create` | `update` | `delete`
 - `payload` 的形状 = 对应领域端点的 body：
   - `workout_session` `create` → `POST /workouts/sessions` 的 body
@@ -52,6 +52,8 @@
   - `workout_set` `update` → `{ id, ...PATCH body }`
   - `workout_set` `delete` → `{ id }`
   - `profile` `create`/`update` → `PUT /profile/me` 的 body
+  - `body_log` `update` → `PUT /body-logs` 的 body（`{ measuredOn, weightKg?, ... }`，按 (userId, measuredOn) upsert）
+  - `body_log` `delete` → `{ id }`
 - 一批最多 500 条，按数组顺序逐条应用。
 
 响应：
@@ -107,6 +109,6 @@
 
 - 变更流是 best-effort 登记：领域写成功但登记失败时，该变更暂不进流（会打日志）。变更流可从领域表重建。**要做**：把登记放进和领域写同一个事务。
 - `serverSeq` 用 `MAX+1 + 唯一约束重试` 分配，高并发下有重试成本。**要做**：换成每用户计数器行 `UPDATE ... RETURNING`。
-- 没有 `plan` / `body_log` 的同步（plan 走 `POST /plans` 自己的版本化；body_log 还没建表）。
+- 没有 `plan` 的同步（走 `POST /plans` 自己的版本化）。`body_log` 已接入（后写胜，同 profile）。
 - 没有服务端主动推送（WebSocket）——客户端靠轮询 `changes`。
 - profile 冲突是后写胜，没有字段级合并。

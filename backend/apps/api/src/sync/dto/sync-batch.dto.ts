@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-const ENTITY_TYPES = ['workout_session', 'workout_set', 'profile'];
+const ENTITY_TYPES = ['workout_session', 'workout_set', 'profile', 'body_log'];
 const OPS = ['create', 'update', 'delete'];
 
 export class SyncEventInputDto {

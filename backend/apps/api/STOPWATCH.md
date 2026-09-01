@@ -142,11 +142,27 @@
 
 **未做**：内容审核（`createPost`/`addComment` 里留 TODO，§9.5）；feed 现在 fan-out-on-read，量大再上 BullMQ 扇出 + Redis；`refId` 归属校验（分享的 workout/plan 是不是自己的）；admin 审核后台。
 
+## 已做（前端对接准备 —— 阶段 3 缺口 + OpenAPI 导出）
+
+用户要开始做 Flutter 前端，核对阶段 3（profiles/plans/workouts/sync）缺口并补齐 + 导出 OpenAPI。
+
+| 改动 | 文件 |
+|---|---|
+| **`body_log` 表** —— 称重 / 体脂 / 围度时间序列（`(userId, measuredOn)` 唯一，按日期 upsert）。check-in 闭环要用（端上 `review_cycle` 吃体重趋势）。`PUT /api/v1/body-logs` / `GET`(游标+日期范围) / `DELETE`。接入 sync（`entityType='body_log'`，后写胜同 profile） | `src/body-logs/` + 迁移 `1756600800000-CreateBodyLog.ts` |
+| workout 场次列表加过滤：`?from=&to=&status=&planVersionId=`（日历 / 计划视图用） | `workout-sessions` list DTO + repo + controller |
+| **游标分页响应 schema 统一** —— `CursorPageDto` + `cursorPage(Model)` swagger helper，列表端点从"裸数组"改成正确的 `{ data, nextCursor }`。已应用到 workouts / plans 版本 / body-logs | `src/common/pagination/cursor-page.dto.ts` |
+| sync 端点补响应 DTO：`BatchResultDto` / `PullResultDto`（原来只有 description） | `src/sync/dto/sync-response.dto.ts` |
+| **OpenAPI 3.1 导出**：`npm run openapi:export` → `backend/packages/contracts/openapi.json`（headless，preview 模式不连 DB）。54 路径 / 64 schema。`packages/contracts/README.md` 给前端速查 | `scripts/generate-openapi.ts` + `package.json` |
+
+单测：`src/body-logs`（3）—— `npx jest` 75 通过。build + lint 通过。
+
+**阶段 3 其它缺口（评估后判定非阻塞，留后续）**：归档计划列表（只有 `current`）；训练聚合 / 数据页（前端可从 sessions 自算）；帖子作者展示需要的用户卡片接口（属阶段 5，social feed 现在只返回 authorId）。
+
 ## 还没做（下一步）
 
 - 把 `IdempotencyInterceptor` 挂成全局（`APP_INTERCEPTOR`）——现在只是文件，未启用。
-- OpenAPI 3.1 spec 导出到 `backend/packages/contracts/`。
 - `user` 防枚举：加 `publicId uuid` 列。
+- social feed 作者展示：`GET /api/v1/users/:id/card`（displayName + photoUrl），前端渲染帖子作者要用。
 - `chat`：升配后接 OpenIM（ADAPTATION_PLAN §9.15 / §11）。
 - 内容审核接入（阿里云 / 腾讯云内容安全 API），media + social 都要。
 - 训练提醒 / 计划就绪接 `NotificationsService.notify()`。

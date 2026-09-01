@@ -14,6 +14,12 @@ export abstract class WorkoutSessionRepository {
     userId: number,
     limit: number,
     cursor?: string | null,
+    filters?: {
+      from?: string;
+      to?: string;
+      status?: string;
+      planVersionId?: string;
+    },
   ): Promise<CursorPage<WorkoutSession>>;
 
   abstract update(
