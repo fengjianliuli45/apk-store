@@ -24,3 +24,30 @@ plugins {
 }
 
 include(":app")
+
+val unityLibraryDirectory = file("unityLibrary")
+if (unityLibraryDirectory.resolve("build.gradle").exists()) {
+    val unityExportPropertiesFile = file("unity-export.properties")
+    require(unityExportPropertiesFile.exists()) {
+        "unity-export.properties is missing; rerun tools/sync_unity_android_library.ps1"
+    }
+    val unityExportProperties = java.util.Properties().apply {
+        unityExportPropertiesFile.inputStream().use { load(it) }
+    }
+    gradle.beforeProject {
+        unityExportProperties.forEach { key, value ->
+            val propertyName = key.toString()
+            if (!extensions.extraProperties.has(propertyName)) {
+                extensions.extraProperties.set(propertyName, value)
+            }
+        }
+        if (
+            !hasProperty("target-platform") &&
+            unityExportProperties.getProperty("unity.abiFilters") == "arm64-v8a"
+        ) {
+            extensions.extraProperties.set("target-platform", "android-arm64")
+        }
+    }
+    include(":unityLibrary")
+    project(":unityLibrary").projectDir = unityLibraryDirectory
+}

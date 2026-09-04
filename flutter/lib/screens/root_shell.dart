@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../data/workout_database.dart';
 import '../planner/plan_copy.dart';
+import '../planner/plan_overview.dart';
 import '../state/auth_controller.dart';
 import '../state/chat_controller.dart';
 import '../state/diet_log_controller.dart';
@@ -10,9 +14,8 @@ import '../state/settings_controller.dart';
 import '../state/social_feed_controller.dart';
 import '../state/workout_log_controller.dart';
 import '../state/workout_session_controller.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_text_styles.dart';
 import 'home_screen.dart';
+import 'cycle_review_screen.dart';
 import 'plan_input_flow.dart';
 import 'social_shell.dart';
 
@@ -53,9 +56,11 @@ class _RootShellState extends State<RootShell> {
     super.initState();
     widget.plan.addListener(_syncPlan);
     _session.attachLog(_workoutLog);
+    _session.attachStoreFactory(() => WorkoutDatabase.instance);
     _dietLog.load();
     _workoutLog.load();
     _syncPlan();
+    unawaited(_restoreSession());
     _chat.load();
     _settings.load();
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptCheckIn());
@@ -63,7 +68,15 @@ class _RootShellState extends State<RootShell> {
 
   void _syncPlan() {
     _dietLog.bindPlan(widget.plan.plan);
-    _session.applyToday(widget.plan.plan);
+    if (!_session.hasResumableSession) {
+      _session.applyToday(widget.plan.plan);
+    }
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _restoreSession() async {
+    if (!await WorkoutDatabase.hasResumableMarker()) return;
+    await _session.restoreResumableSession();
     if (mounted) setState(() {});
   }
 
@@ -78,23 +91,25 @@ class _RootShellState extends State<RootShell> {
     if (!mounted || _checkPromptOpen || !widget.plan.needsCheckInPrompt) return;
     final generated = widget.plan.plan;
     if (generated == null) return;
+    await _workoutLog.load();
     _checkPromptOpen = true;
     final week = planWeekNumber(generated.generatedAt);
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => PlanInputFlow(
-          goalController: widget.goal,
-          planController: widget.plan,
-          allowExit: true,
-          checkInWeek: week,
-          onSkip: () => widget.plan.markCheckPrompted(
-            generatedAt: generated.generatedAt,
-            week: week,
+        builder: (_) => CycleReviewScreen(
+          overview: PlanOverview.from(
+            plan: generated,
+            logs: _workoutLog.entries,
           ),
-          onDone: () => Navigator.of(context).pop(),
+          plan: widget.plan,
+          workoutLog: _workoutLog,
         ),
       ),
+    );
+    await widget.plan.markCheckPrompted(
+      generatedAt: generated.generatedAt,
+      week: week,
     );
     _checkPromptOpen = false;
   }
@@ -111,9 +126,9 @@ class _RootShellState extends State<RootShell> {
           onSkip: checkInWeek == null || generated == null
               ? null
               : () => widget.plan.markCheckPrompted(
-                    generatedAt: generated.generatedAt,
-                    week: checkInWeek,
-                  ),
+                  generatedAt: generated.generatedAt,
+                  week: checkInWeek,
+                ),
           onDone: () => Navigator.of(context).pop(),
         ),
       ),
@@ -138,6 +153,7 @@ class _RootShellState extends State<RootShell> {
           dietLog: _dietLog,
           onLogout: widget.onLogout,
           onEditPlan: () => _openPlanInput(context),
+          onCycleCheckIn: (week) => _openPlanInput(context, checkInWeek: week),
           initialTab: initialTab,
         ),
       ),

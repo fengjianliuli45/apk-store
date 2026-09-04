@@ -85,7 +85,9 @@ class ExerciseLibrary {
     final results = <Exercise>[];
     for (final ex in _exercises) {
       if (!ex.primaryMuscles.contains(muscle) &&
-          !ex.secondaryMuscles.contains(muscle)) continue;
+          !ex.secondaryMuscles.contains(muscle)) {
+        continue;
+      }
       if (!ex.equipmentRequired.every(expandedEquip.contains)) continue;
       if (level == 'beginner' && ex.skillLevel == 'advanced') continue;
       if (inj.isNotEmpty && isContraindicated(ex, inj)) continue;

@@ -1,7 +1,7 @@
 # Stopwatch 文档索引
 
 > 状态：现行文档入口
-> 更新日期：2026-08-27
+> 更新日期：2026-09-02
 > 规则：发生冲突时，按 L0 → L1 → L2 → L3 → L4 的顺序采用；同层级以更新日期和明确的替代声明为准。
 
 ## L0 冻结决策
@@ -10,7 +10,7 @@
 
 ## L1 最终产品与设计规范
 
-- [`PRODUCT_DESIGN_SPEC_V1.md`](PRODUCT_DESIGN_SPEC_V1.md)：V1 工作草案，已合并冻结决策、现行视觉语言、核心流程、页面状态和待定型清单；逐屏设计完成后升级为正式版本。
+- [`PRODUCT_DESIGN_SPEC_V1.md`](PRODUCT_DESIGN_SPEC_V1.md)：V1 工作草案；0.3 已加入 `main@6b4739b` 规划引擎、周期复评、计划版本和同步状态的 Flutter 实现与模拟器验收记录，其他逐屏设计完成后升级为正式版本。
 
 ## L2 现行实施说明
 
@@ -19,6 +19,8 @@
 - [`fitness-planner-data/README.md`](fitness-planner-data/README.md)：动作与 GIF 数据说明。
 - [`../flutter/README.md`](../flutter/README.md)：Flutter 客户端启动、验证与目录说明。
 - [`HANDOFF_2026-08-27.md`](HANDOFF_2026-08-27.md)：当前跨设备交接状态、验证结果和继续工作顺序。
+- [`MALE_COACH_ASSET_AUDIT_2026-08-27.md`](MALE_COACH_ASSET_AUDIT_2026-08-27.md)：男性教练资产、P0 动作链路、发布阻塞项与女性教练补齐门槛。
+- [`EMBEDDED_3D_RUNTIME_SOLUTION_2026-08-27.md`](EMBEDDED_3D_RUNTIME_SOLUTION_2026-08-27.md)：Flutter 主壳、Unity 全屏训练、GLB 轻量预览、启动生命周期和 Bridge 的现行实施方案。
 
 ## L3 待办与分支材料
 
@@ -30,7 +32,7 @@
 ## L4 历史归档
 
 - [`Stopwatch-app-design-blueprint-v2.md`](Stopwatch-app-design-blueprint-v2.md)：旧产品、交互与 Kotlin Multiplatform 架构蓝图。
-- [`FEATURE_PLAN.md`](FEATURE_PLAN.md)：2026-08-19 早期实施计划；已完成与失效内容未持续更新。
+- [`FEATURE_PLAN.md`](FEATURE_PLAN.md)：2026-08-19 早期实施计划；已完成与失效内容未持续更新，其中 Unity 普通 Flutter Widget 内嵌方案已由 `EMBEDDED_3D_RUNTIME_SOLUTION_2026-08-27.md` 替代。
 - [`../fitness-planner/REVIEW.md`](../fitness-planner/REVIEW.md)：2026-08-02 引擎审查快照，测试数量和部分缺口已过时。
 
 ## 整理规则

@@ -12,6 +12,7 @@ class DietGoals {
     required this.fatG,
     required this.recipeGoal,
     required this.meals,
+    this.foodExamples = const {},
   });
 
   final int kcal;
@@ -20,6 +21,7 @@ class DietGoals {
   final int fatG;
   final RecipeGoal recipeGoal;
   final List<Meal> meals;
+  final Map<String, String> foodExamples;
 
   static const fallback = DietGoals(
     kcal: DietCatalog.goalKcal,
@@ -33,10 +35,10 @@ class DietGoals {
   factory DietGoals.fromPlan(GeneratedPlan plan) {
     final dt = plan.macros.dailyTargets;
     return DietGoals(
-      kcal: (dt['kcal'] as num?)?.round() ?? DietCatalog.goalKcal,
-      proteinG: (dt['protein_g'] as num?)?.round() ?? DietCatalog.proteinGoal,
-      carbG: (dt['carbs_g'] as num?)?.round() ?? DietCatalog.carbGoal,
-      fatG: (dt['fat_g'] as num?)?.round() ?? DietCatalog.fatGoal,
+      kcal: dt['kcal']?.round() ?? DietCatalog.goalKcal,
+      proteinG: dt['protein_g']?.round() ?? DietCatalog.proteinGoal,
+      carbG: dt['carbs_g']?.round() ?? DietCatalog.carbGoal,
+      fatG: dt['fat_g']?.round() ?? DietCatalog.fatGoal,
       recipeGoal: switch (plan.macros.goal) {
         'fat_loss' => RecipeGoal.cut,
         'hypertrophy' => RecipeGoal.bulk,
@@ -44,6 +46,7 @@ class DietGoals {
         _ => RecipeGoal.maintain,
       },
       meals: plan.mealPlan.meals,
+      foodExamples: plan.mealPlan.foodExamples,
     );
   }
 
@@ -74,7 +77,23 @@ class DietGoals {
           (meal.options.first['items'] as List?)?.cast<String>() ?? const [];
       if (items.isNotEmpty) return items.join(' + ');
     }
-    return meal.handPortions.isNotEmpty ? meal.handPortions : null;
+    if (meal.handPortions.isNotEmpty) return meal.handPortions;
+    if (foodExamples.isEmpty) return null;
+    final target = meal.proteinG;
+    MapEntry<String, String>? closest;
+    var distance = double.infinity;
+    for (final entry in foodExamples.entries) {
+      final grams = double.tryParse(
+        RegExp(r'\d+(?:\.\d+)?').firstMatch(entry.key)?.group(0) ?? '',
+      );
+      if (grams == null) continue;
+      final nextDistance = (grams - target).abs();
+      if (nextDistance < distance) {
+        distance = nextDistance;
+        closest = entry;
+      }
+    }
+    return closest?.value;
   }
 
   List<RecipeItem> recommendedRecipes() {

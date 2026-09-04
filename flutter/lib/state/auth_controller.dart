@@ -33,6 +33,8 @@ class AuthController extends ChangeNotifier {
   Future<void> skip() async {
     loggedIn = true;
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kLoggedIn, true);
   }
 
   Future<void> logout() async {

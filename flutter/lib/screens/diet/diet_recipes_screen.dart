@@ -16,7 +16,7 @@ class DietRecipesScreen extends StatefulWidget {
 }
 
 class _DietRecipesScreenState extends State<DietRecipesScreen> {
-  late List<RecipeItem> _pool = widget.dietLog.goals.recommendedRecipes();
+  late final List<RecipeItem> _pool = widget.dietLog.goals.recommendedRecipes();
   late RecipeItem _recipe = _pool.first;
   bool _saved = false;
 
@@ -142,9 +142,15 @@ class _DietRecipesScreenState extends State<DietRecipesScreen> {
                       const SizedBox(height: 14),
                       Row(
                         children: [
-                          _Meta(icon: Icons.schedule, label: '${_recipe.prepMinutes} min'),
+                          _Meta(
+                            icon: Icons.schedule,
+                            label: '${_recipe.prepMinutes} min',
+                          ),
                           const SizedBox(width: 14),
-                          _Meta(icon: Icons.fitness_center, label: _recipe.difficulty),
+                          _Meta(
+                            icon: Icons.fitness_center,
+                            label: _recipe.difficulty,
+                          ),
                           const SizedBox(width: 14),
                           _Meta(
                             icon: Icons.local_fire_department,

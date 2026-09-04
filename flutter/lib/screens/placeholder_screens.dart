@@ -1,28 +1,66 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../state/workout_session_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
+import '../unity/unity_runtime_bridge.dart';
+import '../unity/unity_session_coordinator.dart';
 import '../widgets/back_bar.dart';
 import '../widgets/gradient_background.dart';
 
-/// Pushed when the user taps "开始训练". The real training-pod experience
-/// (Ready / Active / Rest, 3D coach) is a native Unity scene built and wired
-/// up by a separate host project — it is intentionally NOT reimplemented
-/// here in Flutter widgets.
-///
-/// Hookup point for later: export the Unity project as an Android/iOS
-/// library per `juicycleff/flutter_unity_widget`, then in this file swap the
-/// icon placeholder below for a `UnityWidget`. Drive it from
-/// [WorkoutSessionController] (already ported from the old Compose
-/// `WorkoutSessionViewModel` state machine) — call
-/// `UnityWidgetController.postMessage` on `startSet` / `completeSet` /
-/// `addRestSeconds` / `skipRest` / `abortWorkout` so Flutter stays the single
-/// timer source of truth and Unity only renders the scene.
-class UnityCoachPlaceholderScreen extends StatelessWidget {
+/// Flutter-side host for the full-screen Unity as a Library training module.
+/// Until the exported Android/iOS library is installed, this screen keeps a
+/// functional fallback so the Flutter state machine remains testable.
+class UnityCoachPlaceholderScreen extends StatefulWidget {
   const UnityCoachPlaceholderScreen({super.key, required this.session});
 
   final WorkoutSessionController session;
+
+  @override
+  State<UnityCoachPlaceholderScreen> createState() =>
+      _UnityCoachPlaceholderScreenState();
+}
+
+class _UnityCoachPlaceholderScreenState
+    extends State<UnityCoachPlaceholderScreen> {
+  late final UnitySessionCoordinator _coordinator;
+  StreamSubscription<UnityHostState>? _stateSubscription;
+  UnityHostState _hostState = UnityHostState.checking;
+  bool _exitScheduled = false;
+
+  WorkoutSessionController get session => widget.session;
+
+  @override
+  void initState() {
+    super.initState();
+    _coordinator = UnitySessionCoordinator(
+      session: session,
+      bridge: MethodChannelUnityRuntimeBridge(),
+      onExitRequested: _returnHome,
+    );
+    _stateSubscription = _coordinator.states.listen((state) {
+      if (mounted) setState(() => _hostState = state);
+    });
+    unawaited(_coordinator.start());
+  }
+
+  void _returnHome() {
+    if (_exitScheduled) return;
+    _exitScheduled = true;
+    unawaited(_coordinator.releaseRuntime());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
+  }
+
+  @override
+  void dispose() {
+    unawaited(_stateSubscription?.cancel());
+    unawaited(_coordinator.dispose());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,16 +83,32 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                         color: AppColors.brandGreen,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.view_in_ar,
-                        color: AppColors.ink,
-                        size: 40,
-                      ),
+                      child:
+                          _hostState == UnityHostState.checking ||
+                              _hostState == UnityHostState.loading
+                          ? const Padding(
+                              padding: EdgeInsets.all(32),
+                              child: CircularProgressIndicator(
+                                color: AppColors.ink,
+                                strokeWidth: 3,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.view_in_ar,
+                              color: AppColors.ink,
+                              size: 40,
+                            ),
                     ),
                     const SizedBox(height: 24),
-                    const Text(
-                      'Unity 训练舱接入点',
-                      style: TextStyle(
+                    Text(
+                      switch (_hostState) {
+                        UnityHostState.checking => '正在检查 3D 模块',
+                        UnityHostState.loading => '正在准备 3D 教练',
+                        UnityHostState.ready => '3D 教练已连接',
+                        UnityHostState.failed => '3D 教练启动失败',
+                        UnityHostState.unavailable => '3D 模块待导出',
+                      },
+                      style: const TextStyle(
                         fontFamily: AppFonts.inter,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -63,7 +117,11 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      '3D 教练与训练舱场景由本机 Unity 工程独立接入，\n此处仅作为 Flutter 侧的占位跳转页。',
+                      _hostState == UnityHostState.unavailable
+                          ? '当前安装包尚未包含 Unity Library。\n可继续使用 Flutter 训练状态机进行联调。'
+                          : _hostState == UnityHostState.failed
+                          ? '训练草稿已保留，可以返回后重试。'
+                          : 'Stopwatch 正在同步训练状态与 3D 教练。',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: AppFonts.inter,
@@ -74,7 +132,10 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 28),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(18),
@@ -83,10 +144,12 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                         children: [
                           Text(
                             session.isRestDay
-                                ? (session.sessionTitle.isEmpty ? '休息日' : session.sessionTitle)
+                                ? (session.sessionTitle.isEmpty
+                                      ? '休息日'
+                                      : session.sessionTitle)
                                 : session.justFinished
-                                    ? '本课完成'
-                                    : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
+                                ? '本课完成'
+                                : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
@@ -114,31 +177,28 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                     if (!session.isRestDay && !session.justFinished) ...[
                       const SizedBox(height: 16),
                       if (session.phase == WorkoutPhase.active)
-                        _PodButton(
-                          label: '完成这组',
-                          onTap: session.completeSet,
-                        )
+                        _PodButton(label: '完成这组', onTap: session.completeSet)
                       else if (session.phase == WorkoutPhase.rest)
                         _PodButton(
                           label: '进入下一组',
                           onTap: session.startNextSetNow,
                         )
                       else if (session.phase == WorkoutPhase.ready)
-                        _PodButton(
-                          label: '开始本组',
-                          onTap: session.startSet,
-                        ),
+                        _PodButton(label: '开始本组', onTap: session.startSet),
                     ],
                   ],
                 ),
               ),
               const Spacer(),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: GestureDetector(
                   onTap: () {
-                    if (!session.justFinished) session.abortWorkout();
-                    Navigator.of(context).pop();
+                    if (!session.justFinished) session.stopWorkout();
+                    _returnHome();
                   },
                   child: Container(
                     width: double.infinity,
@@ -149,7 +209,7 @@ class UnityCoachPlaceholderScreen extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      session.justFinished ? '返回' : '结束训练',
+                      session.justFinished ? '返回首页' : '结束并保存',
                       style: const TextStyle(
                         fontFamily: AppFonts.inter,
                         fontWeight: FontWeight.w600,

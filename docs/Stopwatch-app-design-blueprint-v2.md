@@ -3,6 +3,7 @@
 > 2026-08-19 · Product / UX / Architecture  
 > 状态：历史归档（不再作为现行技术或版本范围依据）
 > 取代者：`PRODUCT_BASELINE_2026-08-25.md`
+> 2026-09-02 计划与周期复评修订：见 `PRODUCT_DESIGN_SPEC_V1.md` §6.8；本历史蓝图不再定义规划引擎字段或前后端契约。
 > 取代：`Stopwatch-app-design-blueprint.md`（2026-08-03，含已废弃的休息舱视觉语汇）  
 > 视觉母版：[Stopwatch App - Mobile UI Interactive](https://www.figma.com/design/AGgbqoUdX7FaKbTCIugsF7?node-id=17-35)  
 > 教练 HUD：[Unity Coach v1 Ready / Active / Rest / Rest Last 5s](https://www.figma.com/design/AGgbqoUdX7FaKbTCIugsF7?node-id=162-28)（`162:28`–`162:31`）

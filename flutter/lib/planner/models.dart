@@ -694,7 +694,9 @@ class MealPlan {
     this.waterMlRest = 0,
     this.waterMlTraining = 0,
     List<String>? dietNotes,
-  }) : dietNotes = dietNotes ?? const [];
+    Map<String, String>? foodExamples,
+  }) : dietNotes = dietNotes ?? const [],
+       foodExamples = foodExamples ?? const {};
 
   final List<Meal> meals;
   final double totalKcal;
@@ -705,6 +707,9 @@ class MealPlan {
   final int waterMlRest;
   final int waterMlTraining;
   final List<String> dietNotes;
+  /// Legacy v1 examples are kept so existing local plan snapshots can still
+  /// be restored. New v1.8 plans use [Meal.options] and [Meal.handPortions].
+  final Map<String, String> foodExamples;
 
   Map<String, dynamic> toJson() => {
     'meals': meals.map((m) => m.toJson()).toList(),
@@ -716,6 +721,7 @@ class MealPlan {
     'water_ml_rest': waterMlRest,
     'water_ml_training': waterMlTraining,
     'diet_notes': dietNotes,
+    if (foodExamples.isNotEmpty) 'food_examples': foodExamples,
   };
 }
 
@@ -1015,6 +1021,9 @@ class GeneratedPlan {
         waterMlRest: (mealsJson['water_ml_rest'] as int?) ?? 0,
         waterMlTraining: (mealsJson['water_ml_training'] as int?) ?? 0,
         dietNotes: List<String>.from(mealsJson['diet_notes'] as List? ?? const []),
+        foodExamples: Map<String, String>.from(
+          mealsJson['food_examples'] as Map? ?? const {},
+        ),
       ),
       supplements: SupplementResult(
         (nutrition['supplements'] as List)

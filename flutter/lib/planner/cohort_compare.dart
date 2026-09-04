@@ -1,5 +1,6 @@
 /// Port of fitness-planner's `cohort_compare.py`.
 /// 同类对标软提示（B 方案）：把 benchmark 结果翻成一句话。引擎不发网络请求。
+library;
 
 const _bands = <String, String>{
   'ahead': '领先（超过同类 75%）',

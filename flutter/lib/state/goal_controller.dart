@@ -7,20 +7,20 @@ enum FitnessGoal { weightLoss, muscleGain, toning, endurance, recovery }
 
 extension FitnessGoalLabel on FitnessGoal {
   String get label => switch (this) {
-        FitnessGoal.weightLoss => '减脂',
-        FitnessGoal.muscleGain => '增肌',
-        FitnessGoal.toning => '塑形',
-        FitnessGoal.endurance => '体能',
-        FitnessGoal.recovery => '恢复',
-      };
+    FitnessGoal.weightLoss => '减脂',
+    FitnessGoal.muscleGain => '增肌',
+    FitnessGoal.toning => '塑形',
+    FitnessGoal.endurance => '体能',
+    FitnessGoal.recovery => '恢复',
+  };
 
   String get description => switch (this) {
-        FitnessGoal.weightLoss => '降低体脂，提升燃脂效率',
-        FitnessGoal.muscleGain => '增加肌肉量，力量训练为主',
-        FitnessGoal.toning => '线条紧致，兼顾力量和有氧',
-        FitnessGoal.endurance => '提升耐力和心肺能力',
-        FitnessGoal.recovery => '低强度恢复，保护身体状态',
-      };
+    FitnessGoal.weightLoss => '降低体脂，提升燃脂效率',
+    FitnessGoal.muscleGain => '增加肌肉量，力量训练为主',
+    FitnessGoal.toning => '线条紧致，兼顾力量和有氧',
+    FitnessGoal.endurance => '提升耐力和心肺能力',
+    FitnessGoal.recovery => '低强度恢复，保护身体状态',
+  };
 
   /// fitness-planner's engine only models 4 strength-training goals
   /// (hypertrophy/fat_loss/strength/recomposition) — 体能 and 恢复 don't
@@ -28,34 +28,49 @@ extension FitnessGoalLabel on FitnessGoal {
   /// (maintenance macros, moderate training vars) as the closest safe
   /// default rather than distorting a goal the engine wasn't built for.
   String get engineGoal => switch (this) {
-        FitnessGoal.weightLoss => 'fat_loss',
-        FitnessGoal.muscleGain => 'hypertrophy',
-        FitnessGoal.toning => 'recomposition',
-        FitnessGoal.endurance => 'recomposition',
-        FitnessGoal.recovery => 'recomposition',
-      };
+    FitnessGoal.weightLoss => 'fat_loss',
+    FitnessGoal.muscleGain => 'hypertrophy',
+    FitnessGoal.toning => 'recomposition',
+    FitnessGoal.endurance => 'recomposition',
+    FitnessGoal.recovery => 'recomposition',
+  };
 }
 
 /// Tracks the goal picked in the post-login survey. Local-only (no
 /// backend), same pattern as SettingsController.
 class GoalController extends ChangeNotifier {
   static const _kGoal = 'fitness_goal';
+  static const _kWelcomeGoal = 'welcome_animation_goal_v1';
 
   FitnessGoal? goal;
+  String? _welcomeGoal;
 
   bool get hasChosen => goal != null;
+  bool get welcomeSeen => goal != null && _welcomeGoal == goal!.name;
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_kGoal);
     goal = stored == null ? null : FitnessGoal.values.byName(stored);
+    _welcomeGoal = prefs.getString(_kWelcomeGoal);
     notifyListeners();
   }
 
   Future<void> choose(FitnessGoal value) async {
+    if (goal != value) _welcomeGoal = null;
     goal = value;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kGoal, value.name);
+    if (_welcomeGoal == null) await prefs.remove(_kWelcomeGoal);
+  }
+
+  Future<void> markWelcomeSeen() async {
+    final selected = goal;
+    if (selected == null) return;
+    _welcomeGoal = selected.name;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kWelcomeGoal, selected.name);
   }
 }

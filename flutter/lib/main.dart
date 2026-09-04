@@ -52,7 +52,6 @@ class _AppGateState extends State<_AppGate> {
   final _goal = GoalController();
   final _plan = PlanController();
   bool _ready = false;
-  bool _welcomeShown = false;
   Map<String, dynamic>? _pendingProfileFields;
 
   @override
@@ -61,7 +60,8 @@ class _AppGateState extends State<_AppGate> {
     _auth.addListener(_onChanged);
     _goal.addListener(_onChanged);
     _plan.addListener(_onChanged);
-    Future.wait([_auth.load(), _goal.load(), _plan.load()]).then((_) => setState(() => _ready = true));
+    Future.wait([_auth.load(), _goal.load(), _plan.load()])
+        .then((_) => setState(() => _ready = true));
   }
 
   void _onChanged() => setState(() {});
@@ -80,7 +80,6 @@ class _AppGateState extends State<_AppGate> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (!_auth.loggedIn) {
-      _welcomeShown = false;
       _pendingProfileFields = null;
       return LoginScreen(auth: _auth);
     }
@@ -101,12 +100,17 @@ class _AppGateState extends State<_AppGate> {
         onDone: () {},
       );
     }
-    if (!_welcomeShown) {
+    if (!_goal.welcomeSeen) {
       return WelcomeAnimationScreen(
         goal: _goal.goal!,
-        onDone: () => setState(() => _welcomeShown = true),
+        onDone: _goal.markWelcomeSeen,
       );
     }
-    return RootShell(onLogout: _auth.logout, plan: _plan, goal: _goal, auth: _auth);
+    return RootShell(
+      onLogout: _auth.logout,
+      plan: _plan,
+      goal: _goal,
+      auth: _auth,
+    );
   }
 }

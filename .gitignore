@@ -17,6 +17,10 @@ local.properties
 /.codex-apk-store-today/
 /.codex-docx-render/
 /.handoff/
+/.codex_tmp/
+/.codex-backups/
+/unity-export/
+/unity-logs/
 
 # Flutter
 .dart_tool/
@@ -25,3 +29,6 @@ local.properties
 .packages
 /flutter/android/gradlew
 /flutter/android/gradlew.bat
+/flutter/android/unityLibrary/
+/flutter/android/shared/
+/flutter/android/unity-export.properties

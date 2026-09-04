@@ -63,7 +63,11 @@ class _GeneratingPlanScreenState extends State<GeneratingPlanScreen> {
       final plan = gateway.generate(raw);
       // Minimum perceived duration so the transition doesn't just flash.
       await Future.delayed(const Duration(milliseconds: 900));
-      await widget.planController.save(plan);
+      await widget.planController.save(
+        plan,
+        changeReason: 'profile-generated',
+        inputSnapshot: raw,
+      );
       if (!mounted) return;
       _done = true;
       widget.onDone();

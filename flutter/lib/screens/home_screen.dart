@@ -41,9 +41,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   void _enterPod() {
+    if (!widget.session.canStart) return;
     if (widget.session.canStart && widget.session.phase == WorkoutPhase.idle) {
       widget.session.startSession();
-      widget.session.startSet();
     }
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -153,19 +153,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     onTap: _enterPod,
                     onLongPress: session.phase == WorkoutPhase.idle
                         ? null
-                        : session.abortWorkout,
+                        : session.stopWorkout,
                     child: SizedBox(
                       width: 220,
                       height: 220,
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                            CustomPaint(
-                              size: const Size(220, 220),
-                              painter: DualRingPainter(
-                                progress: ringProgress,
-                              ),
-                            ),
+                          CustomPaint(
+                            size: const Size(220, 220),
+                            painter: DualRingPainter(progress: ringProgress),
+                          ),
                           Container(
                             width: 134,
                             height: 132,
@@ -191,7 +189,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
-                                  session.isRestDay ? '今日休息' : '开始训练',
+                                  session.isRestDay
+                                      ? '今日休息'
+                                      : session.phase == WorkoutPhase.idle
+                                      ? '开始训练'
+                                      : '继续训练',
                                   style: const TextStyle(
                                     fontFamily: AppFonts.chakraPetch,
                                     fontWeight: FontWeight.bold,

@@ -47,6 +47,7 @@ GeneratedPlan _plan({required DateTime generatedAt, int nextCheckWeek = 4}) {
       totalProteinG: 140,
       totalFatG: 55,
       totalCarbsG: 220,
+      foodExamples: const {},
     ),
     supplements: SupplementResult(const []),
     weeklyVolumePerGroup: const {},

@@ -141,4 +141,31 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('plan tab shows cycle status, weekly rhythm and review entry', (
+    tester,
+  ) async {
+    await _skipLogin(tester);
+    await tester.tap(find.text('我的'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('计划'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('本周节奏'), findsOneWidget);
+
+    final reviewEntry = find.byKey(const Key('plan-cycle-review'));
+    await tester.scrollUntilVisible(
+      reviewEntry,
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('查看阶段复评与下一周期变化'), findsOneWidget);
+    await tester.tap(reviewEntry);
+    await tester.pumpAndSettle();
+
+    expect(find.text('阶段复评'), findsOneWidget);
+    expect(find.text('引擎结论'), findsOneWidget);
+    expect(find.text('继续观察'), findsWidgets);
+  });
 }

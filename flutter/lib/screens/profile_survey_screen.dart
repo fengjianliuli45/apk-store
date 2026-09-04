@@ -33,16 +33,16 @@ enum _Scene { home, street, gym }
 
 extension on _Scene {
   String get label => switch (this) {
-        _Scene.home => '居家',
-        _Scene.street => '街头',
-        _Scene.gym => '健身房',
-      };
+    _Scene.home => '居家',
+    _Scene.street => '街头',
+    _Scene.gym => '健身房',
+  };
 
   List<String> get equipment => switch (this) {
-        _Scene.home => ['bodyweight', 'dumbbell'],
-        _Scene.street => ['bodyweight'],
-        _Scene.gym => ['bodyweight', 'dumbbell', 'barbell', 'cable', 'machine'],
-      };
+    _Scene.home => ['bodyweight', 'dumbbell'],
+    _Scene.street => ['bodyweight'],
+    _Scene.gym => ['bodyweight', 'dumbbell', 'barbell', 'cable', 'machine'],
+  };
 }
 
 const _levels = [
@@ -76,18 +76,27 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
     final initial = widget.initialFields ?? const <String, dynamic>{};
     _gender = (initial['gender'] as String?) ?? 'M';
     _ageController = TextEditingController(text: '${initial['age'] ?? 28}');
-    _heightController = TextEditingController(text: _numText(initial['height_cm'], 170));
-    _weightController = TextEditingController(text: _numText(initial['weight_kg'], 65));
+    _heightController = TextEditingController(
+      text: _numText(initial['height_cm'], 170),
+    );
+    _weightController = TextEditingController(
+      text: _numText(initial['weight_kg'], 65),
+    );
     _bodyFatController = TextEditingController(
-      text: initial['body_fat_pct'] == null ? '' : _numText(initial['body_fat_pct'], 0),
+      text: initial['body_fat_pct'] == null
+          ? ''
+          : _numText(initial['body_fat_pct'], 0),
     );
     _targetWeightController = TextEditingController(
-      text: initial['target_weight_kg'] == null ? '' : _numText(initial['target_weight_kg'], 0),
+      text: initial['target_weight_kg'] == null
+          ? ''
+          : _numText(initial['target_weight_kg'], 0),
     );
     _scene = _sceneFromEquipment(initial['equipment']);
     _level = (initial['level'] as String?) ?? 'beginner';
     _daysPerWeek = (initial['days_per_week'] as num?)?.toInt() ?? 3;
-    _minutesPerSession = (initial['minutes_per_session'] as num?)?.toInt() ?? 30;
+    _minutesPerSession =
+        (initial['minutes_per_session'] as num?)?.toInt() ?? 30;
     _mealsPerDay = (initial['meals_per_day'] as num?)?.toInt() ?? 4;
   }
 
@@ -126,7 +135,7 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
     if (_step == 3) {
       final bodyFat = double.tryParse(_bodyFatController.text);
       final targetWeight = double.tryParse(_targetWeightController.text);
-      widget.onSubmit({
+      final answers = <String, dynamic>{
         'gender': _gender,
         'age': int.tryParse(_ageController.text) ?? 28,
         'height_cm': double.tryParse(_heightController.text) ?? 170.0,
@@ -136,9 +145,12 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
         'minutes_per_session': _minutesPerSession,
         'equipment': _scene.equipment,
         'meals_per_day': _mealsPerDay,
-        if (bodyFat != null) 'body_fat_pct': bodyFat,
-        if (targetWeight != null) 'target_weight_kg': targetWeight,
-      });
+      };
+      if (bodyFat != null) answers['body_fat_pct'] = bodyFat;
+      if (targetWeight != null) {
+        answers['target_weight_kg'] = targetWeight;
+      }
+      widget.onSubmit(answers);
       return;
     }
     setState(() => _step++);
@@ -163,7 +175,10 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
             Row(
               children: [
                 if (_step > 0 || widget.onBackToGoal != null)
-                  IconButton(onPressed: _back, icon: const Icon(Icons.arrow_back, color: AppColors.ink)),
+                  IconButton(
+                    onPressed: _back,
+                    icon: const Icon(Icons.arrow_back, color: AppColors.ink),
+                  ),
                 Expanded(
                   child: Row(
                     children: [
@@ -173,7 +188,9 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
                             height: 4,
                             margin: const EdgeInsets.symmetric(horizontal: 3),
                             decoration: BoxDecoration(
-                              color: i <= _step ? AppColors.brandGreen : Colors.white,
+                              color: i <= _step
+                                  ? AppColors.brandGreen
+                                  : Colors.white,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
@@ -193,10 +210,15 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
                   backgroundColor: AppColors.brandGreen,
                   foregroundColor: AppColors.ink,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _next,
-                child: Text(_step == 3 ? '生成计划' : '下一步', style: const TextStyle(fontWeight: FontWeight.w600)),
+                child: Text(
+                  _step == 3 ? '生成计划' : '下一步',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
@@ -243,24 +265,50 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
           Row(
             children: [
               Expanded(
-                child: _ChoiceCard(label: '男', selected: _gender == 'M', onTap: () => setState(() => _gender = 'M')),
+                child: _ChoiceCard(
+                  label: '男',
+                  selected: _gender == 'M',
+                  onTap: () => setState(() => _gender = 'M'),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _ChoiceCard(label: '女', selected: _gender == 'F', onTap: () => setState(() => _gender = 'F')),
+                child: _ChoiceCard(
+                  label: '女',
+                  selected: _gender == 'F',
+                  onTap: () => setState(() => _gender = 'F'),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           _NumberField(label: '年龄', suffix: '岁', controller: _ageController),
           const SizedBox(height: 12),
-          _NumberField(label: '身高', suffix: 'cm', controller: _heightController),
+          _NumberField(
+            label: '身高',
+            suffix: 'cm',
+            controller: _heightController,
+          ),
           const SizedBox(height: 12),
-          _NumberField(label: '体重', suffix: 'kg', controller: _weightController),
+          _NumberField(
+            label: '体重',
+            suffix: 'kg',
+            controller: _weightController,
+          ),
           const SizedBox(height: 12),
-          _NumberField(label: '目标体重', suffix: 'kg', controller: _targetWeightController, hint: '选填'),
+          _NumberField(
+            label: '目标体重',
+            suffix: 'kg',
+            controller: _targetWeightController,
+            hint: '选填',
+          ),
           const SizedBox(height: 12),
-          _NumberField(label: '体脂', suffix: '%', controller: _bodyFatController, hint: '选填'),
+          _NumberField(
+            label: '体脂',
+            suffix: '%',
+            controller: _bodyFatController,
+            hint: '选填',
+          ),
         ],
       ),
     );
@@ -273,7 +321,11 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
       child: Column(
         children: [
           for (final (value, label) in _levels) ...[
-            _ChoiceCard(label: label, selected: _level == value, onTap: () => setState(() => _level = value)),
+            _ChoiceCard(
+              label: label,
+              selected: _level == value,
+              onTap: () => setState(() => _level = value),
+            ),
             const SizedBox(height: 12),
           ],
         ],
@@ -293,13 +345,23 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
           Row(
             children: [
               IconButton(
-                onPressed: _daysPerWeek > 1 ? () => setState(() => _daysPerWeek--) : null,
-                icon: const Icon(Icons.remove_circle_outline, color: AppColors.ink),
+                onPressed: _daysPerWeek > 1
+                    ? () => setState(() => _daysPerWeek--)
+                    : null,
+                icon: const Icon(
+                  Icons.remove_circle_outline,
+                  color: AppColors.ink,
+                ),
               ),
               Text('$_daysPerWeek 天', style: AppTextStyles.cardTitle),
               IconButton(
-                onPressed: _daysPerWeek < 7 ? () => setState(() => _daysPerWeek++) : null,
-                icon: const Icon(Icons.add_circle_outline, color: AppColors.ink),
+                onPressed: _daysPerWeek < 7
+                    ? () => setState(() => _daysPerWeek++)
+                    : null,
+                icon: const Icon(
+                  Icons.add_circle_outline,
+                  color: AppColors.ink,
+                ),
               ),
             ],
           ),
@@ -340,7 +402,11 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
 }
 
 class _StepShell extends StatelessWidget {
-  const _StepShell({required this.title, required this.subtitle, required this.child});
+  const _StepShell({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String subtitle;
@@ -353,7 +419,14 @@ class _StepShell extends StatelessWidget {
       children: [
         Text(title, style: AppTextStyles.cardTitle),
         const SizedBox(height: 4),
-        Text(subtitle, style: TextStyle(fontFamily: AppFonts.inter, fontSize: 13, color: AppColors.textMuted)),
+        Text(
+          subtitle,
+          style: TextStyle(
+            fontFamily: AppFonts.inter,
+            fontSize: 13,
+            color: AppColors.textMuted,
+          ),
+        ),
         const SizedBox(height: 20),
         child,
       ],
@@ -362,7 +435,11 @@ class _StepShell extends StatelessWidget {
 }
 
 class _ChoiceCard extends StatelessWidget {
-  const _ChoiceCard({required this.label, required this.selected, required this.onTap});
+  const _ChoiceCard({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -378,7 +455,10 @@ class _ChoiceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.brandGreen : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? AppColors.ink : Colors.transparent, width: 1.5),
+          border: Border.all(
+            color: selected ? AppColors.ink : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         alignment: Alignment.center,
         child: Text(label, style: AppTextStyles.cardName),
@@ -404,16 +484,28 @@ class _NumberField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
-          SizedBox(width: 56, child: Text(label, style: AppTextStyles.cardMeta)),
+          SizedBox(
+            width: 56,
+            child: Text(label, style: AppTextStyles.cardMeta),
+          ),
           Expanded(
             child: TextField(
               controller: controller,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               textAlign: TextAlign.right,
-              style: const TextStyle(fontFamily: AppFonts.jetBrainsMono, fontSize: 16, color: AppColors.ink),
+              style: const TextStyle(
+                fontFamily: AppFonts.jetBrainsMono,
+                fontSize: 16,
+                color: AppColors.ink,
+              ),
               decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: hint,

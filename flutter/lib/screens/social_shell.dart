@@ -33,6 +33,7 @@ class SocialShell extends StatefulWidget {
     required this.dietLog,
     required this.onLogout,
     required this.onEditPlan,
+    this.onCycleCheckIn,
     this.initialTab = 3,
   });
 
@@ -46,6 +47,7 @@ class SocialShell extends StatefulWidget {
   final DietLogController dietLog;
   final VoidCallback onLogout;
   final VoidCallback onEditPlan;
+  final ValueChanged<int>? onCycleCheckIn;
 
   /// One of 0 (训练), 1 (计划), 3 (社交) or 4 (我的).
   final int initialTab;
@@ -76,7 +78,13 @@ class _SocialShellState extends State<SocialShell> {
               index: _localIndex(_tabIndex),
               children: [
                 TrainingScreen(plan: widget.plan),
-                PlanScreen(plan: widget.plan),
+                PlanScreen(
+                  plan: widget.plan,
+                  workoutLog: widget.workoutLog,
+                  onEditPlan: widget.onEditPlan,
+                  onStartToday: () => Navigator.of(context).pop(),
+                  onCycleCheckIn: widget.onCycleCheckIn,
+                ),
                 SocialFeedScreen(
                   controller: widget.controller,
                   onBack: () => Navigator.of(context).pop(),

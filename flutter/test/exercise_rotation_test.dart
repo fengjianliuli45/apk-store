@@ -14,14 +14,14 @@ void main() {
     'equipment': ['barbell', 'dumbbell', 'cable', 'machine'],
   };
 
-  List<List<String>> _dayIds(Map<String, dynamic> plan) => [
+  List<List<String>> dayIds(Map<String, dynamic> plan) => [
         for (final s in (plan['training'] as Map)['schedule'] as List)
           if ((s as Map)['type'] != 'rest')
             [for (final e in s['exercises'] as List) (e as Map)['exercise_id'] as String],
       ];
 
   // 每个肌群本节课第一个动作 = 锚定
-  Map<String, String> _anchors(Map<String, dynamic> plan) {
+  Map<String, String> anchors(Map<String, dynamic> plan) {
     final out = <String, String>{};
     for (final s in (plan['training'] as Map)['schedule'] as List) {
       if ((s as Map)['type'] == 'rest') continue;
@@ -42,11 +42,11 @@ void main() {
     final p2 = gw.generate({...raw, 'exercise_cycle_offset': 2}).toJson();
 
     // 锚定动作三份计划完全一致
-    expect(_anchors(p1), _anchors(p0));
-    expect(_anchors(p2), _anchors(p0));
+    expect(anchors(p1), anchors(p0));
+    expect(anchors(p2), anchors(p0));
 
     // 但整体动作序列有变化（辅助动作轮换了）
-    expect(_dayIds(p1), isNot(_dayIds(p0)));
+    expect(dayIds(p1), isNot(dayIds(p0)));
 
     for (final entry in {0: p0, 1: p1, 2: p2}.entries) {
       (entry.value['meta'] as Map)['generated_at'] = 'X';

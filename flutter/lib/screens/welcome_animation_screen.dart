@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../state/goal_controller.dart';
@@ -10,7 +11,11 @@ import '../widgets/gradient_background.dart';
 /// clip exists at the paths below, falls back to a simple pulsing icon so
 /// the flow still works end to end — see assets/videos/README.md.
 class WelcomeAnimationScreen extends StatefulWidget {
-  const WelcomeAnimationScreen({super.key, required this.goal, required this.onDone});
+  const WelcomeAnimationScreen({
+    super.key,
+    required this.goal,
+    required this.onDone,
+  });
 
   final FitnessGoal goal;
   final VoidCallback onDone;
@@ -27,7 +32,8 @@ class WelcomeAnimationScreen extends StatefulWidget {
   State<WelcomeAnimationScreen> createState() => _WelcomeAnimationScreenState();
 }
 
-class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen> with SingleTickerProviderStateMixin {
+class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen>
+    with SingleTickerProviderStateMixin {
   VideoPlayerController? _video;
   late final AnimationController _pulse;
   bool _done = false;
@@ -35,14 +41,22 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen> with Si
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat(reverse: true);
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
     _loadVideo();
   }
 
   Future<void> _loadVideo() async {
     final path = WelcomeAnimationScreen.assetForGoal[widget.goal]!;
-    final controller = VideoPlayerController.asset(path);
+    VideoPlayerController? controller;
     try {
+      // Avoid asking the platform video player to open a known-missing
+      // placeholder. That fallback works visually but produces a native
+      // FileNotFoundException in release diagnostics.
+      await rootBundle.load(path);
+      controller = VideoPlayerController.asset(path);
       await controller.initialize();
       if (!mounted) {
         controller.dispose();
@@ -52,9 +66,9 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen> with Si
       setState(() => _video = controller);
       controller.play();
     } catch (_) {
-      // Placeholder file missing/empty until the real clip is generated —
-      // fall back to the pulsing icon instead of crashing the flow.
-      controller.dispose();
+      // Placeholder file missing/empty until the real clip is generated.
+      // Fall back to the pulsing icon instead of touching the native player.
+      await controller?.dispose();
     }
   }
 
@@ -109,10 +123,15 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen> with Si
                   backgroundColor: AppColors.brandGreen,
                   foregroundColor: AppColors.ink,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _finish,
-                child: const Text('进入 App', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Text(
+                  '进入 App',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
@@ -156,18 +175,18 @@ class _WelcomeAnimationScreenState extends State<WelcomeAnimationScreen> with Si
 
 extension _WelcomeGoalContent on FitnessGoal {
   String get welcomeCopy => switch (this) {
-        FitnessGoal.weightLoss => '欢迎开启减脂计划 🔥',
-        FitnessGoal.muscleGain => '欢迎踏上增肌之路 💪',
-        FitnessGoal.toning => '欢迎开始塑形训练 ✨',
-        FitnessGoal.endurance => '欢迎提升你的体能 🏃',
-        FitnessGoal.recovery => '欢迎开始恢复训练 🌿',
-      };
+    FitnessGoal.weightLoss => '欢迎开启减脂计划 🔥',
+    FitnessGoal.muscleGain => '欢迎踏上增肌之路 💪',
+    FitnessGoal.toning => '欢迎开始塑形训练 ✨',
+    FitnessGoal.endurance => '欢迎提升你的体能 🏃',
+    FitnessGoal.recovery => '欢迎开始恢复训练 🌿',
+  };
 
   IconData get welcomeIcon => switch (this) {
-        FitnessGoal.weightLoss => Icons.local_fire_department,
-        FitnessGoal.muscleGain => Icons.fitness_center,
-        FitnessGoal.toning => Icons.auto_awesome,
-        FitnessGoal.endurance => Icons.directions_run,
-        FitnessGoal.recovery => Icons.spa,
-      };
+    FitnessGoal.weightLoss => Icons.local_fire_department,
+    FitnessGoal.muscleGain => Icons.fitness_center,
+    FitnessGoal.toning => Icons.auto_awesome,
+    FitnessGoal.endurance => Icons.directions_run,
+    FitnessGoal.recovery => Icons.spa,
+  };
 }
