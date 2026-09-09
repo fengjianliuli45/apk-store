@@ -218,6 +218,57 @@ void main() {
       session.dispose();
     },
   );
+
+  test(
+    'Unity missing-value sentinels stay unknown instead of becoming zero',
+    () async {
+      final log = WorkoutLogController();
+      await log.load();
+      final session = WorkoutSessionController()
+        ..attachLog(log)
+        ..plans = const [SetPlan('push_up', '俯卧撑', 12)]
+        ..startSession();
+      final bridge = _FakeUnityRuntimeBridge();
+      final coordinator = UnitySessionCoordinator(
+        session: session,
+        bridge: bridge,
+        sessionId: 'sentinel-session',
+      );
+      await coordinator.start();
+      bridge.emit(
+        _event(
+          'start-sentinel',
+          'start_training',
+          sessionId: 'sentinel-session',
+        ),
+      );
+      bridge.emit(
+        _event(
+          'complete-sentinel',
+          'complete_set',
+          sessionId: 'sentinel-session',
+          payload: const {
+            'actual_reps': 12,
+            'weight_kg': -1,
+            'rir': -1,
+            'rpe': -1,
+            'recovery_score': -1,
+          },
+        ),
+      );
+      await _flushEvents();
+
+      final recorded = log.recent.single;
+      final set = recorded.exercises.single.sets.single;
+      expect(set.weightKg, isNull);
+      expect(set.rir, isNull);
+      expect(set.rpe, isNull);
+      expect(recorded.recoveryScore, isNull);
+
+      await coordinator.dispose();
+      session.dispose();
+    },
+  );
 }
 
 UnityRuntimeEvent _event(

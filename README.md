@@ -18,7 +18,7 @@ Stopwatch 休息舱 HUD 的私有备份仓库。
 
 ## Flutter（当前主线）
 
-应用 ID / Bundle ID 统一为 `com.restpod.hud`。当前已接入：本地手机号 + OTP 登录、目标调研 + 身体数据问卷 → `PlannerGateway` 生成真实训练/营养计划（`lib/planner/` 是 [fitness-planner](https://github.com/fengjianliuli45/fitness-planner) 引擎的 Dart 移植，逐字段核对过与 Python 版一致，离线跑在设备上）、个性化欢迎动画、首页真计时训练舱、社交圈真评论、饮食打卡（相机/条码+历史+食谱）、训练与计划日历 tab、本地消息会话、附近的人地图、设置页和语音条。Android 已接入可选 Unity as a Library Host；动作闭环已支持逐组次数、重量、RIR、RPE、疼痛与恢复证据，独立 Unity 工程的对应输入控件和 ARM64 真机验收仍待完成，详见 `docs/EXERCISE_CLOSED_LOOP_V1_2026-09-10.md`。
+应用 ID / Bundle ID 统一为 `com.restpod.hud`。当前已接入：本地手机号 + OTP 登录、目标调研 + 身体数据问卷 → `PlannerGateway` 生成真实训练/营养计划（`lib/planner/` 是 [fitness-planner](https://github.com/fengjianliuli45/fitness-planner) 引擎的 Dart 移植，逐字段核对过与 Python 版一致，离线跑在设备上）、个性化欢迎动画、首页真计时训练舱、社交圈真评论、饮食打卡（相机/条码+历史+食谱）、训练与计划日历 tab、本地消息会话、附近的人地图、设置页和语音条。Android 已接入可选 Unity as a Library Host；动作闭环已支持逐组次数、重量、RIR、RPE、疼痛与恢复证据，本机独立 Unity 工程已补对应输入控件并重新导出、同步和构建 ARM64 Debug APK，真机验收仍待完成，详见 `docs/EXERCISE_CLOSED_LOOP_V1_2026-09-10.md`。
 
 ### Android
 

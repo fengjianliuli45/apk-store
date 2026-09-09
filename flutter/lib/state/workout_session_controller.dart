@@ -481,7 +481,7 @@ class WorkoutSessionController extends ChangeNotifier {
       reps: actualReps,
       durationMs: setElapsedMs,
       weightKg: _boundedDouble(evidence?.weightKg, 0, 2000),
-      rir: evidence?.rir?.clamp(0, 5),
+      rir: _boundedInt(evidence?.rir, 0, 5),
       rpe: _boundedDouble(evidence?.rpe, 1, 10),
       painFlag: evidence?.painFlag ?? false,
       painArea: evidence?.painFlag == true
@@ -819,8 +819,15 @@ class WorkoutSessionController extends ChangeNotifier {
   static String _pad(int value) => value.toString().padLeft(2, '0');
 
   static double? _boundedDouble(double? value, double min, double max) {
-    if (value == null || !value.isFinite) return null;
-    return value.clamp(min, max).toDouble();
+    if (value == null || !value.isFinite || value < min || value > max) {
+      return null;
+    }
+    return value;
+  }
+
+  static int? _boundedInt(int? value, int min, int max) {
+    if (value == null || value < min || value > max) return null;
+    return value;
   }
 
   static String? _nonEmptyText(String? value) {

@@ -13,6 +13,8 @@
 - 中断恢复会同时恢复完整处方与已完成组证据，不把已完成内容降级成聚合统计。
 - Flutter 降级训练页在“完成这组”时提供低阻力记录层：实际次数、重量、RIR、疼痛和末组恢复评分均可选填。
 - Unity Bridge 的 `complete_set` / `end_session` 同时接受 camelCase 与 snake_case 证据字段；Flutter 发往 Unity 的快照增加计划负荷、目标 RPE、节奏和动作提示。
+- 本机独立 Unity 工程已增加“完成本组”证据层；最后一次计数会先进入确认层，避免自动完成绕过记录。空重量、RIR、RPE 和恢复使用 `-1` 作为仅限传输层的未知哨兵，Flutter 会丢弃而不是误存为 0。
+- 已用 Unity 6000.5.4f1 图形 Editor 重新导出 Activity 入口 Android Library，同步到 Flutter Android 工程，并成功构建只含 `arm64-v8a` 的集成 Debug APK。APK 内已核实包含 `libunity.so`、`libil2cpp.so`、`libmain.so` 和 `libsqlite3.so`。
 - `WorkoutLogEntry` 增加结构化动作/组记录并保持旧日志向后兼容。规划复评优先消费真实动作 ID 和逐组证据；只有旧记录继续使用 `aggregate_log`，且不会伪造重量或 RIR。
 - 四种确定性复评结果 `advance`、`extend`、`deload_then_retry`、`address_safety` 已改为通过 App 的结构化训练日志模型进入引擎测试。
 
@@ -36,14 +38,14 @@ Unity 完成本组事件建议发送：
 
 ## 尚未完成
 
-1. 独立 Unity 工程仍需把逐组记录控件接到上述事件载荷；当前 Flutter 降级页可完整采集，Bridge 和本地持久化已就绪。
+1. 本机 Unity 工程 `D:\Codex_pro\Stopwatch\repo-main\stopwatch-main\unity\StopwatchUnity` 已接入逐组证据控件并通过实际导入、C# 编译、Android Library 重导出和 Flutter APK 集成构建；Unity 源码按仓库既定边界不在 Git 中。剩余项是 ARM64 真机目视/交互验收。修改前备份位于 `D:\Codex_pro\Stopwatch\.codex-backups\unity-evidence-before-20260910`。
 2. 真实后端 API 地址、认证令牌、离线 outbox、重试与跨设备冲突策略尚未联合验收。
 3. ARM64 荣耀真机仍需执行逐组输入、进程恢复、完整复评和 30 分钟稳定性矩阵；x86_64 模拟器不能验收 ARM64-only Unity Library。
 4. Unity `trial version` 水印、iOS Unity as a Library、女性教练/配音/宠物资产仍属于发布阻塞，未被本轮代码变更覆盖。
 
 ## 验收命令
 
-本轮结果：Flutter 全量 110 项测试通过，`flutter analyze --no-pub` 无问题；Python 权威引擎 187 项测试通过；`git diff --check` 通过。
+本轮结果：Flutter 全量 111 项测试通过，`flutter analyze --no-pub` 无问题；Python 权威引擎 187 项测试通过；Unity Runtime/Editor 两个 C# 工程均为 0 错误（6 个既有序列化警告），图形 Editor 实际导入和 Android Library 导出成功；`git diff --check` 通过。Unity 批处理模式因 Personal 许可证缺少 `com.unity.editor.headless` entitlement 返回 198，已改用带界面的 Editor 执行导出，不影响产物。集成 APK 为 `flutter/build/app/outputs/flutter-apk/app-debug.apk`，大小 `95,125,394` bytes，SHA-256 `4F99659D12629D3E4E0EA669EF57EEB505D853285B7F0E7BF927DA325539EA56`。
 
 ```powershell
 cd flutter
