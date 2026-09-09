@@ -239,7 +239,7 @@ class _UnityCoachPlaceholderScreenState
                         UnityHostState.loading => '正在准备 3D 教练',
                         UnityHostState.ready => '3D 教练已连接',
                         UnityHostState.failed => '3D 教练启动失败',
-                        UnityHostState.unavailable => '3D 模块待导出',
+                        UnityHostState.unavailable => '3D 模块当前不可用',
                       },
                       style: const TextStyle(
                         fontFamily: AppFonts.inter,
@@ -251,7 +251,7 @@ class _UnityCoachPlaceholderScreenState
                     const SizedBox(height: 10),
                     Text(
                       _hostState == UnityHostState.unavailable
-                          ? '当前安装包尚未包含 Unity Library。\n可继续使用 Flutter 训练状态机进行联调。'
+                          ? '当前设备无法运行内置 3D 模块。\n可继续使用 Flutter 训练界面。'
                           : _hostState == UnityHostState.failed
                           ? '训练草稿已保留，可以返回后重试。'
                           : 'Stopwatch 正在同步训练状态与 3D 教练。',

@@ -29,6 +29,15 @@ flutter test
 flutter analyze
 ```
 
+包含本机 x86_64 模拟器和 ARM64 真机 Flutter 库的 Android 通用调试包：
+
+```powershell
+flutter pub get
+flutter build apk --debug --target-platform android-arm64,android-x64 --no-pub
+```
+
+`flutter pub get` 不可省略：它会生成 Android 原生插件注册清单。Unity Library 当前仍为 ARM64-only，因此 x86_64 模拟器会进入完整 Flutter 降级训练页；真实 Unity 画面必须在 ARM64 设备验收。
+
 阶段目标与达成逻辑可单独验证：
 
 ```powershell

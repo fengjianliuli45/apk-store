@@ -72,7 +72,7 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
         // UnityPlayerActivity without libmain.so and later crash during its
         // native cleanup. Do not start the host unless this process can use
         // the exported runtime ABI.
-        if (Build.SUPPORTED_ABIS.none { it == "arm64-v8a" }) return false
+        if (!supportsArm64UnityRuntime(Build.SUPPORTED_ABIS)) return false
         return runCatching {
             Class.forName(UNITY_PLAYER_CLASS)
             Class.forName(UNITY_HOST_ACTIVITY_CLASS)

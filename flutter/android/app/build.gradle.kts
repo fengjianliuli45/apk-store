@@ -74,6 +74,8 @@ flutter {
 }
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
+
     if (unityLibraryIncluded) {
         implementation(project(":unityLibrary"))
         implementation("com.google.android.play:asset-delivery:2.3.0")
