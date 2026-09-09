@@ -14,7 +14,7 @@
 - Flutter 降级训练页在“完成这组”时提供低阻力记录层：实际次数、重量、RIR、疼痛和末组恢复评分均可选填。
 - Unity Bridge 的 `complete_set` / `end_session` 同时接受 camelCase 与 snake_case 证据字段；Flutter 发往 Unity 的快照增加计划负荷、目标 RPE、节奏和动作提示。
 - 本机独立 Unity 工程已增加“完成本组”证据层；最后一次计数会先进入确认层，避免自动完成绕过记录。空重量、RIR、RPE 和恢复使用 `-1` 作为仅限传输层的未知哨兵，Flutter 会丢弃而不是误存为 0。
-- 已用 Unity 6000.5.4f1 图形 Editor 重新导出 Activity 入口 Android Library，同步到 Flutter Android 工程，并成功构建只含 `arm64-v8a` 的集成 Debug APK。APK 内已核实包含 `libunity.so`、`libil2cpp.so`、`libmain.so` 和 `libsqlite3.so`。
+- 已用 Unity 6000.5.4f1 图形 Editor 重新导出 Activity 入口 Android Library，同步到 Flutter Android 工程，并成功构建只含 `arm64-v8a` 的集成 Debug APK。APK 内已核实包含 `libunity.so`、`libil2cpp.so`、`libmain.so` 和 `libsqlite3.so`；合并 Manifest 只有 Flutter `MainActivity` 一个 Launcher，`unity.splash-enable=false`。
 - `WorkoutLogEntry` 增加结构化动作/组记录并保持旧日志向后兼容。规划复评优先消费真实动作 ID 和逐组证据；只有旧记录继续使用 `aggregate_log`，且不会伪造重量或 RIR。
 - 四种确定性复评结果 `advance`、`extend`、`deload_then_retry`、`address_safety` 已改为通过 App 的结构化训练日志模型进入引擎测试。
 
