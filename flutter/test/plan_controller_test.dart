@@ -8,20 +8,24 @@ import 'package:rest_pod_hud/planner/planner_gateway.dart';
 import 'package:rest_pod_hud/state/plan_controller.dart';
 
 class _FakeRemoteStore implements PlanRemoteStore {
-  _FakeRemoteStore({this.isConfigured = true});
+  _FakeRemoteStore({this.isConfigured = true, this.fail = false});
 
   @override
   final bool isConfigured;
+  bool fail;
   final List<Map<String, dynamic>> saved = [];
 
   @override
   Future<void> savePlan({
+    required String idempotencyKey,
     required String plannerVersion,
     required Map<String, dynamic> inputSnapshot,
     required Map<String, dynamic> planJson,
     required String changeReason,
   }) async {
+    if (fail) throw StateError('offline');
     saved.add({
+      'idempotencyKey': idempotencyKey,
       'plannerVersion': plannerVersion,
       'inputSnapshot': inputSnapshot,
       'planJson': planJson,
@@ -46,24 +50,70 @@ void main() {
 
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('save appends immutable versions and syncs the OpenAPI payload', () async {
-    final remote = _FakeRemoteStore();
+  test(
+    'save appends immutable versions and syncs the OpenAPI payload',
+    () async {
+      final remote = _FakeRemoteStore();
+      final plan = (await PlannerGateway.instance()).generate(_raw);
+      final controller = PlanController(remoteStore: remote);
+
+      await controller.save(plan, inputSnapshot: _raw);
+      await controller.save(plan, changeReason: 'check-in: extend');
+
+      expect(controller.currentVersion, 2);
+      expect(controller.versions.map((item) => item.number), [1, 2]);
+      expect(controller.versions.every((item) => item.synced), isTrue);
+      expect(remote.saved, hasLength(2));
+      expect(remote.saved.first['plannerVersion'], '1.8');
+      expect(
+        remote.saved.first['idempotencyKey'],
+        startsWith('stopwatch-plan-1-'),
+      );
+
+      final restored = PlanController(remoteStore: _FakeRemoteStore());
+      await restored.load();
+      expect(restored.currentVersion, 2);
+      expect(restored.plan, isNotNull);
+    },
+  );
+
+  test(
+    'persisted outbox retries once with the original idempotency key',
+    () async {
+      final offline = _FakeRemoteStore(fail: true);
+      final plan = (await PlannerGateway.instance()).generate(_raw);
+      final controller = PlanController(remoteStore: offline);
+      await controller.save(plan);
+
+      expect(controller.versions.single.synced, isFalse);
+      final originalKey = controller.versions.single.idempotencyKey;
+
+      final online = _FakeRemoteStore();
+      final restored = PlanController(remoteStore: online);
+      await restored.load();
+      await restored.retryPendingSync();
+
+      expect(online.saved, hasLength(1));
+      expect(online.saved.single['idempotencyKey'], originalKey);
+      expect(restored.versions.single.synced, isTrue);
+    },
+  );
+
+  test('outbox preserves version order when connectivity returns', () async {
+    final remote = _FakeRemoteStore(fail: true);
     final plan = (await PlannerGateway.instance()).generate(_raw);
     final controller = PlanController(remoteStore: remote);
+    await controller.save(plan);
 
-    await controller.save(plan, inputSnapshot: _raw);
+    remote.fail = false;
     await controller.save(plan, changeReason: 'check-in: extend');
 
-    expect(controller.currentVersion, 2);
-    expect(controller.versions.map((item) => item.number), [1, 2]);
+    expect(remote.saved.map((item) => item['idempotencyKey']), [
+      controller.versions[0].idempotencyKey,
+      controller.versions[1].idempotencyKey,
+    ]);
     expect(controller.versions.every((item) => item.synced), isTrue);
-    expect(remote.saved, hasLength(2));
-    expect(remote.saved.first['plannerVersion'], '1.8');
-
-    final restored = PlanController(remoteStore: _FakeRemoteStore());
-    await restored.load();
-    expect(restored.currentVersion, 2);
-    expect(restored.plan, isNotNull);
+    expect(controller.syncLabel, '云端已同步');
   });
 
   test('restoring an old plan creates a new rollback-safe version', () async {
@@ -100,28 +150,33 @@ void main() {
     );
   });
 
-  test('cycle review uses the deterministic engine and never invents evidence', () async {
-    final plan = (await PlannerGateway.instance()).generate(_raw);
-    final controller = PlanController(remoteStore: _FakeRemoteStore(isConfigured: false));
-    await controller.save(plan);
+  test(
+    'cycle review uses the deterministic engine and never invents evidence',
+    () async {
+      final plan = (await PlannerGateway.instance()).generate(_raw);
+      final controller = PlanController(
+        remoteStore: _FakeRemoteStore(isConfigured: false),
+      );
+      await controller.save(plan);
 
-    final review = await controller.reviewCurrentCycle([
-      WorkoutLogEntry(
-        id: 'aggregate-1',
-        title: '训练',
-        timestampMs: plan.generatedAt
-            .add(const Duration(minutes: 1))
-            .millisecondsSinceEpoch,
-        durationMs: 30 * 60 * 1000,
-        completedSets: 8,
-        totalSets: 10,
-        estimatedKcal: 120,
-      ),
-    ]);
+      final review = await controller.reviewCurrentCycle([
+        WorkoutLogEntry(
+          id: 'aggregate-1',
+          title: '训练',
+          timestampMs: plan.generatedAt
+              .add(const Duration(minutes: 1))
+              .millisecondsSinceEpoch,
+          durationMs: 30 * 60 * 1000,
+          completedSets: 8,
+          totalSets: 10,
+          estimatedKcal: 120,
+        ),
+      ]);
 
-    expect(review.verdict, 'extend');
-    expect(review.nextPlan, isNotNull);
-    expect((review.review['assessment'] as Map)['data_quality_met'], isFalse);
-    expect(review.review['summary'], contains('1/'));
-  });
+      expect(review.verdict, 'extend');
+      expect(review.nextPlan, isNotNull);
+      expect((review.review['assessment'] as Map)['data_quality_met'], isFalse);
+      expect(review.review['summary'], contains('1/'));
+    },
+  );
 }

@@ -39,13 +39,13 @@ Unity 完成本组事件建议发送：
 ## 尚未完成
 
 1. 本机 Unity 工程 `D:\Codex_pro\Stopwatch\repo-main\stopwatch-main\unity\StopwatchUnity` 已接入逐组证据控件并通过实际导入、C# 编译、Android Library 重导出和 Flutter APK 集成构建；Unity 源码按仓库既定边界不在 Git 中。剩余项是 ARM64 真机目视/交互验收。修改前备份位于 `D:\Codex_pro\Stopwatch\.codex-backups\unity-evidence-before-20260910`。
-2. 真实后端 API 地址、认证令牌、离线 outbox、重试与跨设备冲突策略尚未联合验收。
+2. 计划版本离线 outbox 已持久化并在启动后按序自动重试，每条写请求带稳定 `Idempotency-Key`；真实后端 API 地址、认证令牌与跨设备冲突策略仍未联合验收。
 3. ARM64 荣耀真机仍需执行逐组输入、进程恢复、完整复评和 30 分钟稳定性矩阵；x86_64 模拟器不能验收 ARM64-only Unity Library。
 4. Unity `trial version` 水印、iOS Unity as a Library、女性教练/配音/宠物资产仍属于发布阻塞，未被本轮代码变更覆盖。
 
 ## 验收命令
 
-本轮结果：Flutter 全量 111 项测试通过，`flutter analyze --no-pub` 无问题；Python 权威引擎 187 项测试通过；Unity Runtime/Editor 两个 C# 工程均为 0 错误（6 个既有序列化警告），图形 Editor 实际导入和 Android Library 导出成功；`git diff --check` 通过。Unity 批处理模式因 Personal 许可证缺少 `com.unity.editor.headless` entitlement 返回 198，已改用带界面的 Editor 执行导出，不影响产物。集成 APK 为 `flutter/build/app/outputs/flutter-apk/app-debug.apk`，大小 `95,125,394` bytes，SHA-256 `4F99659D12629D3E4E0EA669EF57EEB505D853285B7F0E7BF927DA325539EA56`。
+本轮结果：Flutter 全量 113 项测试通过，`flutter analyze --no-pub` 无问题；Python 权威引擎 187 项测试通过；Unity Runtime/Editor 两个 C# 工程均为 0 错误（6 个既有序列化警告），图形 Editor 实际导入和 Android Library 导出成功；`git diff --check` 通过。Unity 批处理模式因 Personal 许可证缺少 `com.unity.editor.headless` entitlement 返回 198，已改用带界面的 Editor 执行导出，不影响产物。集成 APK 为 `flutter/build/app/outputs/flutter-apk/app-debug.apk`，大小 `95,125,394` bytes，SHA-256 `40A2891064A73D82BD6ADEB82C4F9BF3A35236E59BA33C8E587527D3B2896074`。
 
 ```powershell
 cd flutter

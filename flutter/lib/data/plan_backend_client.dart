@@ -11,6 +11,7 @@ abstract interface class PlanRemoteStore {
   bool get isConfigured;
 
   Future<void> savePlan({
+    required String idempotencyKey,
     required String plannerVersion,
     required Map<String, dynamic> inputSnapshot,
     required Map<String, dynamic> planJson,
@@ -28,10 +29,12 @@ class PlanBackendClient implements PlanRemoteStore {
   final String accessToken;
 
   @override
-  bool get isConfigured => baseUrl.trim().isNotEmpty && accessToken.trim().isNotEmpty;
+  bool get isConfigured =>
+      baseUrl.trim().isNotEmpty && accessToken.trim().isNotEmpty;
 
   @override
   Future<void> savePlan({
+    required String idempotencyKey,
     required String plannerVersion,
     required Map<String, dynamic> inputSnapshot,
     required Map<String, dynamic> planJson,
@@ -46,14 +49,20 @@ class PlanBackendClient implements PlanRemoteStore {
       final endpoint = Uri.parse('$root/api/v1/plans');
       final request = await client.postUrl(endpoint);
       request.headers.contentType = ContentType.json;
-      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $accessToken');
-      request.write(jsonEncode({
-        'plannerVersion': plannerVersion,
-        'generatedBy': 'dart',
-        'inputSnapshot': inputSnapshot,
-        'planJson': planJson,
-        'changeReason': changeReason,
-      }));
+      request.headers.set(
+        HttpHeaders.authorizationHeader,
+        'Bearer $accessToken',
+      );
+      request.headers.set('Idempotency-Key', idempotencyKey);
+      request.write(
+        jsonEncode({
+          'plannerVersion': plannerVersion,
+          'generatedBy': 'dart',
+          'inputSnapshot': inputSnapshot,
+          'planJson': planJson,
+          'changeReason': changeReason,
+        }),
+      );
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
       if (response.statusCode < 200 || response.statusCode >= 300) {

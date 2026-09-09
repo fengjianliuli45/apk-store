@@ -228,7 +228,7 @@ Brand Green 只服务最重要的当前动作。首页的社区、宠物线索�
 - 端上先保存新的计划 JSON 和输入快照；
 - 后端通过 `POST /api/v1/plans` 追加不可变版本，保存 `plannerVersion`、`inputSnapshot`、`planJson`、`changeReason`；
 - 旧版本不得被覆盖，可从版本历史查看并恢复；
-- 网络不可用时进入 Outbox，显示等待同步，不重复生成或丢失训练记录。
+- 网络不可用时进入 Outbox，显示等待同步；App 启动后按本地版本顺序自动重试，每个写请求复用持久化的稳定幂等键，不重复生成或丢失计划记录。
 
 #### 6.8.3 Figma 修订稿
 

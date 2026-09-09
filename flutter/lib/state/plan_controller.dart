@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -17,6 +18,7 @@ class PlanVersionRecord {
     required this.changeReason,
     required this.planJson,
     required this.inputSnapshot,
+    required this.idempotencyKey,
     required this.synced,
   });
 
@@ -26,40 +28,49 @@ class PlanVersionRecord {
   final String changeReason;
   final Map<String, dynamic> planJson;
   final Map<String, dynamic> inputSnapshot;
+  final String idempotencyKey;
   final bool synced;
 
   PlanVersionRecord copyWith({bool? synced}) => PlanVersionRecord(
-        number: number,
-        createdAt: createdAt,
-        plannerVersion: plannerVersion,
-        changeReason: changeReason,
-        planJson: planJson,
-        inputSnapshot: inputSnapshot,
-        synced: synced ?? this.synced,
-      );
+    number: number,
+    createdAt: createdAt,
+    plannerVersion: plannerVersion,
+    changeReason: changeReason,
+    planJson: planJson,
+    inputSnapshot: inputSnapshot,
+    idempotencyKey: idempotencyKey,
+    synced: synced ?? this.synced,
+  );
 
   Map<String, dynamic> toJson() => {
-        'number': number,
-        'created_at': createdAt.toIso8601String(),
-        'planner_version': plannerVersion,
-        'change_reason': changeReason,
-        'plan_json': planJson,
-        'input_snapshot': inputSnapshot,
-        'synced': synced,
-      };
+    'number': number,
+    'created_at': createdAt.toIso8601String(),
+    'planner_version': plannerVersion,
+    'change_reason': changeReason,
+    'plan_json': planJson,
+    'input_snapshot': inputSnapshot,
+    'idempotency_key': idempotencyKey,
+    'synced': synced,
+  };
 
-  factory PlanVersionRecord.fromJson(Map<String, dynamic> json) =>
-      PlanVersionRecord(
-        number: (json['number'] as num).toInt(),
-        createdAt: DateTime.parse(json['created_at'] as String),
-        plannerVersion: json['planner_version'] as String,
-        changeReason: json['change_reason'] as String,
-        planJson: Map<String, dynamic>.from(json['plan_json'] as Map),
-        inputSnapshot: Map<String, dynamic>.from(
-          json['input_snapshot'] as Map? ?? const {},
-        ),
-        synced: (json['synced'] as bool?) ?? false,
-      );
+  factory PlanVersionRecord.fromJson(Map<String, dynamic> json) {
+    final number = (json['number'] as num).toInt();
+    final createdAt = DateTime.parse(json['created_at'] as String);
+    return PlanVersionRecord(
+      number: number,
+      createdAt: createdAt,
+      plannerVersion: json['planner_version'] as String,
+      changeReason: json['change_reason'] as String,
+      planJson: Map<String, dynamic>.from(json['plan_json'] as Map),
+      inputSnapshot: Map<String, dynamic>.from(
+        json['input_snapshot'] as Map? ?? const {},
+      ),
+      idempotencyKey:
+          json['idempotency_key'] as String? ??
+          _planIdempotencyKey(number, createdAt),
+      synced: (json['synced'] as bool?) ?? false,
+    );
+  }
 }
 
 class PlanReviewResult {
@@ -77,7 +88,7 @@ class PlanReviewResult {
 /// blocks local training.
 class PlanController extends ChangeNotifier {
   PlanController({PlanRemoteStore? remoteStore})
-      : _remoteStore = remoteStore ?? const PlanBackendClient();
+    : _remoteStore = remoteStore ?? const PlanBackendClient();
 
   static const _kPlan = 'generated_plan_json';
   static const _kVersions = 'generated_plan_versions_v1';
@@ -85,6 +96,8 @@ class PlanController extends ChangeNotifier {
   static const _kCheckPromptedWeek = 'check_prompt_week';
 
   final PlanRemoteStore _remoteStore;
+  final Set<int> _syncingRecords = <int>{};
+  Future<void>? _pendingSyncFlush;
   final List<PlanVersionRecord> versions = [];
   GeneratedPlan? plan;
   String? checkPromptedAt;
@@ -99,7 +112,7 @@ class PlanController extends ChangeNotifier {
   String get syncLabel {
     if (syncing) return '正在同步';
     if (versions.isEmpty) return '尚未保存';
-    if (versions.last.synced) return '云端已同步';
+    if (versions.every((item) => item.synced)) return '云端已同步';
     return _remoteStore.isConfigured ? '等待重试同步' : '本地已保存';
   }
 
@@ -146,6 +159,7 @@ class PlanController extends ChangeNotifier {
               changeReason: 'migrated-local-plan',
               planJson: normalizedJson,
               inputSnapshot: plan!.profile.toJson(),
+              idempotencyKey: _planIdempotencyKey(1, plan!.generatedAt),
               synced: false,
             ),
           );
@@ -164,6 +178,7 @@ class PlanController extends ChangeNotifier {
             changeReason: legacy.changeReason,
             planJson: normalizedJson,
             inputSnapshot: legacy.inputSnapshot,
+            idempotencyKey: legacy.idempotencyKey,
             synced: legacy.synced,
           );
           await _persistVersions(prefs);
@@ -175,9 +190,15 @@ class PlanController extends ChangeNotifier {
     checkPromptedAt = prefs.getString(_kCheckPromptedAt);
     checkPromptedWeek = prefs.getInt(_kCheckPromptedWeek) ?? 0;
     notifyListeners();
+    if (_remoteStore.isConfigured && versions.any((item) => !item.synced)) {
+      unawaited(retryPendingSync());
+    }
   }
 
-  Future<void> markCheckPrompted({required DateTime generatedAt, required int week}) async {
+  Future<void> markCheckPrompted({
+    required DateTime generatedAt,
+    required int week,
+  }) async {
     checkPromptedAt = generatedAt.toIso8601String();
     checkPromptedWeek = week;
     final prefs = await SharedPreferences.getInstance();
@@ -191,13 +212,16 @@ class PlanController extends ChangeNotifier {
     Map<String, dynamic>? inputSnapshot,
   }) async {
     final json = value.toJson();
+    final number = currentVersion + 1;
+    final createdAt = DateTime.now().toUtc();
     final record = PlanVersionRecord(
-      number: currentVersion + 1,
-      createdAt: DateTime.now().toUtc(),
+      number: number,
+      createdAt: createdAt,
       plannerVersion: _plannerVersion(json),
       changeReason: changeReason,
       planJson: json,
       inputSnapshot: inputSnapshot ?? value.profile.toJson(),
+      idempotencyKey: _planIdempotencyKey(number, createdAt),
       synced: false,
     );
     plan = value;
@@ -211,7 +235,10 @@ class PlanController extends ChangeNotifier {
     await _persistVersions(prefs);
     await prefs.remove(_kCheckPromptedAt);
     await prefs.remove(_kCheckPromptedWeek);
-    await _syncRecord(record.number);
+    await retryPendingSync();
+    if (!versions.last.synced && versions.any((item) => !item.synced)) {
+      await retryPendingSync();
+    }
   }
 
   Future<PlanReviewResult> reviewCurrentCycle(
@@ -220,7 +247,8 @@ class PlanController extends ChangeNotifier {
     final current = plan;
     if (current == null) throw StateError('No plan to review');
     final start = current.generatedAt;
-    final cycleWeeks = current.stageGoal?.cycleWeeks ??
+    final cycleWeeks =
+        current.stageGoal?.cycleWeeks ??
         current.mesocycle?.lengthWeeks ??
         current.progression.nextCheckWeek;
     final end = start.add(Duration(days: cycleWeeks * 7));
@@ -263,7 +291,18 @@ class PlanController extends ChangeNotifier {
     );
   }
 
-  Future<void> retryPendingSync() async {
+  Future<void> retryPendingSync() {
+    final active = _pendingSyncFlush;
+    if (active != null) return active;
+    late final Future<void> pending;
+    pending = _retryPendingSync().whenComplete(() {
+      if (identical(_pendingSyncFlush, pending)) _pendingSyncFlush = null;
+    });
+    _pendingSyncFlush = pending;
+    return pending;
+  }
+
+  Future<void> _retryPendingSync() async {
     for (final record in versions.where((item) => !item.synced).toList()) {
       await _syncRecord(record.number);
       if (lastSyncError != null) break;
@@ -273,13 +312,19 @@ class PlanController extends ChangeNotifier {
   Future<void> _syncRecord(int number) async {
     if (!_remoteStore.isConfigured) return;
     final index = versions.indexWhere((item) => item.number == number);
-    if (index < 0 || versions[index].synced) return;
+    if (index < 0 ||
+        versions[index].synced ||
+        _syncingRecords.contains(number)) {
+      return;
+    }
+    _syncingRecords.add(number);
     syncing = true;
     lastSyncError = null;
     notifyListeners();
     try {
       final record = versions[index];
       await _remoteStore.savePlan(
+        idempotencyKey: record.idempotencyKey,
         plannerVersion: record.plannerVersion,
         inputSnapshot: record.inputSnapshot,
         planJson: record.planJson,
@@ -290,17 +335,20 @@ class PlanController extends ChangeNotifier {
     } catch (error) {
       lastSyncError = '$error';
     } finally {
-      syncing = false;
+      _syncingRecords.remove(number);
+      syncing = _syncingRecords.isNotEmpty;
       notifyListeners();
     }
   }
 
   Future<void> _persistVersions(SharedPreferences prefs) => prefs.setString(
-        _kVersions,
-        jsonEncode(versions.map((item) => item.toJson()).toList()),
-      );
+    _kVersions,
+    jsonEncode(versions.map((item) => item.toJson()).toList()),
+  );
 
   static String _plannerVersion(Map<String, dynamic> json) =>
       ((json['meta'] as Map?)?['version'] as String?) ?? '1.8';
-
 }
+
+String _planIdempotencyKey(int number, DateTime createdAt) =>
+    'stopwatch-plan-$number-${createdAt.toUtc().microsecondsSinceEpoch}';
