@@ -226,7 +226,7 @@ class PlanController extends ChangeNotifier {
     final end = start.add(Duration(days: cycleWeeks * 7));
     final cycleLogs = logs
         .where((entry) => !entry.at.isBefore(start) && entry.at.isBefore(end))
-        .map(_workoutForEngine)
+        .map((entry) => entry.toEngineJson())
         .toList();
     final gateway = await PlannerGateway.instance();
     final output = gateway.runCheckIn(
@@ -303,25 +303,4 @@ class PlanController extends ChangeNotifier {
   static String _plannerVersion(Map<String, dynamic> json) =>
       ((json['meta'] as Map?)?['version'] as String?) ?? '1.8';
 
-  static Map<String, dynamic> _workoutForEngine(WorkoutLogEntry entry) => {
-        'date': entry.at.toUtc().toIso8601String().split('T').first,
-        'plan_day': entry.at.weekday,
-        'session_type': 'logged',
-        'planned_sets': entry.totalSets,
-        // Aggregate local logs do not yet contain load/RIR details. A
-        // synthetic exercise carries only set completion so the engine can
-        // count attendance without inventing performance evidence.
-        'exercises': [
-          {
-            'exercise_id': 'aggregate_log',
-            'planned_sets': entry.totalSets,
-            'sets': [
-              for (var index = 0; index < entry.completedSets; index++)
-                const <String, dynamic>{},
-            ],
-          },
-        ],
-        'aborted': entry.completedSets * 2 < entry.totalSets,
-        'pain_flag': false,
-      };
 }

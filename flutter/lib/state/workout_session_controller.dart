@@ -23,11 +23,53 @@ class SetPlan {
     this.name,
     this.targetReps, {
     this.restMs = WorkoutSessionController.restDefaultMs,
+    this.repsPrescription = '',
+    this.load = '',
+    this.loadKg,
+    this.rpe,
+    this.tempo = '',
+    this.notes = '',
+    this.formCues = const [],
+    this.targetMuscle = '',
+    this.exerciseSequence = 1,
+    this.exerciseSetIndex = 1,
+    this.plannedSets = 1,
   });
   final String exerciseId;
   final String name;
   final int targetReps;
   final int restMs;
+  final String repsPrescription;
+  final String load;
+  final double? loadKg;
+  final double? rpe;
+  final String tempo;
+  final String notes;
+  final List<String> formCues;
+  final String targetMuscle;
+  final int exerciseSequence;
+  final int exerciseSetIndex;
+  final int plannedSets;
+}
+
+class SetCompletionEvidence {
+  const SetCompletionEvidence({
+    this.actualReps,
+    this.weightKg,
+    this.rir,
+    this.rpe,
+    this.painFlag = false,
+    this.painArea,
+    this.recoveryScore,
+  });
+
+  final int? actualReps;
+  final double? weightKg;
+  final int? rir;
+  final double? rpe;
+  final bool painFlag;
+  final String? painArea;
+  final double? recoveryScore;
 }
 
 class WorkoutSessionController extends ChangeNotifier {
@@ -49,6 +91,8 @@ class WorkoutSessionController extends ChangeNotifier {
   List<SetPlan> plans = List<SetPlan>.of(_fallbackPlans);
   bool isRestDay = false;
   String sessionTitle = '';
+  String sessionType = 'logged';
+  String planDay = '';
   WorkoutLogController? log;
   WorkoutDatabase? _store;
   WorkoutDatabase Function()? _storeFactory;
@@ -59,6 +103,9 @@ class WorkoutSessionController extends ChangeNotifier {
 
   int _workoutElapsedMs = 0;
   int _setsFinished = 0;
+  final Map<int, WorkoutSetLog> _completedSetEvidence = {};
+  bool _painFlag = false;
+  double? _recoveryScore;
   String? _sessionId;
   Timer? _resumeCountdownTimer;
   int resumeCountdownSeconds = 0;
@@ -122,12 +169,16 @@ class WorkoutSessionController extends ChangeNotifier {
       plans = List<SetPlan>.of(_fallbackPlans);
       isRestDay = false;
       sessionTitle = '';
+      sessionType = 'logged';
+      planDay = '';
       _reset(notify: false);
       notifyListeners();
       return;
     }
     final session = sessionForDate(plan, DateTime.now());
     sessionTitle = sessionTypeLabels[session.type] ?? session.type;
+    sessionType = session.type;
+    planDay = session.day;
     if (session.isRest || session.exercises.isEmpty) {
       plans = const [];
       isRestDay = true;
@@ -165,6 +216,10 @@ class WorkoutSessionController extends ChangeNotifier {
       return false;
     }
     sessionTitle = draft.title;
+    sessionType = draft.sessionType;
+    planDay = draft.planDay;
+    _painFlag = draft.painFlag;
+    _recoveryScore = draft.recoveryScore;
     isRestDay = false;
     _sessionId = draft.id;
     currentSet = draft.currentSet.clamp(1, totalSets);
@@ -177,20 +232,62 @@ class WorkoutSessionController extends ChangeNotifier {
     isPaused = true;
     resumeCountdownSeconds = 0;
     setElapsedMs = phase == WorkoutPhase.active ? draft.setElapsedMs : 0;
+    final persistedSets =
+        await _database?.loadCompletedSets(draft.id) ?? const [];
+    _completedSetEvidence
+      ..clear()
+      ..addEntries(
+        persistedSets.map(
+          (set) => MapEntry(
+            set.setNumber,
+            WorkoutSetLog(
+              setNumber: set.exerciseSetIndex,
+              reps: set.actualReps,
+              durationMs: set.effectiveDurationMs,
+              weightKg: set.actualWeightKg,
+              rir: set.actualRir,
+              rpe: set.actualRpe,
+              painFlag: set.painFlag,
+              painArea: set.painArea,
+            ),
+          ),
+        ),
+      );
     _startTicker();
-    _persist('session_recovered');
+    await _persist('session_recovered');
     notifyListeners();
     return true;
   }
 
   static List<SetPlan> _setPlansFromSession(SessionResult session) {
     final sets = <SetPlan>[];
-    for (final exercise in session.exercises) {
+    for (
+      var exerciseIndex = 0;
+      exerciseIndex < session.exercises.length;
+      exerciseIndex++
+    ) {
+      final exercise = session.exercises[exerciseIndex];
       final reps = _parseTargetReps(exercise.reps);
       final restMs = (exercise.restSec <= 0 ? 30 : exercise.restSec) * 1000;
       for (var i = 0; i < exercise.sets; i++) {
         sets.add(
-          SetPlan(exercise.exerciseId, exercise.name, reps, restMs: restMs),
+          SetPlan(
+            exercise.exerciseId,
+            exercise.name,
+            reps,
+            restMs: restMs,
+            repsPrescription: exercise.reps,
+            load: exercise.load,
+            loadKg: exercise.loadKg,
+            rpe: exercise.rpe,
+            tempo: exercise.tempo,
+            notes: exercise.notes,
+            formCues: exercise.formCues,
+            targetMuscle: exercise.targetMuscle,
+            exerciseSequence: exerciseIndex + 1,
+            exerciseSetIndex: i + 1,
+            plannedSets: exercise.sets,
+          ),
         );
       }
     }
@@ -205,6 +302,17 @@ class WorkoutSessionController extends ChangeNotifier {
             'name': plan.name,
             'targetReps': plan.targetReps,
             'restMs': plan.restMs,
+            'repsPrescription': plan.repsPrescription,
+            'load': plan.load,
+            'loadKg': plan.loadKg,
+            'rpe': plan.rpe,
+            'tempo': plan.tempo,
+            'notes': plan.notes,
+            'formCues': plan.formCues,
+            'targetMuscle': plan.targetMuscle,
+            'exerciseSequence': plan.exerciseSequence,
+            'exerciseSetIndex': plan.exerciseSetIndex,
+            'plannedSets': plan.plannedSets,
           },
         )
         .toList(growable: false),
@@ -222,6 +330,21 @@ class WorkoutSessionController extends ChangeNotifier {
               entry['name']?.toString() ?? '',
               (entry['targetReps'] as num?)?.toInt() ?? 0,
               restMs: (entry['restMs'] as num?)?.toInt() ?? restDefaultMs,
+              repsPrescription: entry['repsPrescription']?.toString() ?? '',
+              load: entry['load']?.toString() ?? '',
+              loadKg: (entry['loadKg'] as num?)?.toDouble(),
+              rpe: (entry['rpe'] as num?)?.toDouble(),
+              tempo: entry['tempo']?.toString() ?? '',
+              notes: entry['notes']?.toString() ?? '',
+              formCues: List<String>.from(
+                entry['formCues'] as List? ?? const [],
+              ),
+              targetMuscle: entry['targetMuscle']?.toString() ?? '',
+              exerciseSequence:
+                  (entry['exerciseSequence'] as num?)?.toInt() ?? 1,
+              exerciseSetIndex:
+                  (entry['exerciseSetIndex'] as num?)?.toInt() ?? 1,
+              plannedSets: (entry['plannedSets'] as num?)?.toInt() ?? 1,
             ),
           )
           .where(
@@ -292,6 +415,9 @@ class WorkoutSessionController extends ChangeNotifier {
     _sessionId = 'workout-${DateTime.now().microsecondsSinceEpoch}';
     _workoutElapsedMs = 0;
     _setsFinished = 0;
+    _completedSetEvidence.clear();
+    _painFlag = false;
+    _recoveryScore = null;
     _applySet(1, WorkoutPhase.ready);
     _persist('session_started');
   }
@@ -343,10 +469,31 @@ class WorkoutSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void completeSet() {
+  void completeSet([SetCompletionEvidence? evidence]) {
     if (phase != WorkoutPhase.active) return;
     _syncClock();
-    _persistCurrentSet('completed');
+    final actualReps =
+        (evidence?.actualReps ??
+                (completedReps > 0 ? completedReps : targetReps))
+            .clamp(0, 999);
+    final completedEvidence = WorkoutSetLog(
+      setNumber: plans[currentSet - 1].exerciseSetIndex,
+      reps: actualReps,
+      durationMs: setElapsedMs,
+      weightKg: _boundedDouble(evidence?.weightKg, 0, 2000),
+      rir: evidence?.rir?.clamp(0, 5),
+      rpe: _boundedDouble(evidence?.rpe, 1, 10),
+      painFlag: evidence?.painFlag ?? false,
+      painArea: evidence?.painFlag == true
+          ? _nonEmptyText(evidence?.painArea)
+          : null,
+    );
+    _completedSetEvidence[currentSet] = completedEvidence;
+    _painFlag = _painFlag || completedEvidence.painFlag;
+    _recoveryScore =
+        _boundedDouble(evidence?.recoveryScore, 1, 5) ?? _recoveryScore;
+    completedReps = actualReps;
+    _persistCurrentSet('completed', completedEvidence);
     _setsFinished += 1;
     if (currentSet >= totalSets) {
       _finishWorkout();
@@ -391,16 +538,30 @@ class WorkoutSessionController extends ChangeNotifier {
   /// log model cannot yet distinguish completed and stopped sessions; the
   /// SQLite migration will preserve that status explicitly. Until then this
   /// keeps the completed sets and effective duration instead of aborting.
-  void stopWorkout({String? stopReason}) {
+  void stopWorkout({
+    String? stopReason,
+    bool painFlag = false,
+    double? recoveryScore,
+  }) {
     justFinished = false;
     _syncClock();
+    _painFlag = _painFlag || painFlag;
+    _recoveryScore = _boundedDouble(recoveryScore, 1, 5) ?? _recoveryScore;
     if (phase == WorkoutPhase.active &&
         (completedReps > 0 || setElapsedMs > 0)) {
-      _persistCurrentSet('incomplete');
+      _persistCurrentSet(
+        'incomplete',
+        WorkoutSetLog(
+          setNumber: plans[currentSet - 1].exerciseSetIndex,
+          reps: completedReps,
+          durationMs: setElapsedMs,
+          painFlag: painFlag,
+        ),
+      );
     }
     _persist('session_stopped', status: 'stopped', stopReason: stopReason);
     if (_setsFinished > 0 || _workoutElapsedMs > 0) {
-      _recordWorkout();
+      _recordWorkout(aborted: true);
     }
     _reset(clearSession: true);
   }
@@ -408,18 +569,35 @@ class WorkoutSessionController extends ChangeNotifier {
   void _finishWorkout() {
     _syncClock();
     _persist('session_completed', status: 'completed');
-    _recordWorkout();
+    _recordWorkout(aborted: false);
     justFinished = true;
     _reset(clearSession: true);
   }
 
-  void _recordWorkout() {
+  void _recordWorkout({required bool aborted}) {
     final durationMs = _workoutElapsedMs.clamp(1000, 6 * 3600 * 1000);
     final hours = durationMs / 3600000;
     final kcal = (bodyWeightKg * 5.0 * hours).round().clamp(1, 2000);
     final title = sessionTitle.isEmpty ? exerciseName : sessionTitle;
     final workoutLog = log;
     if (workoutLog != null) {
+      final grouped = <String, List<WorkoutSetLog>>{};
+      for (final entry in _completedSetEvidence.entries) {
+        final plan = plans[entry.key - 1];
+        grouped.putIfAbsent(plan.exerciseId, () => []).add(entry.value);
+      }
+      final exercises = <WorkoutExerciseLog>[];
+      for (final entry in grouped.entries) {
+        exercises.add(
+          WorkoutExerciseLog(
+            exerciseId: entry.key,
+            plannedSets: plans
+                .where((plan) => plan.exerciseId == entry.key)
+                .length,
+            sets: List<WorkoutSetLog>.unmodifiable(entry.value),
+          ),
+        );
+      }
       unawaited(
         workoutLog.record(
           WorkoutLogEntry(
@@ -430,6 +608,12 @@ class WorkoutSessionController extends ChangeNotifier {
             completedSets: _setsFinished,
             totalSets: totalSets,
             estimatedKcal: kcal,
+            planDay: planDay,
+            sessionType: sessionType,
+            aborted: aborted,
+            painFlag: _painFlag,
+            recoveryScore: _recoveryScore,
+            exercises: exercises,
           ),
         ),
       );
@@ -490,6 +674,9 @@ class WorkoutSessionController extends ChangeNotifier {
     isLastFiveSeconds = false;
     _workoutElapsedMs = 0;
     _setsFinished = 0;
+    _completedSetEvidence.clear();
+    _painFlag = false;
+    _recoveryScore = null;
     _resumeCountdownTimer?.cancel();
     _resumeCountdownTimer = null;
     resumeCountdownSeconds = 0;
@@ -551,12 +738,12 @@ class WorkoutSessionController extends ChangeNotifier {
     });
   }
 
-  void _persist(
+  Future<void> _persist(
     String eventType, {
     String? status,
     String? stopReason,
     Map<String, Object?> payload = const {},
-  }) {
+  }) async {
     final id = _sessionId;
     final database = _database;
     if (id == null || database == null || plans.isEmpty) return;
@@ -566,39 +753,41 @@ class WorkoutSessionController extends ChangeNotifier {
       WorkoutPhase.ready => 'ready',
       WorkoutPhase.idle => 'idle',
     };
-    unawaited(() async {
-      await database.saveSession(
-        id: id,
-        title: sessionTitle.isEmpty ? exerciseName : sessionTitle,
-        status: status ?? (isPaused ? 'paused' : 'active'),
-        effectiveDurationMs: _workoutElapsedMs,
-        setElapsedMs: setElapsedMs,
-        restRemainingMs: restRemainingMs,
-        completedSets: _setsFinished,
-        totalSets: totalSets,
-        currentSet: currentSet,
-        currentRep: completedReps,
-        targetReps: targetReps,
-        phase: phaseName,
-        isPaused: isPaused,
-        planJson: _encodePlans(plans),
-        eventType: eventType,
-        stopReason: stopReason,
-        payload: payload,
-      );
-      await database.saveExercise(
-        sessionId: id,
-        exerciseId: exerciseId,
-        label: exerciseName,
-        sequence: currentSet,
-        status: status ?? (isPaused ? 'paused' : 'active'),
-        completedSets: _setsFinished,
-        totalSets: totalSets,
-      );
-    }());
+    await database.saveSession(
+      id: id,
+      title: sessionTitle.isEmpty ? exerciseName : sessionTitle,
+      status: status ?? (isPaused ? 'paused' : 'active'),
+      effectiveDurationMs: _workoutElapsedMs,
+      setElapsedMs: setElapsedMs,
+      restRemainingMs: restRemainingMs,
+      completedSets: _setsFinished,
+      totalSets: totalSets,
+      currentSet: currentSet,
+      currentRep: completedReps,
+      targetReps: targetReps,
+      phase: phaseName,
+      isPaused: isPaused,
+      planJson: _encodePlans(plans),
+      eventType: eventType,
+      sessionType: sessionType,
+      planDay: planDay,
+      painFlag: _painFlag,
+      recoveryScore: _recoveryScore,
+      stopReason: stopReason,
+      payload: payload,
+    );
+    await database.saveExercise(
+      sessionId: id,
+      exerciseId: exerciseId,
+      label: exerciseName,
+      sequence: currentSet,
+      status: status ?? (isPaused ? 'paused' : 'active'),
+      completedSets: _setsFinished,
+      totalSets: totalSets,
+    );
   }
 
-  void _persistCurrentSet(String status) {
+  void _persistCurrentSet(String status, WorkoutSetLog evidence) {
     final id = _sessionId;
     final database = _database;
     if (id == null || database == null || plans.isEmpty) return;
@@ -611,11 +800,33 @@ class WorkoutSessionController extends ChangeNotifier {
         actualReps: completedReps,
         effectiveDurationMs: setElapsedMs,
         status: status,
+        plannedRepsText: plans[currentSet - 1].repsPrescription,
+        plannedLoadText: plans[currentSet - 1].load,
+        plannedWeightKg: plans[currentSet - 1].loadKg,
+        actualWeightKg: evidence.weightKg,
+        targetRpe: plans[currentSet - 1].rpe,
+        actualRpe: evidence.rpe,
+        actualRir: evidence.rir,
+        tempo: plans[currentSet - 1].tempo,
+        painFlag: evidence.painFlag,
+        painArea: evidence.painArea,
+        formCues: plans[currentSet - 1].formCues,
+        exerciseSetIndex: plans[currentSet - 1].exerciseSetIndex,
       ),
     );
   }
 
   static String _pad(int value) => value.toString().padLeft(2, '0');
+
+  static double? _boundedDouble(double? value, double min, double max) {
+    if (value == null || !value.isFinite) return null;
+    return value.clamp(min, max).toDouble();
+  }
+
+  static String? _nonEmptyText(String? value) {
+    final normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
+  }
 
   @override
   void dispose() {

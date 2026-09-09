@@ -48,3 +48,4 @@ flutter test test/stage_goal_test.dart
 - 首页和底部导航当前处于“阶段视觉基调已确定、细节讨论暂停”状态，不要把网页原型直接覆盖进正式客户端。
 - Unity 教练资产尚未完成首发可用性核查。
 - Python/Dart 规划逻辑修改必须保持字段和测试同步。
+- 逐组证据的数据合同和 SQLite v4 状态见 [`../docs/EXERCISE_CLOSED_LOOP_V1_2026-09-10.md`](../docs/EXERCISE_CLOSED_LOOP_V1_2026-09-10.md)；独立 Unity 工程发出的 `complete_set` 必须携带真实输入，不得用 0 代替未知重量或 RIR。

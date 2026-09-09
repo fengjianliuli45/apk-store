@@ -57,14 +57,35 @@ void main() {
 
     // Four fallback sets (深蹲 x2, 俯卧撑 x2).
     for (var i = 0; i < 3; i++) {
-      session.completeSet();
+      session.completeSet(
+        SetCompletionEvidence(actualReps: 10 + i, weightKg: 20, rir: 2),
+      );
       session.startNextSetNow();
     }
-    session.completeSet();
+    session.completeSet(
+      const SetCompletionEvidence(
+        actualReps: 9,
+        weightKg: 12.5,
+        rir: 1,
+        painFlag: true,
+        painArea: '左腕',
+        recoveryScore: 3.5,
+      ),
+    );
 
     expect(session.justFinished, isTrue);
     expect(log.sessionCount, 1);
     expect(log.recent.first.title, isNotEmpty);
+    expect(log.recent.first.exercises, hasLength(2));
+    expect(log.recent.first.exercises.first.sets, hasLength(2));
+    expect(log.recent.first.painFlag, isTrue);
+    expect(log.recent.first.recoveryScore, 3.5);
+    final engineLog = log.recent.first.toEngineJson();
+    expect(
+      ((engineLog['exercises'] as List).first as Map)['exercise_id'],
+      'bodyweight_squat',
+    );
+    expect(engineLog['pain_flag'], isTrue);
     session.dispose();
 
     final abandoned = WorkoutSessionController()
@@ -75,5 +96,46 @@ void main() {
     expect(abandoned.justFinished, isFalse);
     expect(log.sessionCount, 1);
     abandoned.dispose();
+  });
+
+  test('structured workout evidence survives local JSON persistence', () {
+    final original = WorkoutLogEntry(
+      id: 'structured-1',
+      title: '上肢训练',
+      timestampMs: DateTime.utc(2026, 9, 10).millisecondsSinceEpoch,
+      durationMs: 1800000,
+      completedSets: 1,
+      totalSets: 1,
+      estimatedKcal: 120,
+      planDay: 'mon',
+      sessionType: 'upper',
+      recoveryScore: 4,
+      exercises: const [
+        WorkoutExerciseLog(
+          exerciseId: 'barbell_bench_press',
+          plannedSets: 1,
+          sets: [
+            WorkoutSetLog(
+              setNumber: 1,
+              reps: 10,
+              durationMs: 32000,
+              weightKg: 60,
+              rir: 2,
+              rpe: 8,
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final restored = WorkoutLogEntry.fromJson(original.toJson());
+    expect(restored.sessionType, 'upper');
+    expect(restored.exercises.single.sets.single.weightKg, 60);
+    expect(
+      ((restored.toEngineJson()['exercises'] as List).single as Map)['sets'],
+      [
+        {'reps': 10, 'weight_kg': 60.0, 'rir': 2, 'rpe': 8.0},
+      ],
+    );
   });
 }

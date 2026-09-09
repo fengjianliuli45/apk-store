@@ -95,7 +95,21 @@ class UnitySessionCoordinator {
         session.registerRep();
         if (session.justFinished) onExitRequested?.call();
       case 'complete_set':
-        session.completeSet();
+        session.completeSet(
+          SetCompletionEvidence(
+            actualReps: _intValue(event.payload, 'actualReps', 'actual_reps'),
+            weightKg: _doubleValue(event.payload, 'weightKg', 'weight_kg'),
+            rir: _intValue(event.payload, 'rir'),
+            rpe: _doubleValue(event.payload, 'rpe'),
+            painFlag: _boolValue(event.payload, 'painFlag', 'pain_flag'),
+            painArea: _stringValue(event.payload, 'painArea', 'pain_area'),
+            recoveryScore: _doubleValue(
+              event.payload,
+              'recoveryScore',
+              'recovery_score',
+            ),
+          ),
+        );
         if (session.justFinished) onExitRequested?.call();
       case 'toggle_pause':
         session.togglePause();
@@ -107,7 +121,14 @@ class UnitySessionCoordinator {
         final seconds = event.payload['seconds'];
         session.addRestSeconds(seconds is num ? seconds.toInt() : 30);
       case 'end_session':
-        session.stopWorkout();
+        session.stopWorkout(
+          painFlag: _boolValue(event.payload, 'painFlag', 'pain_flag'),
+          recoveryScore: _doubleValue(
+            event.payload,
+            'recoveryScore',
+            'recovery_score',
+          ),
+        );
         onExitRequested?.call();
       case 'return_home':
         onExitRequested?.call();
@@ -170,6 +191,24 @@ class UnitySessionCoordinator {
       'totalSets': session.totalSets,
       'rep': session.completedReps,
       'targetReps': session.targetReps,
+      'repsPrescription': session.plans.isEmpty
+          ? ''
+          : session.plans[session.currentSet - 1].repsPrescription,
+      'plannedLoad': session.plans.isEmpty
+          ? ''
+          : session.plans[session.currentSet - 1].load,
+      'plannedWeightKg': session.plans.isEmpty
+          ? null
+          : session.plans[session.currentSet - 1].loadKg,
+      'targetRpe': session.plans.isEmpty
+          ? null
+          : session.plans[session.currentSet - 1].rpe,
+      'tempo': session.plans.isEmpty
+          ? ''
+          : session.plans[session.currentSet - 1].tempo,
+      'formCues': session.plans.isEmpty
+          ? const <String>[]
+          : session.plans[session.currentSet - 1].formCues,
       'elapsedSeconds': session.setElapsedMs / 1000,
       'remainingSeconds': session.phase == WorkoutPhase.rest
           ? session.restRemainingMs ~/ 1000
@@ -177,6 +216,54 @@ class UnitySessionCoordinator {
       'paused': session.isPaused,
       'resumeCountdownSeconds': session.resumeCountdownSeconds,
     };
+  }
+
+  static Object? _value(Map<String, Object?> values, List<String> keys) {
+    for (final key in keys) {
+      if (values.containsKey(key)) return values[key];
+    }
+    return null;
+  }
+
+  static int? _intValue(
+    Map<String, Object?> values,
+    String first, [
+    String? second,
+  ]) {
+    final value = _value(values, [first, ?second]);
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  static double? _doubleValue(
+    Map<String, Object?> values,
+    String first, [
+    String? second,
+  ]) {
+    final value = _value(values, [first, ?second]);
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '');
+  }
+
+  static bool _boolValue(
+    Map<String, Object?> values,
+    String first, [
+    String? second,
+  ]) {
+    final value = _value(values, [first, ?second]);
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    return value?.toString().toLowerCase() == 'true';
+  }
+
+  static String? _stringValue(
+    Map<String, Object?> values,
+    String first, [
+    String? second,
+  ]) {
+    final value = _value(values, [first, ?second]);
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 
   void _setState(UnityHostState next) {

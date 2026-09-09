@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:rest_pod_hud/models/workout_log.dart';
 import 'package:rest_pod_hud/planner/exercise_library.dart';
 import 'package:rest_pod_hud/planner/planner_gateway.dart';
 import 'package:rest_pod_hud/planner/progress_tracker.dart';
@@ -38,31 +39,41 @@ void main() {
         final s = sched[di];
         if (adh < 1.0 && ((w * sched.length + di) % 3 == 0)) continue;
         final dt = start.add(Duration(days: w * 7 + di * 2));
-        final exs = [
+        final exs = <WorkoutExerciseLog>[
           for (final e in s['exercises'])
-            {
-              'exercise_id': e['exercise_id'],
-              'planned_sets': e['sets'],
-              'sets': [
+            WorkoutExerciseLog(
+              exerciseId: e['exercise_id'] as String,
+              plannedSets: e['sets'] as int,
+              sets: [
                 for (var i = 0; i < (e['sets'] as int); i++)
-                  {
-                    'reps': 12,
-                    'weight_kg': e['load_kg'] != null
+                  WorkoutSetLog(
+                    setNumber: i + 1,
+                    reps: 12,
+                    durationMs: 30000,
+                    weightKg: e['load_kg'] != null
                         ? double.parse(((e['load_kg'] as num) *
                                 (1 + progress * w / weeks))
                             .toStringAsFixed(1))
                         : null,
-                    'rir': 1,
-                  },
+                    rir: 1,
+                  ),
               ],
-            },
+            ),
         ];
-        out.add({
-          'date': dt.toIso8601String().split('T')[0],
-          'plan_day': s['day'], 'session_type': s['type'],
-          'planned_sets': s['total_sets'], 'exercises': exs, 'aborted': false,
-          'pain_flag': painLast && w == weeks - 1 && di >= sched.length - 1,
-        });
+        out.add(WorkoutLogEntry(
+          id: 'week-$w-session-$di',
+          title: s['type'] as String,
+          timestampMs: dt.millisecondsSinceEpoch,
+          durationMs: 60 * 60 * 1000,
+          completedSets: s['total_sets'] as int,
+          totalSets: s['total_sets'] as int,
+          estimatedKcal: 300,
+          planDay: s['day'] as String,
+          sessionType: s['type'] as String,
+          painFlag: painLast && w == weeks - 1 && di >= sched.length - 1,
+          recoveryScore: 4,
+          exercises: exs,
+        ).toEngineJson());
       }
     }
     return out;

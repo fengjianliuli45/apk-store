@@ -1,7 +1,7 @@
 # Stopwatch 文档索引
 
 > 状态：现行文档入口
-> 更新日期：2026-09-02
+> 更新日期：2026-09-10
 > 规则：发生冲突时，按 L0 → L1 → L2 → L3 → L4 的顺序采用；同层级以更新日期和明确的替代声明为准。
 
 ## L0 冻结决策
@@ -21,6 +21,7 @@
 - [`HANDOFF_2026-08-27.md`](HANDOFF_2026-08-27.md)：当前跨设备交接状态、验证结果和继续工作顺序。
 - [`MALE_COACH_ASSET_AUDIT_2026-08-27.md`](MALE_COACH_ASSET_AUDIT_2026-08-27.md)：男性教练资产、P0 动作链路、发布阻塞项与女性教练补齐门槛。
 - [`EMBEDDED_3D_RUNTIME_SOLUTION_2026-08-27.md`](EMBEDDED_3D_RUNTIME_SOLUTION_2026-08-27.md)：Flutter 主壳、Unity 全屏训练、GLB 轻量预览、启动生命周期和 Bridge 的现行实施方案。
+- [`EXERCISE_CLOSED_LOOP_V1_2026-09-10.md`](EXERCISE_CLOSED_LOOP_V1_2026-09-10.md)：154 动作目录完整性、逐组训练证据、SQLite v4、Unity 事件合同和剩余联调边界。
 
 ## L3 待办与分支材料
 

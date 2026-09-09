@@ -55,6 +55,139 @@ class _UnityCoachPlaceholderScreenState
     });
   }
 
+  Future<void> _completeSetWithEvidence() async {
+    final current = session.plans[session.currentSet - 1];
+    final repsController = TextEditingController(
+      text:
+          '${session.completedReps > 0 ? session.completedReps : session.targetReps}',
+    );
+    final weightController = TextEditingController(
+      text: current.loadKg?.toStringAsFixed(1) ?? '',
+    );
+    final painAreaController = TextEditingController();
+    final recoveryController = TextEditingController();
+    int? rir;
+    var painFlag = false;
+    final evidence = await showModalBottomSheet<SetCompletionEvidence>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            MediaQuery.viewInsetsOf(context).bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '记录本组',
+                  style: TextStyle(
+                    fontFamily: AppFonts.inter,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: repsController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: '实际次数'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: weightController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: '重量 kg（可选）',
+                          hintText: current.load,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<int?>(
+                  initialValue: rir,
+                  decoration: const InputDecoration(labelText: '剩余次数 RIR（可选）'),
+                  items: [
+                    const DropdownMenuItem<int?>(
+                      value: null,
+                      child: Text('不记录'),
+                    ),
+                    for (var value = 0; value <= 5; value++)
+                      DropdownMenuItem<int?>(
+                        value: value,
+                        child: Text('$value'),
+                      ),
+                  ],
+                  onChanged: (value) => setSheetState(() => rir = value),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('本组出现疼痛'),
+                  value: painFlag,
+                  onChanged: (value) => setSheetState(() => painFlag = value),
+                ),
+                if (painFlag)
+                  TextField(
+                    controller: painAreaController,
+                    decoration: const InputDecoration(labelText: '疼痛部位（可选）'),
+                  ),
+                if (session.currentSet == session.totalSets) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: recoveryController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: '今日恢复评分 1–5（可选）',
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                _PodButton(
+                  label: '保存并完成本组',
+                  onTap: () => Navigator.of(context).pop(
+                    SetCompletionEvidence(
+                      actualReps: int.tryParse(repsController.text),
+                      weightKg: double.tryParse(weightController.text),
+                      rir: rir,
+                      painFlag: painFlag,
+                      painArea: painAreaController.text.trim().isEmpty
+                          ? null
+                          : painAreaController.text.trim(),
+                      recoveryScore: double.tryParse(recoveryController.text),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    repsController.dispose();
+    weightController.dispose();
+    painAreaController.dispose();
+    recoveryController.dispose();
+    if (evidence != null) session.completeSet(evidence);
+  }
+
   @override
   void dispose() {
     unawaited(_stateSubscription?.cancel());
@@ -177,7 +310,10 @@ class _UnityCoachPlaceholderScreenState
                     if (!session.isRestDay && !session.justFinished) ...[
                       const SizedBox(height: 16),
                       if (session.phase == WorkoutPhase.active)
-                        _PodButton(label: '完成这组', onTap: session.completeSet)
+                        _PodButton(
+                          label: '完成这组',
+                          onTap: () => unawaited(_completeSetWithEvidence()),
+                        )
                       else if (session.phase == WorkoutPhase.rest)
                         _PodButton(
                           label: '进入下一组',

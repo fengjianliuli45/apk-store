@@ -109,7 +109,9 @@ void main() {
       WorkoutLogEntry(
         id: 'aggregate-1',
         title: '训练',
-        timestampMs: DateTime.now().millisecondsSinceEpoch,
+        timestampMs: plan.generatedAt
+            .add(const Duration(minutes: 1))
+            .millisecondsSinceEpoch,
         durationMs: 30 * 60 * 1000,
         completedSets: 8,
         totalSets: 10,

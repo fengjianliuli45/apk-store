@@ -2,11 +2,15 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rest_pod_hud/state/workout_session_controller.dart';
+import 'package:rest_pod_hud/state/workout_log_controller.dart';
 import 'package:rest_pod_hud/unity/unity_protocol.dart';
 import 'package:rest_pod_hud/unity/unity_runtime_bridge.dart';
 import 'package:rest_pod_hud/unity/unity_session_coordinator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   test(
     'Unity intents mutate the Flutter-owned session and exit on completion',
     () async {
@@ -158,6 +162,62 @@ void main() {
     await coordinator.dispose();
     session.dispose();
   });
+
+  test(
+    'Unity complete_set payload becomes structured planner evidence',
+    () async {
+      final log = WorkoutLogController();
+      await log.load();
+      final session = WorkoutSessionController()
+        ..attachLog(log)
+        ..plans = const [SetPlan('barbell_bench_press', '杠铃卧推', 10)]
+        ..startSession();
+      final bridge = _FakeUnityRuntimeBridge();
+      final coordinator = UnitySessionCoordinator(
+        session: session,
+        bridge: bridge,
+        sessionId: 'evidence-session',
+      );
+      await coordinator.start();
+
+      bridge.emit(
+        _event(
+          'start-evidence',
+          'start_training',
+          sessionId: 'evidence-session',
+        ),
+      );
+      bridge.emit(
+        _event(
+          'complete-evidence',
+          'complete_set',
+          sessionId: 'evidence-session',
+          payload: const {
+            'actual_reps': 9,
+            'weight_kg': 62.5,
+            'rir': 1,
+            'rpe': 9,
+            'pain_flag': true,
+            'pain_area': '右肩',
+            'recovery_score': 3,
+          },
+        ),
+      );
+      await _flushEvents();
+
+      final recorded = log.recent.single;
+      final set = recorded.exercises.single.sets.single;
+      expect(set.reps, 9);
+      expect(set.weightKg, 62.5);
+      expect(set.rir, 1);
+      expect(set.rpe, 9);
+      expect(set.painArea, '右肩');
+      expect(recorded.recoveryScore, 3);
+
+      await coordinator.dispose();
+      session.dispose();
+    },
+  );
 }
 
 UnityRuntimeEvent _event(
