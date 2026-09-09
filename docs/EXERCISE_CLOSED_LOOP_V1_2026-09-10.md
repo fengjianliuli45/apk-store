@@ -16,6 +16,7 @@
 - 本机独立 Unity 工程已增加“完成本组”证据层；最后一次计数会先进入确认层，避免自动完成绕过记录。空重量、RIR、RPE 和恢复使用 `-1` 作为仅限传输层的未知哨兵，Flutter 会丢弃而不是误存为 0。
 - 已用 Unity 6000.5.4f1 图形 Editor 重新导出 Activity 入口 Android Library 并同步到 Flutter Android 工程。最终 Debug APK 同时提供 ARM64/x86_64 Flutter 与 SQLite，Unity/IL2CPP/Main 仍为 ARM64-only；合并 Manifest 只有 Flutter `MainActivity` 一个 Launcher，`unity.splash-enable=false`。
 - 修复 x86_64 模拟器同时声明 `x86_64,arm64-v8a` 时的 Unity 误启动：运行时现在只在设备主 ABI 为 `arm64-v8a` 时开放 Unity Host，并由 3 项 Kotlin 单元测试锁定。不可用提示改为设备兼容性文案，不再错误声称安装包缺少 Unity Library。
+- 修复逐组证据层关闭时的控制器生命周期错误：输入控制器改由底部层 StatefulWidget 持有，直到退场动画完成后才释放，避免聚焦输入框后按系统返回触发 Flutter `_dependents.isEmpty` 红屏。返回取消与保存完成两条路径均已在最终 APK 上复验。
 - `WorkoutLogEntry` 增加结构化动作/组记录并保持旧日志向后兼容。规划复评优先消费真实动作 ID 和逐组证据；只有旧记录继续使用 `aggregate_log`，且不会伪造重量或 RIR。
 - 四种确定性复评结果 `advance`、`extend`、`deload_then_retry`、`address_safety` 已改为通过 App 的结构化训练日志模型进入引擎测试。
 
@@ -46,9 +47,9 @@ Unity 完成本组事件建议发送：
 
 ## 验收命令
 
-本轮结果：Flutter 全量 113 项测试通过，`flutter analyze --no-pub` 无问题；Android ABI 兼容性 3 项 Kotlin 测试通过；Python 权威引擎 187 项测试通过；Unity Runtime/Editor 两个 C# 工程均为 0 错误（6 个既有序列化警告），图形 Editor 实际导入和 Android Library 导出成功；`git diff --check` 通过。Unity 批处理模式因 Personal 许可证缺少 `com.unity.editor.headless` entitlement 返回 198，已改用带界面的 Editor 执行导出，不影响产物。最终通用 APK 为 `flutter/build/app/outputs/flutter-apk/app-debug.apk`，大小 `140,425,056` bytes，SHA-256 `530C734B71C14EE5DFE75D6DC8C1149A33694A60488687704C8BD066BE364744`。
+本轮结果：Flutter 全量 114 项测试通过，`flutter analyze --no-pub` 无问题；Android ABI 兼容性 3 项 Kotlin 测试通过；Python 权威引擎 187 项测试通过；Unity Runtime/Editor 两个 C# 工程均为 0 错误（6 个既有序列化警告），图形 Editor 实际导入和 Android Library 导出成功；`git diff --check` 通过。Unity 批处理模式因 Personal 许可证缺少 `com.unity.editor.headless` entitlement 返回 198，已改用带界面的 Editor 执行导出，不影响产物。最终通用 APK 为 `flutter/build/app/outputs/flutter-apk/app-debug.apk`，大小 `140,425,691` bytes，SHA-256 `4FAE39D0B595CA66F18C7CDFC823146295ACC93143ADCAC854FBD81FEEFCAFEA`。
 
-构建前必须先执行一次 `flutter pub get`；若在缺少 `.flutter-plugins-dependencies` 时直接使用 `--no-pub`，Android 原生插件不会注册。模拟器验收截图保存在本机 `.codex_tmp/emulator-test-20260910/`，其中 `universal-home.png`、`evidence-sheet.png`、`after-set.png` 和 `final-fallback.png` 分别对应首页、证据层、休息态和最终兼容性文案。
+构建前必须先执行一次 `flutter pub get`；若在缺少 `.flutter-plugins-dependencies` 时直接使用 `--no-pub`，Android 原生插件不会注册。模拟器基础验收截图保存在本机 `.codex_tmp/emulator-test-20260910/`；红屏复现及修复证据保存在 `.codex_tmp/emulator-crash-20260910/`，其中 `crash-current.png`、`built-fixed.png` 和 `save-fixed.png` 分别对应原始红屏、返回关闭修复和保存进入休息态。
 
 ```powershell
 cd flutter

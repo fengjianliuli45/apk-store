@@ -57,135 +57,20 @@ class _UnityCoachPlaceholderScreenState
 
   Future<void> _completeSetWithEvidence() async {
     final current = session.plans[session.currentSet - 1];
-    final repsController = TextEditingController(
-      text:
-          '${session.completedReps > 0 ? session.completedReps : session.targetReps}',
-    );
-    final weightController = TextEditingController(
-      text: current.loadKg?.toStringAsFixed(1) ?? '',
-    );
-    final painAreaController = TextEditingController();
-    final recoveryController = TextEditingController();
-    int? rir;
-    var painFlag = false;
     final evidence = await showModalBottomSheet<SetCompletionEvidence>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            20,
-            24,
-            MediaQuery.viewInsetsOf(context).bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '记录本组',
-                  style: TextStyle(
-                    fontFamily: AppFonts.inter,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    color: AppColors.ink,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: repsController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: '实际次数'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: weightController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        decoration: InputDecoration(
-                          labelText: '重量 kg（可选）',
-                          hintText: current.load,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<int?>(
-                  initialValue: rir,
-                  decoration: const InputDecoration(labelText: '剩余次数 RIR（可选）'),
-                  items: [
-                    const DropdownMenuItem<int?>(
-                      value: null,
-                      child: Text('不记录'),
-                    ),
-                    for (var value = 0; value <= 5; value++)
-                      DropdownMenuItem<int?>(
-                        value: value,
-                        child: Text('$value'),
-                      ),
-                  ],
-                  onChanged: (value) => setSheetState(() => rir = value),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('本组出现疼痛'),
-                  value: painFlag,
-                  onChanged: (value) => setSheetState(() => painFlag = value),
-                ),
-                if (painFlag)
-                  TextField(
-                    controller: painAreaController,
-                    decoration: const InputDecoration(labelText: '疼痛部位（可选）'),
-                  ),
-                if (session.currentSet == session.totalSets) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: recoveryController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: '今日恢复评分 1–5（可选）',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                _PodButton(
-                  label: '保存并完成本组',
-                  onTap: () => Navigator.of(context).pop(
-                    SetCompletionEvidence(
-                      actualReps: int.tryParse(repsController.text),
-                      weightKg: double.tryParse(weightController.text),
-                      rir: rir,
-                      painFlag: painFlag,
-                      painArea: painAreaController.text.trim().isEmpty
-                          ? null
-                          : painAreaController.text.trim(),
-                      recoveryScore: double.tryParse(recoveryController.text),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (context) => _SetCompletionEvidenceSheet(
+        initialReps: session.completedReps > 0
+            ? session.completedReps
+            : session.targetReps,
+        initialWeightKg: current.loadKg,
+        loadHint: current.load,
+        showRecovery: session.currentSet == session.totalSets,
       ),
     );
-    repsController.dispose();
-    weightController.dispose();
-    painAreaController.dispose();
-    recoveryController.dispose();
-    if (evidence != null) session.completeSet(evidence);
+    if (mounted && evidence != null) session.completeSet(evidence);
   }
 
   @override
@@ -359,6 +244,154 @@ class _UnityCoachPlaceholderScreenState
           ),
         );
       },
+    );
+  }
+}
+
+class _SetCompletionEvidenceSheet extends StatefulWidget {
+  const _SetCompletionEvidenceSheet({
+    required this.initialReps,
+    required this.initialWeightKg,
+    required this.loadHint,
+    required this.showRecovery,
+  });
+
+  final int initialReps;
+  final double? initialWeightKg;
+  final String loadHint;
+  final bool showRecovery;
+
+  @override
+  State<_SetCompletionEvidenceSheet> createState() =>
+      _SetCompletionEvidenceSheetState();
+}
+
+class _SetCompletionEvidenceSheetState
+    extends State<_SetCompletionEvidenceSheet> {
+  late final TextEditingController _repsController;
+  late final TextEditingController _weightController;
+  final TextEditingController _painAreaController = TextEditingController();
+  final TextEditingController _recoveryController = TextEditingController();
+  int? _rir;
+  var _painFlag = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _repsController = TextEditingController(text: '${widget.initialReps}');
+    _weightController = TextEditingController(
+      text: widget.initialWeightKg?.toStringAsFixed(1) ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _repsController.dispose();
+    _weightController.dispose();
+    _painAreaController.dispose();
+    _recoveryController.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final painArea = _painAreaController.text.trim();
+    Navigator.of(context).pop(
+      SetCompletionEvidence(
+        actualReps: int.tryParse(_repsController.text),
+        weightKg: double.tryParse(_weightController.text),
+        rir: _rir,
+        painFlag: _painFlag,
+        painArea: painArea.isEmpty ? null : painArea,
+        recoveryScore: double.tryParse(_recoveryController.text),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        20,
+        24,
+        MediaQuery.viewInsetsOf(context).bottom + 24,
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '记录本组',
+              style: TextStyle(
+                fontFamily: AppFonts.inter,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _repsController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: '实际次数'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _weightController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: '重量 kg（可选）',
+                      hintText: widget.loadHint,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            DropdownButtonFormField<int?>(
+              initialValue: _rir,
+              decoration: const InputDecoration(labelText: '剩余次数 RIR（可选）'),
+              items: [
+                const DropdownMenuItem<int?>(value: null, child: Text('不记录')),
+                for (var value = 0; value <= 5; value++)
+                  DropdownMenuItem<int?>(value: value, child: Text('$value')),
+              ],
+              onChanged: (value) => setState(() => _rir = value),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('本组出现疼痛'),
+              value: _painFlag,
+              onChanged: (value) => setState(() => _painFlag = value),
+            ),
+            if (_painFlag)
+              TextField(
+                controller: _painAreaController,
+                decoration: const InputDecoration(labelText: '疼痛部位（可选）'),
+              ),
+            if (widget.showRecovery) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _recoveryController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: const InputDecoration(labelText: '今日恢复评分 1–5（可选）'),
+              ),
+            ],
+            const SizedBox(height: 20),
+            _PodButton(label: '保存并完成本组', onTap: _save),
+          ],
+        ),
+      ),
     );
   }
 }
