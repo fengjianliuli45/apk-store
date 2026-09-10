@@ -24,17 +24,20 @@ class UnityCoachPlaceholderScreen extends StatefulWidget {
 }
 
 class _UnityCoachPlaceholderScreenState
-    extends State<UnityCoachPlaceholderScreen> {
+    extends State<UnityCoachPlaceholderScreen>
+    with WidgetsBindingObserver {
   late final UnitySessionCoordinator _coordinator;
   StreamSubscription<UnityHostState>? _stateSubscription;
   UnityHostState _hostState = UnityHostState.checking;
   bool _exitScheduled = false;
+  bool _evidenceOpen = false;
 
   WorkoutSessionController get session => widget.session;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _coordinator = UnitySessionCoordinator(
       session: session,
       bridge: MethodChannelUnityRuntimeBridge(),
@@ -44,6 +47,17 @@ class _UnityCoachPlaceholderScreenState
       if (mounted) setState(() => _hostState = state);
     });
     unawaited(_coordinator.start());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The native Unity host handles its own interruptions. Only pause here
+    // when this Flutter fallback owns the visible training experience.
+    if ((_hostState == UnityHostState.unavailable ||
+            _hostState == UnityHostState.failed) &&
+        state != AppLifecycleState.resumed) {
+      session.pauseForInterruption('flutter_${state.name}');
+    }
   }
 
   void _returnHome() {
@@ -56,25 +70,39 @@ class _UnityCoachPlaceholderScreenState
   }
 
   Future<void> _completeSetWithEvidence() async {
-    final current = session.plans[session.currentSet - 1];
-    final evidence = await showModalBottomSheet<SetCompletionEvidence>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      builder: (context) => _SetCompletionEvidenceSheet(
-        initialReps: session.completedReps > 0
-            ? session.completedReps
-            : session.targetReps,
-        initialWeightKg: current.loadKg,
-        loadHint: current.load,
-        showRecovery: session.currentSet == session.totalSets,
-      ),
-    );
-    if (mounted && evidence != null) session.completeSet(evidence);
+    if (_evidenceOpen ||
+        session.isPaused ||
+        session.phase != WorkoutPhase.active) {
+      return;
+    }
+    _evidenceOpen = true;
+    try {
+      final current = session.plans[session.currentSet - 1];
+      final evidence = await showModalBottomSheet<SetCompletionEvidence>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
+        builder: (context) => _SetCompletionEvidenceSheet(
+          initialReps: session.completedReps > 0
+              ? session.completedReps
+              : session.targetReps,
+          initialWeightKg: current.loadKg,
+          loadHint: current.load,
+          showRecovery: session.currentSet == session.totalSets,
+        ),
+      );
+      if (mounted && evidence != null) {
+        session.completeSet(evidence);
+        if (session.justFinished) _returnHome();
+      }
+    } finally {
+      _evidenceOpen = false;
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     unawaited(_stateSubscription?.cancel());
     unawaited(_coordinator.dispose());
     super.dispose();
@@ -285,6 +313,7 @@ class _SetCompletionEvidenceSheetState
   final TextEditingController _recoveryController = TextEditingController();
   int? _rir;
   var _painFlag = false;
+  bool _submitted = false;
 
   @override
   void initState() {
@@ -305,6 +334,8 @@ class _SetCompletionEvidenceSheetState
   }
 
   void _save() {
+    if (_submitted) return;
+    _submitted = true;
     final painArea = _painAreaController.text.trim();
     Navigator.of(context).pop(
       SetCompletionEvidence(
