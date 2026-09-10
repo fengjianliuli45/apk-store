@@ -314,6 +314,17 @@ class _SetCompletionEvidenceSheetState
   int? _rir;
   var _painFlag = false;
   bool _submitted = false;
+  String? _repsError;
+  String? _weightError;
+  String? _recoveryError;
+
+  String? _numberError(String text, double min, double max) {
+    if (text.trim().isEmpty) return null;
+    final value = double.tryParse(text.trim());
+    return value == null || !value.isFinite || value < min || value > max
+        ? '请输入 $min–$max 之间的数值'
+        : null;
+  }
 
   @override
   void initState() {
@@ -335,6 +346,19 @@ class _SetCompletionEvidenceSheetState
 
   void _save() {
     if (_submitted) return;
+    final repsText = _repsController.text.trim();
+    final reps = int.tryParse(repsText);
+    setState(() {
+      _repsError =
+          repsText.isNotEmpty && (reps == null || reps < 0 || reps > 999)
+          ? '请输入 0–999 的整数'
+          : null;
+      _weightError = _numberError(_weightController.text, 0, 2000);
+      _recoveryError = _numberError(_recoveryController.text, 1, 5);
+    });
+    if (_repsError != null || _weightError != null || _recoveryError != null) {
+      return;
+    }
     _submitted = true;
     final painArea = _painAreaController.text.trim();
     Navigator.of(context).pop(
@@ -379,7 +403,10 @@ class _SetCompletionEvidenceSheetState
                   child: TextField(
                     controller: _repsController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: '实际次数'),
+                    decoration: InputDecoration(
+                      labelText: '实际次数',
+                      errorText: _repsError,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -392,6 +419,7 @@ class _SetCompletionEvidenceSheetState
                     decoration: InputDecoration(
                       labelText: '重量 kg（可选）',
                       hintText: widget.loadHint,
+                      errorText: _weightError,
                     ),
                   ),
                 ),
@@ -426,7 +454,10 @@ class _SetCompletionEvidenceSheetState
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(labelText: '今日恢复评分 1–5（可选）'),
+                decoration: InputDecoration(
+                  labelText: '今日恢复评分 1–5（可选）',
+                  errorText: _recoveryError,
+                ),
               ),
             ],
             const SizedBox(height: 20),

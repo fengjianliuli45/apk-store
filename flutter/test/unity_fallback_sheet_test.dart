@@ -5,6 +5,55 @@ import 'package:rest_pod_hud/screens/placeholder_screens.dart';
 import 'package:rest_pod_hud/state/workout_session_controller.dart';
 
 void main() {
+  testWidgets('invalid evidence stays editable and valid boundaries can save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final session = WorkoutSessionController()
+      ..plans = const [SetPlan('bodyweight_squat', '徒手深蹲', 12)]
+      ..startSession()
+      ..startSet();
+    await tester.pumpWidget(
+      MaterialApp(home: UnityCoachPlaceholderScreen(session: session)),
+    );
+    await tester.pump();
+    await tester.tap(find.text('完成这组'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    for (final values in [
+      ['abc', 'NaN', 'Infinity'],
+      ['-1', '-0.1', '0.9'],
+      ['1000', '2000.1', '5.1'],
+      ['1.5', 'text', '-1'],
+    ]) {
+      for (var i = 0; i < 3; i++) {
+        await tester.enterText(find.byType(TextField).at(i), values[i]);
+      }
+      await tester.tap(find.text('保存并完成本组'));
+      await tester.pump();
+      expect(find.text('记录本组'), findsOneWidget);
+      expect(find.text('请输入 0–999 的整数'), findsOneWidget);
+      expect(find.text('请输入 0.0–2000.0 之间的数值'), findsOneWidget);
+      expect(find.text('请输入 1.0–5.0 之间的数值'), findsOneWidget);
+      expect(session.phase, WorkoutPhase.active);
+    }
+    for (var i = 0; i < 3; i++) {
+      await tester.enterText(
+        find.byType(TextField).at(i),
+        ['999', '2000', '5'][i],
+      );
+    }
+    await tester.tap(find.text('保存并完成本组'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(session.justFinished, isTrue);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose();
+  });
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
