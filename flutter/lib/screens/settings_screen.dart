@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_update_screen.dart';
 
 import '../state/auth_controller.dart';
 import '../state/identity.dart';
@@ -71,6 +72,7 @@ class SettingsScreen extends StatelessWidget {
                     ]),
                     _GroupLabel('通用'),
                     _SectionCard(children: [
+                      _NavRow(label: '检查更新', value: '', onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const AppUpdateScreen()))),
                       _SwitchRow(
                         label: '单位（公制）',
                         value: settings.metricUnits,

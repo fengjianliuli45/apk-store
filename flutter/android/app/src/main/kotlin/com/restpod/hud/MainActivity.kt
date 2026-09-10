@@ -18,6 +18,33 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "com.restpod.hud/update")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "version" -> {
+                        val info = packageManager.getPackageInfo(packageName, 0)
+                        val code = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+                        result.success(mapOf("version" to info.versionName, "build" to code))
+                    }
+                    "openDownload" -> {
+                        val uri = android.net.Uri.parse(call.arguments as? String ?: "")
+                        if (uri.scheme != "https" || uri.host != "mainleaf.top" ||
+                            uri.port != -1 || !uri.path.orEmpty().startsWith("/apk/") ||
+                            uri.userInfo != null) {
+                            result.error("invalid_url", "Invalid download URL", null)
+                        } else {
+                            try {
+                                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                                result.success(null)
+                            } catch (e: android.content.ActivityNotFoundException) {
+                                result.error("no_browser", "No browser installed", null)
+                            }
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             UnityRuntimeBridge.METHOD_CHANNEL,

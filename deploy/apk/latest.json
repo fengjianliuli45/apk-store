@@ -1,0 +1,6 @@
+{
+  "version": "1.0.1",
+  "build": 2,
+  "url": "https://mainleaf.top/apk/stopwatch-1.0.1-2.apk",
+  "notes": "新增设置内检查更新；修复训练恢复、末组返回首页和记录输入校验。此为内部测试版本。"
+}
