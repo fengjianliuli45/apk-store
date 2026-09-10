@@ -182,7 +182,11 @@ class _UnityCoachPlaceholderScreenState
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            session.isRestDay ? '今日无训练组' : session.phaseLabel,
+                            session.isRestDay
+                                ? '今日无训练组'
+                                : session.isPaused
+                                ? '已暂停'
+                                : session.phaseLabel,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
                               fontSize: 12,
@@ -194,7 +198,14 @@ class _UnityCoachPlaceholderScreenState
                     ),
                     if (!session.isRestDay && !session.justFinished) ...[
                       const SizedBox(height: 16),
-                      if (session.phase == WorkoutPhase.active)
+                      if (session.isPaused)
+                        _PodButton(
+                          label: session.resumeCountdownSeconds > 0
+                              ? '${session.resumeCountdownSeconds} 秒后继续'
+                              : '继续训练',
+                          onTap: session.togglePause,
+                        )
+                      else if (session.phase == WorkoutPhase.active)
                         _PodButton(
                           label: '完成这组',
                           onTap: () => unawaited(_completeSetWithEvidence()),
