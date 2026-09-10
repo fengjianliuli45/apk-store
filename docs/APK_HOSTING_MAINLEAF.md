@@ -6,7 +6,7 @@
 
 应用 1.0.1+2 增加「设置 → 检查更新」：从 `https://mainleaf.top/apk/latest.json` 检查更高 build，用户点击下载后在系统浏览器获取 APK 并确认安装。不是静默安装，也不是 Google Play 更新接口。下载 URL 只允许 HTTPS/mainleaf.top/apk/。请求超时、无网络和无效清单均提示重试。
 
-服务器 `root@39.97.248.129` 已连通，但现有 SSH 身份返回 `Permission denied (publickey,gssapi-keyex,gssapi-with-mic)`；等待用户提供本机私钥路径。尚未上传、未验证 HTTPS 下载和线上更新闭环。
+已部署至 `root@39.97.248.129:/var/www/mainleaf/apk/`。用户提供共享目录 SSH 密钥后认证成功；由于原目录 ACL 过宽，部署使用当前用户专属临时副本，未改变原密钥。APK 服务端 SHA256 与上述本地值一致，文件大小 154554021 bytes；下载页、APK、latest.json 均 HTTPS 200。模拟器 1.0.1 实际检查线上清单显示“当前已是最新版本（1.0.1）”。尚未执行未来更高版本的浏览器下载/系统覆盖升级整链测试。
 
 ## 待上传文件
 
@@ -16,7 +16,7 @@
 
 发布顺序：先确认目标目录和现有文件；保留已有版本 APK，先上传新版本并核验 SHA256/HTTPS 下载，最后以临时文件重命名方式更新 latest.json。仅操作 apk 子目录，不覆盖网站主页。建议 latest.json 返回 Cache-Control: no-cache；APK 内容类型 application/vnd.android.package-archive。
 
-预期下载页面：https://mainleaf.top/apk/ ，预期 APK：https://mainleaf.top/apk/stopwatch-1.0.1-2.apk 。地址未部署前不可视为可用。
+已上线下载页面：https://mainleaf.top/apk/ ，APK：https://mainleaf.top/apk/stopwatch-1.0.1-2.apk 。网站原主页未修改，发布文件位于独立 apk 子目录。
 
 ## 后续发版
 
