@@ -1,5 +1,18 @@
 # 模拟器验收追加记录（2026-09-10）
 
+## 第三轮：设备端证据字段与 Activity 重建
+
+在第二轮相同 APK（SHA-256 `AA23AE68BBC7B14237E92442F9A3344CB79993C791BCAE356D34C6D157AE2C80`）执行，无新增应用代码修改。
+
+- 第一组通过模拟器真实 UI 选择 RIR=2、打开疼痛标记并输入测试部位 `left_knee`，保存进入休息。
+- 使用 Android `am start -W -R 2` 执行 Activity 销毁/新建；events 日志确认旧实例 `234769788` 调用 `performDestroy`、新实例 `101656078` 调用 `performCreate`，进程 PID 均为 2794。该项验证 Activity 实例重建，不宣称旋转屏幕必然触发重建（Manifest 自行处理 orientation 等配置变化）。
+- 重建后保留第 1/11 组、已完成 1 组与剩余休息 01:14.89，处于暂停状态；继续入口可正常恢复。直接读取设备 SQLite：首组 actual_rir=2、pain_flag=1、pain_area=left_knee，未填写重量为 null。
+- 继续完成至第 11 组，在末组实际输入恢复评分 3.5。数据库最终 status=completed、completed_sets=11、total_sets=11、pain_flag=1、recovery_score=3.5，首组证据仍保留；其他未填写 RIR 均为 null，没有伪造为 0。
+- 末组保存后自动返回首页 STOPWATCH / READY。末次日志抽查未见致命异常或既有控制器红屏。
+- 测试期间短暂设置的 always_finish_activities 已恢复原状（null）；该设置未触发实际销毁，不作为重建通过依据。
+
+本轮通过基本字段输入与持久化、Activity 实例重建和恢复后整课闭环验收。117 项自动化测试为第二轮相同代码的有效结果，本轮未重复运行。仍待：输入非法值/边界值矩阵、ARM64 Unity 实际画面与 30 分钟稳定性、真实后端认证/跨设备冲突、发布资产。下一步优先补齐输入边界验证，然后转 ARM64 真机；模拟器不能替代 Unity 真机验收。
+
 ## 第二轮：整课与生命周期
 
 远端同步：修复提交 `b19779c` 已成功推送至 `origin/feat/exercise-closed-loop-v1`，包含此前 `7847f87` 和 `77cba77`；尚未合并 `main`。下方第一轮网络阻塞已解除。
