@@ -2,6 +2,8 @@
 
 ## 当前状态
 
+最新发布：1.0.2+3，下载 `https://mainleaf.top/apk/stopwatch-1.0.2-3.apk`。126546029 bytes，SHA256 `17d016d36e26e8658e765ab3d617a0e5f021095a1cacfd1c07b879b055259915`，服务端一致、HTTPS 200，latest.json 已切换 build 3。122 项测试通过，模拟器覆盖安装/问卷/休息日/演示降级验证完成。旧 APK 保留；旧清单和页面分别备份为 latest.1.0.1-2.json.bak、index.1.0.1-2.html.bak。仍待 ARM64 真机和浏览器下载安装完整升级链验收。以下 1.0.1 记录为历史发布记录。
+
 验证：Flutter 119 项测试通过、静态检查无问题；通用 Debug APK 构建并覆盖安装模拟器成功，系统确认 versionName=1.0.1/versionCode=2。SHA256 `25997F261CFFB9786FD0C54E7CF60A2572F5604A1F69F7AA98D06ED76606C627`。线上清单/下载/升级尚待服务器认证后联合验收。
 
 应用 1.0.1+2 增加「设置 → 检查更新」：从 `https://mainleaf.top/apk/latest.json` 检查更高 build，用户点击下载后在系统浏览器获取 APK 并确认安装。不是静默安装，也不是 Google Play 更新接口。下载 URL 只允许 HTTPS/mainleaf.top/apk/。请求超时、无网络和无效清单均提示重试。

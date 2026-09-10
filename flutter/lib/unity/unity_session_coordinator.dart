@@ -24,6 +24,7 @@ class UnitySessionCoordinator {
     required this.session,
     required this.bridge,
     this.onExitRequested,
+    this.previewOnly = false,
     String? sessionId,
   }) : sessionId =
            sessionId ?? 'workout-${DateTime.now().millisecondsSinceEpoch}';
@@ -32,6 +33,7 @@ class UnitySessionCoordinator {
   final UnityRuntimeBridge bridge;
   final void Function()? onExitRequested;
   final String sessionId;
+  final bool previewOnly;
 
   final StreamController<UnityHostState> _states =
       StreamController<UnityHostState>.broadcast();
@@ -41,16 +43,19 @@ class UnitySessionCoordinator {
   String? _lastSnapshot;
   final Set<String> _processedRuntimeEvents = <String>{};
   bool _runtimeReleaseRequested = false;
+  bool _disposed = false;
 
   Stream<UnityHostState> get states => _states.stream;
 
   Future<void> start() async {
+    if (_disposed) return;
     try {
       _setState(UnityHostState.checking);
       if (!await bridge.isAvailable()) {
         _setState(UnityHostState.unavailable);
         return;
       }
+      if (_disposed) return;
 
       _setState(UnityHostState.loading);
       _eventSubscription = bridge.events.listen(
@@ -59,6 +64,10 @@ class UnitySessionCoordinator {
       );
       if (!await bridge.prepare()) {
         _setState(UnityHostState.failed);
+        return;
+      }
+      if (_disposed) {
+        await bridge.disposeSession(sessionId);
         return;
       }
 
@@ -70,6 +79,7 @@ class UnitySessionCoordinator {
   }
 
   void _handleEvent(UnityRuntimeEvent event) {
+    if (_disposed) return;
     if (event.protocolVersion != unityProtocolVersion) return;
     if (event.sessionId.isNotEmpty &&
         event.sessionId != sessionId &&
@@ -81,6 +91,20 @@ class UnitySessionCoordinator {
       return;
     }
 
+    // Demonstration never starts a workout, timer, draft or completion record.
+    if (previewOnly &&
+        event.type != 'unity_ready' &&
+        event.type != 'coach_ready' &&
+        event.type != 'render_fatal') {
+      if (const {
+        'host_back',
+        'return_home',
+        'end_session',
+      }.contains(event.type)) {
+        onExitRequested?.call();
+      }
+      return;
+    }
     switch (event.type) {
       case 'unity_ready':
       case 'coach_ready':
@@ -183,6 +207,7 @@ class UnitySessionCoordinator {
     };
     return {
       'mode': mode,
+      'previewOnly': previewOnly,
       'exerciseId': session.exerciseId,
       'exerciseLabel': session.exerciseName,
       'nextExerciseId': session.nextExerciseId,
@@ -278,6 +303,7 @@ class UnitySessionCoordinator {
   }
 
   Future<void> dispose() async {
+    _disposed = true;
     session.removeListener(_sendSnapshotIfChanged);
     await _eventSubscription?.cancel();
     await releaseRuntime();

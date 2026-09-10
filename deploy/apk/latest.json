@@ -1,6 +1,6 @@
 {
-  "version": "1.0.1",
-  "build": 2,
-  "url": "https://mainleaf.top/apk/stopwatch-1.0.1-2.apk",
-  "notes": "新增设置内检查更新；修复训练恢复、末组返回首页和记录输入校验。此为内部测试版本。"
+  "version": "1.0.2",
+  "build": 3,
+  "url": "https://mainleaf.top/apk/stopwatch-1.0.2-3.apk",
+  "notes": "问卷接入引擎最低训练时长并自动安排频率；休息日显示恢复说明和下次训练日期；新增不计入记录的动作演示。旧计划需重新生成。ARM64 Unity仍待真机验收，演示中请用返回键退出。内部测试版本。"
 }

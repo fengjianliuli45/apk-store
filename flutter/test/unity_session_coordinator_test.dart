@@ -12,6 +12,47 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   test(
+    'preview ignores workout controls and never records a workout',
+    () async {
+      final log = WorkoutLogController();
+      final session = WorkoutSessionController()..attachLog(log);
+      final bridge = _FakeUnityRuntimeBridge();
+      var exits = 0;
+      final coordinator = UnitySessionCoordinator(
+        session: session,
+        bridge: bridge,
+        previewOnly: true,
+        sessionId: 'session-1',
+        onExitRequested: () => exits++,
+      );
+      await coordinator.start();
+      expect(bridge.commands.first.payload['mode'], 'preview');
+      expect(bridge.commands.first.payload['previewOnly'], true);
+      for (final type in [
+        'start_training',
+        'register_rep',
+        'complete_set',
+        'toggle_pause',
+        'skip_rest',
+        'rest_complete',
+        'extend_rest',
+      ]) {
+        bridge.emit(_event(type, type));
+      }
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.idle);
+      expect(session.hasResumableSession, false);
+      expect(session.completedSets, 0);
+      expect(log.recent, isEmpty);
+      bridge.emit(_event('back', 'host_back'));
+      await _flushEvents();
+      expect(exits, 1);
+      await coordinator.dispose();
+      session.dispose();
+    },
+  );
+
+  test(
     'Unity intents mutate the Flutter-owned session and exit on completion',
     () async {
       final session = WorkoutSessionController()

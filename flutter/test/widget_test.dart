@@ -3,9 +3,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:rest_pod_hud/main.dart';
+import 'package:rest_pod_hud/planner/planner_gateway.dart';
 import 'package:rest_pod_hud/widgets/exercise_glyph.dart';
 
 Future<void> _skipLogin(WidgetTester tester) async {
+  // The questionnaire now loads the engine before showing duration choices.
+  await tester.runAsync(() => PlannerGateway.instance());
   // Default test surface (800x600, landscape-ish) is shorter than any real
   // phone and clips this phone-shaped UI — use a normal portrait size.
   tester.view.physicalSize = const Size(1170, 2532);

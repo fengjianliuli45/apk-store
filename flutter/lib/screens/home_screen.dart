@@ -11,6 +11,7 @@ import '../widgets/gradient_background.dart';
 import '../widgets/voice_bar.dart';
 import 'diet/diet_capture_screen.dart';
 import 'placeholder_screens.dart';
+import 'exercise_preview_screen.dart';
 
 /// Home (screen home-with-fab, node 207:236) is the app root — a standalone
 /// module with no bottom tab bar, just the two corner FABs that push into
@@ -25,6 +26,8 @@ class HomeScreen extends StatefulWidget {
     required this.onOpenProfile,
     required this.onOpenSocial,
     required this.onEditPlan,
+    this.nextTrainingLabel,
+    this.previewExercises = const [],
   });
 
   final WorkoutSessionController session;
@@ -34,6 +37,8 @@ class HomeScreen extends StatefulWidget {
   final VoidCallback onOpenProfile;
   final VoidCallback onOpenSocial;
   final VoidCallback onEditPlan;
+  final String? nextTrainingLabel;
+  final List<SetPlan> previewExercises;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -41,13 +46,59 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   void _enterPod() {
-    if (!widget.session.canStart) return;
+    if (!widget.session.canStart) {
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('今日按计划恢复'),
+          content: Text(
+            '引擎按肌群恢复间隔安排了休息日。调整每周天数不代表今天会变成训练日。\n\n${widget.nextTrainingLabel ?? '暂无后续训练安排，请重新生成计划。'}\n\n你仍可查看动作演示，不计入训练记录。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('知道了'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
     if (widget.session.canStart && widget.session.phase == WorkoutPhase.idle) {
       widget.session.startSession();
     }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => UnityCoachPlaceholderScreen(session: widget.session),
+      ),
+    );
+  }
+
+  Future<void> _choosePreview() async {
+    final exercise = await showModalBottomSheet<SetPlan>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text('动作演示'),
+              subtitle: Text('仅查看，不计入训练；请使用返回键退出演示。'),
+            ),
+            for (final exercise in widget.previewExercises)
+              ListTile(
+                title: Text(exercise.name),
+                trailing: const Icon(Icons.play_circle_outline),
+                onTap: () => Navigator.pop(context, exercise),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || exercise == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ExercisePreviewScreen(exercise: exercise),
       ),
     );
   }
@@ -223,6 +274,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (session.isRestDay && widget.nextTrainingLabel != null)
+                  Text(widget.nextTrainingLabel!, textAlign: TextAlign.center),
+                if (widget.previewExercises.isNotEmpty && !session.isRunning)
+                  TextButton(
+                    onPressed: _choosePreview,
+                    child: const Text('查看动作演示 · 不计入训练'),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: GestureDetector(

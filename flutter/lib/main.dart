@@ -90,6 +90,7 @@ class _AppGateState extends State<_AppGate> {
       final pending = _pendingProfileFields;
       if (pending == null) {
         return ProfileSurveyScreen(
+          engineGoal: _goal.goal!.engineGoal,
           onSubmit: (fields) => setState(() => _pendingProfileFields = fields),
         );
       }

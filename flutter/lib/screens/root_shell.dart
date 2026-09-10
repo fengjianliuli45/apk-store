@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data/workout_database.dart';
 import '../planner/plan_copy.dart';
+import '../planner/plan_adapter.dart';
 import '../planner/plan_overview.dart';
 import '../state/auth_controller.dart';
 import '../state/chat_controller.dart';
@@ -162,7 +163,32 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
+    final generated = widget.plan.plan;
+    String? nextTraining;
+    final exercises = <String, SetPlan>{};
+    if (generated != null && generated.sessions.isNotEmpty) {
+      final now = DateTime.now();
+      for (var offset = 1; offset <= 7; offset++) {
+        final date = DateTime(now.year, now.month, now.day + offset);
+        final day = sessionForDate(generated, date);
+        if (!day.isRest && day.exercises.isNotEmpty) {
+          nextTraining =
+              '下次训练：${date.month}月${date.day}日 ${day.day} · ${sessionTypeLabels[day.type] ?? day.type}';
+          break;
+        }
+      }
+      for (final day in generated.sessions) {
+        for (final e in day.exercises) {
+          exercises.putIfAbsent(
+            e.exerciseId,
+            () => SetPlan(e.exerciseId, e.name, 0, formCues: e.formCues),
+          );
+        }
+      }
+    }
     return HomeScreen(
+      nextTrainingLabel: nextTraining,
+      previewExercises: exercises.values.toList(),
       session: _session,
       dietLog: _dietLog,
       workoutLog: _workoutLog,

@@ -66,6 +66,7 @@ class _PlanInputFlowState extends State<PlanInputFlow> {
             onContinue: () => setState(() => _phase = _Phase.profile),
           ),
         _Phase.profile => ProfileSurveyScreen(
+            engineGoal: widget.goalController.goal!.engineGoal,
             initialFields: _fields ?? _initialFields,
             allowExit: widget.allowExit,
             onBackToGoal: () => setState(() => _phase = _Phase.goal),

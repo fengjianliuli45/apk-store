@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../planner/planner_gateway.dart';
+
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/gradient_background.dart';
@@ -13,6 +15,7 @@ class ProfileSurveyScreen extends StatefulWidget {
   const ProfileSurveyScreen({
     super.key,
     required this.onSubmit,
+    required this.engineGoal,
     this.initialFields,
     this.allowExit = false,
     this.onBackToGoal,
@@ -21,6 +24,7 @@ class ProfileSurveyScreen extends StatefulWidget {
   /// Raw fields PlannerGateway.generate() needs besides `goal` (added by
   /// the caller, which already knows the chosen FitnessGoal).
   final void Function(Map<String, dynamic> profileFields) onSubmit;
+  final String engineGoal;
   final Map<String, dynamic>? initialFields;
   final bool allowExit;
   final VoidCallback? onBackToGoal;
@@ -51,7 +55,7 @@ const _levels = [
   ('advanced', '经常练'),
 ];
 
-const _minuteOptions = [15, 30, 45, 60];
+const _minuteOptions = [30, 45, 60, 75, 90, 105, 120];
 
 class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   int _step = 0;
@@ -66,7 +70,9 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   late _Scene _scene;
   late String _level;
 
-  late int _daysPerWeek;
+  int? _minimumMinutes;
+  bool _calculating = false;
+  String? _minimumError;
   late int _minutesPerSession;
   late int _mealsPerDay;
 
@@ -94,7 +100,6 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
     );
     _scene = _sceneFromEquipment(initial['equipment']);
     _level = (initial['level'] as String?) ?? 'beginner';
-    _daysPerWeek = (initial['days_per_week'] as num?)?.toInt() ?? 3;
     _minutesPerSession =
         (initial['minutes_per_session'] as num?)?.toInt() ?? 30;
     _mealsPerDay = (initial['meals_per_day'] as num?)?.toInt() ?? 4;
@@ -131,8 +136,37 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
     super.dispose();
   }
 
-  void _next() {
+  Future<void> _next() async {
+    if (_calculating) return;
+    if (_step == 2) {
+      setState(() {
+        _calculating = true;
+        _minimumError = null;
+      });
+      try {
+        final gateway = await PlannerGateway.instance();
+        final minimum = gateway.minSessionMinutes(
+          level: _level,
+          goal: widget.engineGoal,
+          equipment: _scene.equipment,
+        );
+        if (!mounted) return;
+        setState(() {
+          _minimumMinutes = minimum;
+          _minutesPerSession = _minutesPerSession.clamp(minimum, 120);
+          _step = 3;
+        });
+      } catch (_) {
+        if (mounted) setState(() => _minimumError = '无法计算最低时长，请重试。');
+      } finally {
+        if (mounted) setState(() => _calculating = false);
+      }
+      return;
+    }
     if (_step == 3) {
+      if (_minimumMinutes == null || _minutesPerSession < _minimumMinutes!) {
+        return;
+      }
       final bodyFat = double.tryParse(_bodyFatController.text);
       final targetWeight = double.tryParse(_targetWeightController.text);
       final answers = <String, dynamic>{
@@ -141,7 +175,6 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
         'height_cm': double.tryParse(_heightController.text) ?? 170.0,
         'weight_kg': double.tryParse(_weightController.text) ?? 65.0,
         'level': _level,
-        'days_per_week': _daysPerWeek,
         'minutes_per_session': _minutesPerSession,
         'equipment': _scene.equipment,
         'meals_per_day': _mealsPerDay,
@@ -157,6 +190,7 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   }
 
   void _back() {
+    if (_calculating) return;
     if (_step == 0) {
       widget.onBackToGoal?.call();
       return;
@@ -203,6 +237,7 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(child: SingleChildScrollView(child: _buildStep())),
+            if (_minimumError != null) Text(_minimumError!),
             SizedBox(
               width: double.infinity,
               child: FilledButton(
@@ -214,9 +249,13 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                onPressed: _next,
+                onPressed: _calculating ? null : _next,
                 child: Text(
-                  _step == 3 ? '生成计划' : '下一步',
+                  _calculating
+                      ? '计算最低时长…'
+                      : _step == 3
+                      ? '生成计划'
+                      : '下一步',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -335,43 +374,24 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
 
   Widget _scheduleStep() {
     return _StepShell(
-      title: '每周练几天，每次多久？',
-      subtitle: '用来匹配分肢方案和活动量',
+      title: '每次可以训练多久？',
+      subtitle: '引擎根据每周训练容量自动安排天数与恢复日',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('每周天数', style: AppTextStyles.cardMeta),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              IconButton(
-                onPressed: _daysPerWeek > 1
-                    ? () => setState(() => _daysPerWeek--)
-                    : null,
-                icon: const Icon(
-                  Icons.remove_circle_outline,
-                  color: AppColors.ink,
-                ),
-              ),
-              Text('$_daysPerWeek 天', style: AppTextStyles.cardTitle),
-              IconButton(
-                onPressed: _daysPerWeek < 7
-                    ? () => setState(() => _daysPerWeek++)
-                    : null,
-                icon: const Icon(
-                  Icons.add_circle_outline,
-                  color: AppColors.ink,
-                ),
-              ),
-            ],
-          ),
+          Text('每次至少 $_minimumMinutes 分钟', style: AppTextStyles.cardTitle),
+          const Text('根据你的目标、训练经验和器械计算。这是训练日的单次时长，不要求休息日训练。'),
           const SizedBox(height: 20),
           Text('单次时长', style: AppTextStyles.cardMeta),
           const SizedBox(height: 8),
           Wrap(
             spacing: 10,
             children: [
-              for (final m in _minuteOptions)
+              for (final m in ({
+                _minimumMinutes!,
+                _minutesPerSession,
+                ..._minuteOptions,
+              }.where((m) => m >= _minimumMinutes!).toList()..sort()))
                 ChoiceChip(
                   label: Text('$m 分钟'),
                   selected: _minutesPerSession == m,
