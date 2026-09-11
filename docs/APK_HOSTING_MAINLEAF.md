@@ -1,5 +1,13 @@
 # mainleaf.top APK 测试分发
 
+最新已发布 **1.0.5+6**：`https://mainleaf.top/apk/stopwatch-1.0.5-6.apk`。保留 Unity 跨语言静态入口，启动超时只恢复 Flutter 前台，不再在原生初始化期间卸载 Unity。Release APK 构建成功，136 项 Flutter 测试、DEX 入口及 API 35 模拟器覆盖安装/冷启动已通过；服务器 SHA-256 与本地一致，公网清单、APK 和下载页均验证成功。详情见 [Unity 桥接与超时修复](UNITY_BRIDGE_TIMEOUT_FIX_2026-09-11.md)。
+
+## 2026-09-11 发布 1.0.3+4
+
+已按用户要求发布 `https://mainleaf.top/apk/stopwatch-1.0.3-4.apk`，49021492 bytes，SHA-256 `FEB1DE037E6688A65E89CDBE64DA721A7BC865A912028DED36AA5AE325CE3540`。服务器与本地哈希一致，公网 APK HTTPS 200，latest.json 已验证返回 version=1.0.3/build=4。新旧 APK 包名 com.restpod.hud、签名证书 SHA-256 `271d3a901e82ae13378621155e665b1e69b862ee05ed49f1226b31a8a2608c46` 一致，可由 1.0.2+3 覆盖升级。此次为带 Unity ARM64 的内部测试版本，手机安装与完整训练尚待用户验收。
+
+发布前递增 pubspec 版本号并重新构建，未直接使用旧 build 3 候选。旧 APK 保留，清单与页面备份为服务器 apk 目录内 latest.before-1.0.3-4.json.bak、index.before-1.0.3-4.html.bak；先上传并校验 APK，再切换清单。用户从设置→检查更新下载并按系统提示安装；旧计划需要重新生成才能采用新保持时长规则。未推送 Git 远端。
+
 ## 当前状态
 
 最新发布：1.0.2+3，下载 `https://mainleaf.top/apk/stopwatch-1.0.2-3.apk`。126546029 bytes，SHA256 `17d016d36e26e8658e765ab3d617a0e5f021095a1cacfd1c07b879b055259915`，服务端一致、HTTPS 200，latest.json 已切换 build 3。122 项测试通过，模拟器覆盖安装/问卷/休息日/演示降级验证完成。旧 APK 保留；旧清单和页面分别备份为 latest.1.0.1-2.json.bak、index.1.0.1-2.html.bak。仍待 ARM64 真机和浏览器下载安装完整升级链验收。以下 1.0.1 记录为历史发布记录。

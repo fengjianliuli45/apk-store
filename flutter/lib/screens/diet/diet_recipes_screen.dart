@@ -35,6 +35,26 @@ class _DietRecipesScreenState extends State<DietRecipesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_pool.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('饮食建议')),
+        body: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            const Text('已启用饮食限制，暂不推荐未经限制校验的目录食谱。以下为引擎生成的餐次建议；购买或进食前仍需核对实际配料。'),
+            for (final meal in widget.dietLog.goals.meals) ...[
+              const SizedBox(height: 20),
+              Text('${meal.name} · ${meal.kcal.round()} kcal'),
+              if (meal.options.isNotEmpty)
+                for (final option in meal.options)
+                  Text((option['items'] as List? ?? const []).join(' + '))
+              else
+                Text(meal.handPortions),
+            ],
+          ],
+        ),
+      );
+    }
     return Material(
       color: const Color(0xFF070908),
       child: Stack(

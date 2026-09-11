@@ -6,10 +6,29 @@ sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent.par
 from engine.profile_validator import validate
 from engine.split_selector import select
 from engine.exercise_library import ExerciseLibrary
-from engine.session_builder import build_sessions
+from engine.session_builder import (
+    CONTROLLED_REP_SECONDS,
+    HOLD_SECONDS_BY_LEVEL,
+    STATIC_HOLD_EXERCISES,
+    ExerciseEntry,
+    build_sessions,
+)
 
 
 class TestSessionBuilder(unittest.TestCase):
+
+    def test_execution_timing_contract_is_serialized(self):
+        entry = ExerciseEntry(
+            name="平板支撑", name_en="Plank", exercise_id="plank", sets=3,
+            reps="30秒", load="自重", rest_sec=90, rpe=7.5,
+            tempo="静态保持", notes="", order=1, hold_seconds=30,
+        )
+        payload = entry.to_dict()
+        self.assertEqual(payload["hold_seconds"], 30)
+        self.assertIsNone(payload["rep_duration_seconds"])
+        self.assertIn("plank", STATIC_HOLD_EXERCISES)
+        self.assertEqual(HOLD_SECONDS_BY_LEVEL["intermediate"], 30)
+        self.assertEqual(CONTROLLED_REP_SECONDS, 6)
 
     def setUp(self):
         self.lib = ExerciseLibrary()

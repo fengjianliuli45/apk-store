@@ -195,7 +195,7 @@ class _UnityCoachPlaceholderScreenState
                                       : session.sessionTitle)
                                 : session.justFinished
                                 ? '本课完成'
-                                : '${session.exerciseName} · 第 ${session.currentSet}/${session.totalSets} 组',
+                                : '${session.exerciseName} · 第 ${session.plans[session.currentSet - 1].exerciseSetIndex}/${session.plans[session.currentSet - 1].plannedSets} 组',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontFamily: AppFonts.inter,
@@ -209,6 +209,31 @@ class _UnityCoachPlaceholderScreenState
                             style: AppTextStyles.timer.copyWith(fontSize: 28),
                           ),
                           const SizedBox(height: 4),
+                          if (!session.isRestDay &&
+                              !session.justFinished &&
+                              session.phase != WorkoutPhase.rest)
+                            Text(
+                              session.workTimerLabel,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                          if (!session.isRestDay &&
+                              session.plans.isNotEmpty &&
+                              session
+                                  .plans[session.currentSet - 1]
+                                  .notes
+                                  .isNotEmpty)
+                            Text(
+                              session.plans[session.currentSet - 1].notes,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
                           Text(
                             session.isRestDay
                                 ? '今日无训练组'

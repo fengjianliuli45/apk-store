@@ -26,6 +26,7 @@ class WelcomeAnimationScreen extends StatefulWidget {
     FitnessGoal.toning: 'assets/videos/goal_toning.mp4',
     FitnessGoal.endurance: 'assets/videos/goal_endurance.mp4',
     FitnessGoal.recovery: 'assets/videos/goal_recovery.mp4',
+    FitnessGoal.strength: 'assets/videos/goal_muscle_gain.mp4',
   };
 
   @override
@@ -180,6 +181,7 @@ extension _WelcomeGoalContent on FitnessGoal {
     FitnessGoal.toning => '欢迎开始塑形训练 ✨',
     FitnessGoal.endurance => '欢迎提升你的体能 🏃',
     FitnessGoal.recovery => '欢迎开始恢复训练 🌿',
+    FitnessGoal.strength => '欢迎开始力量训练 💪',
   };
 
   IconData get welcomeIcon => switch (this) {
@@ -188,5 +190,6 @@ extension _WelcomeGoalContent on FitnessGoal {
     FitnessGoal.toning => Icons.auto_awesome,
     FitnessGoal.endurance => Icons.directions_run,
     FitnessGoal.recovery => Icons.spa,
+    FitnessGoal.strength => Icons.fitness_center,
   };
 }

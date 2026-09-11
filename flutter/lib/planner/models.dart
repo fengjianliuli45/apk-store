@@ -25,10 +25,21 @@ const validLevels = ['beginner', 'intermediate', 'advanced'];
 const validGoals = ['hypertrophy', 'fat_loss', 'strength', 'recomposition'];
 const validCooking = ['home', 'canteen', 'none'];
 const validMovementPatterns = {
-  'horizontal_push', 'vertical_push', 'horizontal_pull', 'vertical_pull',
-  'squat', 'hip_hinge', 'hip_extension', 'knee_flexion', 'calf_raise',
-  'elbow_flexion', 'elbow_extension', 'trunk_flexion', 'trunk_rotation',
-  'anti_extension', 'core',
+  'horizontal_push',
+  'vertical_push',
+  'horizontal_pull',
+  'vertical_pull',
+  'squat',
+  'hip_hinge',
+  'hip_extension',
+  'knee_flexion',
+  'calf_raise',
+  'elbow_flexion',
+  'elbow_extension',
+  'trunk_flexion',
+  'trunk_rotation',
+  'anti_extension',
+  'core',
 };
 
 class ValidationError implements Exception {
@@ -79,7 +90,7 @@ class UserProfile {
   final double weightKg;
   final String level;
   final String goal;
-  final int? daysPerWeek;   // null → 由 frequencyPlanner 推导
+  final int? daysPerWeek; // null → 由 frequencyPlanner 推导
   final int minutesPerSession;
   final List<String> equipment;
   final double? bodyFatPct;
@@ -89,11 +100,13 @@ class UserProfile {
   final List<String> injuries;
   final List<String> dietaryRestrictions;
   final String cookingAccess;
-  final Map<String, dynamic> strengthBaseline; // {basis: {weight_kg,reps} | {one_rm_kg}}
+  final Map<String, dynamic>
+  strengthBaseline; // {basis: {weight_kg,reps} | {one_rm_kg}}
   final int volumeCycleOffset; // check-in 产出：+1 往 MRV 推一档，-1 下调
   final int kcalAdjust; // check-in 产出：按体重趋势累计微调热量（钳在 ±500）
   final int exerciseCycleOffset; // check-in 产出：阶段达成后 +1，辅助动作轮换
-  final Map<String, int> bodyweightProgress; // check-in 产出：{movement_pattern: 净进阶档数}
+  final Map<String, int>
+  bodyweightProgress; // check-in 产出：{movement_pattern: 净进阶档数}
   final List<String> warnings;
   final List<String> notes;
 
@@ -300,6 +313,8 @@ class ExerciseEntry {
     this.formCues = const [],
     this.targetMuscle = '',
     this.loadKg,
+    this.holdSeconds,
+    this.repDurationSeconds,
   });
 
   final String name;
@@ -318,6 +333,8 @@ class ExerciseEntry {
   final String targetMuscle;
   final bool compound;
   final List<String> formCues;
+  final int? holdSeconds;
+  final int? repDurationSeconds;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -336,6 +353,8 @@ class ExerciseEntry {
     'compound': compound,
     'form_cues': formCues,
     'target_muscle': targetMuscle,
+    'hold_seconds': holdSeconds,
+    'rep_duration_seconds': repDurationSeconds,
   };
 }
 
@@ -707,6 +726,7 @@ class MealPlan {
   final int waterMlRest;
   final int waterMlTraining;
   final List<String> dietNotes;
+
   /// Legacy v1 examples are kept so existing local plan snapshots can still
   /// be restored. New v1.8 plans use [Meal.options] and [Meal.handPortions].
   final Map<String, String> foodExamples;
@@ -834,10 +854,7 @@ class GeneratedPlan {
       'generated_at': generatedAt.toIso8601String(),
       'evidence_basis': evidenceBasis,
     },
-    'profile': {
-      ...profile.toJson(),
-      'one_rm_estimates': oneRmEstimates,
-    },
+    'profile': {...profile.toJson(), 'one_rm_estimates': oneRmEstimates},
     'nutrition': {
       'tdee': tdee.toJson(),
       'macros': macros.toJson(),
@@ -894,12 +911,15 @@ class GeneratedPlan {
         strengthBaseline: Map<String, dynamic>.from(
           profileJson['strength_baseline'] as Map? ?? const {},
         ),
-        volumeCycleOffset: (profileJson['volume_cycle_offset'] as num?)?.toInt() ?? 0,
+        volumeCycleOffset:
+            (profileJson['volume_cycle_offset'] as num?)?.toInt() ?? 0,
         kcalAdjust: (profileJson['kcal_adjust'] as num?)?.toInt() ?? 0,
         exerciseCycleOffset:
             (profileJson['exercise_cycle_offset'] as num?)?.toInt() ?? 0,
         bodyweightProgress: {
-          for (final e in (profileJson['bodyweight_progress'] as Map? ?? const {}).entries)
+          for (final e
+              in (profileJson['bodyweight_progress'] as Map? ?? const {})
+                  .entries)
             e.key as String: (e.value as num).toInt(),
         },
         injuries: List<String>.from(
@@ -970,6 +990,8 @@ class GeneratedPlan {
               compound: (ex['compound'] as bool?) ?? false,
               formCues: List<String>.from(ex['form_cues'] as List? ?? const []),
               targetMuscle: (ex['target_muscle'] as String?) ?? '',
+              holdSeconds: (ex['hold_seconds'] as num?)?.toInt(),
+              repDurationSeconds: (ex['rep_duration_seconds'] as num?)?.toInt(),
             );
           }).toList(),
         );
@@ -1020,7 +1042,9 @@ class GeneratedPlan {
         fiberG: (mealsJson['fiber_g'] as int?) ?? 0,
         waterMlRest: (mealsJson['water_ml_rest'] as int?) ?? 0,
         waterMlTraining: (mealsJson['water_ml_training'] as int?) ?? 0,
-        dietNotes: List<String>.from(mealsJson['diet_notes'] as List? ?? const []),
+        dietNotes: List<String>.from(
+          mealsJson['diet_notes'] as List? ?? const [],
+        ),
         foodExamples: Map<String, String>.from(
           mealsJson['food_examples'] as Map? ?? const {},
         ),
@@ -1048,7 +1072,8 @@ class GeneratedPlan {
       weeklyVolumeDelivered: Map<String, num>.from(
         training['weekly_volume_delivered'] as Map? ?? const {},
       ),
-      volumeCoveragePct: (training['volume_coverage_pct'] as num?)?.toInt() ?? 100,
+      volumeCoveragePct:
+          (training['volume_coverage_pct'] as num?)?.toInt() ?? 100,
       vsOptimalPct: (training['vs_optimal_pct'] as num?)?.toInt() ?? 100,
       volumeNotes: List<String>.from(
         training['volume_notes'] as List? ?? const [],

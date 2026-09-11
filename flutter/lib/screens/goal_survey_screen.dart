@@ -51,13 +51,16 @@ class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(
-                  onPressed: widget.onExit ?? () => Navigator.of(context).maybePop(),
+                  onPressed:
+                      widget.onExit ?? () => Navigator.of(context).maybePop(),
                   icon: const Icon(Icons.close, color: AppColors.ink),
                 ),
               ),
             const SizedBox(height: 12),
             Text(
-              widget.checkInWeek == null ? '你的健身目标是？' : '第 ${widget.checkInWeek} 周检查',
+              widget.checkInWeek == null
+                  ? '你的健身目标是？'
+                  : '第 ${widget.checkInWeek} 周检查',
               style: AppTextStyles.cardTitle,
             ),
             const SizedBox(height: 4),
@@ -65,14 +68,18 @@ class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
               widget.checkInWeek == null
                   ? '选一个，我们会据此生成专属欢迎动画和训练建议'
                   : '到检查周了。请确认目标，并在下一步更新体重和训练条件，我们会按新数据重算计划。',
-              style: TextStyle(fontFamily: AppFonts.inter, fontSize: 13, color: AppColors.textMuted),
+              style: TextStyle(
+                fontFamily: AppFonts.inter,
+                fontSize: 13,
+                color: AppColors.textMuted,
+              ),
             ),
             const SizedBox(height: 24),
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    for (final option in FitnessGoal.values) ...[
+                    for (final option in engineSupportedGoals) ...[
                       _GoalCard(
                         goal: option,
                         selected: _selected == option,
@@ -90,12 +97,19 @@ class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: AppColors.brandGreen,
                   foregroundColor: AppColors.ink,
-                  disabledBackgroundColor: AppColors.brandGreen.withValues(alpha: 0.4),
+                  disabledBackgroundColor: AppColors.brandGreen.withValues(
+                    alpha: 0.4,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
                 ),
                 onPressed: _selected == null ? null : _continue,
-                child: const Text('继续', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: const Text(
+                  '继续',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
             ),
           ],
@@ -106,7 +120,11 @@ class _GoalSurveyScreenState extends State<GoalSurveyScreen> {
 }
 
 class _GoalCard extends StatelessWidget {
-  const _GoalCard({required this.goal, required this.selected, required this.onTap});
+  const _GoalCard({
+    required this.goal,
+    required this.selected,
+    required this.onTap,
+  });
 
   final FitnessGoal goal;
   final bool selected;
@@ -122,7 +140,10 @@ class _GoalCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.brandGreen : Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: selected ? AppColors.ink : Colors.transparent, width: 1.5),
+          border: Border.all(
+            color: selected ? AppColors.ink : Colors.transparent,
+            width: 1.5,
+          ),
         ),
         child: Row(
           children: [

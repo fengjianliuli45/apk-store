@@ -52,7 +52,9 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context) => AlertDialog(
           title: const Text('今日按计划恢复'),
           content: Text(
-            '引擎按肌群恢复间隔安排了休息日。调整每周天数不代表今天会变成训练日。\n\n${widget.nextTrainingLabel ?? '暂无后续训练安排，请重新生成计划。'}\n\n你仍可查看动作演示，不计入训练记录。',
+            '引擎按肌群恢复间隔安排了休息日。调整每周天数不代表今天会变成训练日。\n\n'
+            '${widget.session.recoveryDay == null ? '' : '${widget.session.recoveryDay!.title} · ${widget.session.recoveryDay!.durationMin} 分钟\n${widget.session.recoveryDay!.focus}\n${widget.session.recoveryDay!.items.join('\n')}\n\n'}'
+            '${widget.nextTrainingLabel ?? '暂无后续训练安排，请重新生成计划。'}\n\n你仍可查看动作演示，不计入训练记录。',
           ),
           actions: [
             TextButton(

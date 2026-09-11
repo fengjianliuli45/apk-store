@@ -43,7 +43,7 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
+class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   final _socialFeedController = SocialFeedController();
   final _session = WorkoutSessionController();
   final _dietLog = DietLogController();
@@ -51,10 +51,17 @@ class _RootShellState extends State<RootShell> {
   final _chat = ChatController();
   final _settings = SettingsController();
   bool _checkPromptOpen = false;
+  Timer? _dayTimer;
+  DateTime _boundDay = DateTime.now();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _dayTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _refreshDay(),
+    );
     widget.plan.addListener(_syncPlan);
     _session.attachLog(_workoutLog);
     _session.attachStoreFactory(() => WorkoutDatabase.instance);
@@ -68,11 +75,26 @@ class _RootShellState extends State<RootShell> {
   }
 
   void _syncPlan() {
+    _boundDay = DateTime.now();
     _dietLog.bindPlan(widget.plan.plan);
     if (!_session.hasResumableSession) {
       _session.applyToday(widget.plan.plan);
     }
     if (mounted) setState(() {});
+  }
+
+  void _refreshDay() {
+    final now = DateTime.now();
+    if (now.year != _boundDay.year ||
+        now.month != _boundDay.month ||
+        now.day != _boundDay.day) {
+      _syncPlan();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refreshDay();
   }
 
   Future<void> _restoreSession() async {
@@ -83,6 +105,8 @@ class _RootShellState extends State<RootShell> {
 
   @override
   void dispose() {
+    _dayTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     widget.plan.removeListener(_syncPlan);
     _session.dispose();
     super.dispose();

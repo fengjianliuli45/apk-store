@@ -57,10 +57,10 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
   }
 
   (Color, String) _look(MacroLevel level) => switch (level) {
-        MacroLevel.low => (const Color(0xFFD98C1A), '偏低'),
-        MacroLevel.ok => (const Color(0xFF5C9926), '达标'),
-        MacroLevel.high => (const Color(0xFFC44B3A), '偏高'),
-      };
+    MacroLevel.low => (const Color(0xFFD98C1A), '偏低'),
+    MacroLevel.ok => (const Color(0xFF5C9926), '达标'),
+    MacroLevel.high => (const Color(0xFFC44B3A), '偏高'),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +71,9 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
     final todayFat = widget.dietLog.todayFat + _template.fatG;
     final progress = (today / goals.kcal.clamp(1, 1 << 31)).clamp(0.0, 1.0);
     final kcalLook = _look(DietCatalog.levelOf(today, goals.kcal));
-    final proteinLook = _look(DietCatalog.levelOf(todayProtein, goals.proteinG));
+    final proteinLook = _look(
+      DietCatalog.levelOf(todayProtein, goals.proteinG),
+    );
     final carbLook = _look(DietCatalog.levelOf(todayCarbs, goals.carbG));
     final fatLook = _look(DietCatalog.levelOf(todayFat, goals.fatG));
     final slotMeal = goals.mealForSlot(_template.slot);
@@ -129,6 +131,11 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
                 children: [
+                  if (goals.cycleNote.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(goals.cycleNote),
+                    ),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(24),
                     child: Stack(
@@ -190,7 +197,10 @@ class _DietEstimateSheetState extends State<DietEstimateSheet> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('目录匹配结果', style: TextStyle(fontSize: 14)),
+                            const Text(
+                              '目录匹配结果',
+                              style: TextStyle(fontSize: 14),
+                            ),
                             Text(
                               _template.slot.label,
                               style: const TextStyle(
@@ -462,9 +472,15 @@ class _SuccessSheet extends StatelessWidget {
                       Wrap(
                         spacing: 4,
                         children: [
-                          _MiniTag('热量${DietCatalog.levelOf(template.kcal, goals.kcalForSlot(template.slot)).label}'),
-                          _MiniTag('蛋白质${DietCatalog.levelOf(template.proteinG, goals.proteinG ~/ 4).label}'),
-                          _MiniTag('碳水${DietCatalog.levelOf(template.carbG, goals.carbG ~/ 4).label}'),
+                          _MiniTag(
+                            '热量${DietCatalog.levelOf(template.kcal, goals.kcalForSlot(template.slot)).label}',
+                          ),
+                          _MiniTag(
+                            '蛋白质${DietCatalog.levelOf(template.proteinG, goals.proteinG ~/ 4).label}',
+                          ),
+                          _MiniTag(
+                            '碳水${DietCatalog.levelOf(template.carbG, goals.carbG ~/ 4).label}',
+                          ),
                         ],
                       ),
                     ],

@@ -1,6 +1,6 @@
 {
-  "version": "1.0.2",
-  "build": 3,
-  "url": "https://mainleaf.top/apk/stopwatch-1.0.2-3.apk",
-  "notes": "问卷接入引擎最低训练时长并自动安排频率；休息日显示恢复说明和下次训练日期；新增不计入记录的动作演示。旧计划需重新生成。ARM64 Unity仍待真机验收，演示中请用返回键退出。内部测试版本。"
+  "version": "1.0.5",
+  "build": 6,
+  "url": "https://mainleaf.top/apk/stopwatch-1.0.5-6.apk",
+  "notes": "修复 Unity 跨语言桥接入口被 R8 改名，以及启动超时卸载 Unity 导致的原生闪退。可直接覆盖安装；Unity 教练完整流程仍需 ARM64 真机复验。"
 }

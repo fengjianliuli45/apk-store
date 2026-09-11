@@ -142,10 +142,14 @@ class PlanOverview {
     }
     final moment = now ?? DateTime.now();
     final stage = plan.stageGoal;
-    final cycleWeeks = plan.mesocycle?.lengthWeeks ??
+    final cycleWeeks =
+        plan.mesocycle?.lengthWeeks ??
         stage?.cycleWeeks ??
         plan.progression.nextCheckWeek.clamp(1, 24);
-    final rawWeek = planWeekNumber(plan.generatedAt, moment);
+    final rawWeek =
+        (plan.mesocycle?.currentWeek ?? 1) +
+        planWeekNumber(plan.generatedAt, moment) -
+        1;
     final currentWeek = rawWeek.clamp(1, cycleWeeks);
     final mesocycleWeek = plan.mesocycle?.weeks
         .where((week) => week.week == currentWeek)
@@ -159,10 +163,15 @@ class PlanOverview {
       plan.generatedAt.day,
     ).add(Duration(days: cycleWeeks * 7));
     final todaySession = sessionForDate(plan, moment);
-    final trainingDays = plan.sessions.where((session) => !session.isRest).toList();
+    final trainingDays = plan.sessions
+        .where((session) => !session.isRest)
+        .toList();
     final todayIndex = todaySession.isRest
         ? trainingDays.length
-        : trainingDays.indexWhere((session) => session.day == todaySession.day) + 1;
+        : trainingDays.indexWhere(
+                (session) => session.day == todaySession.day,
+              ) +
+              1;
 
     return PlanOverview(
       currentWeek: currentWeek,
@@ -175,21 +184,18 @@ class PlanOverview {
           : (mesocycleWeek.note.isEmpty
                 ? stageGoalSummary(plan.profile.goal)
                 : mesocycleWeek.note),
-      mesocycleLabel: '中周期 $currentWeek / $cycleWeeks · '
+      mesocycleLabel:
+          '中周期 $currentWeek / $cycleWeeks · '
           '${_phaseShortLabel(mesocycleWeek?.phase ?? stage?.stageType ?? 'adaptation')}',
       volumeSummary: deloadWeek == null
           ? '容量 ${plan.vsOptimalPct}%'
           : '容量 ${plan.vsOptimalPct}% · 第 ${deloadWeek.week} 周减载至 '
-              '${(deloadWeek.volumeMult * 100).round()}%',
+                '${(deloadWeek.volumeMult * 100).round()}%',
       cycleTargetLabel: _cycleTargetLabel(plan),
       reviewDateLabel: '复评 ${reviewDate.month}/${reviewDate.day}',
       weekDays: [
         for (var i = 0; i < 7; i++)
-          _weekDay(
-            plan,
-            weekday: i + 1,
-            todayWeekday: moment.weekday,
-          ),
+          _weekDay(plan, weekday: i + 1, todayWeekday: moment.weekday),
       ],
       today: TodaySessionSnapshot(
         title: _sessionTitle(todaySession),
@@ -257,8 +263,11 @@ String _sessionTitle(SessionResult session) {
 }
 
 String _cycleTargetLabel(GeneratedPlan plan) {
-  final exercises = plan.sessions.expand((session) => session.exercises).toList();
-  final lift = exercises.where((exercise) => exercise.compound).firstOrNull ??
+  final exercises = plan.sessions
+      .expand((session) => session.exercises)
+      .toList();
+  final lift =
+      exercises.where((exercise) => exercise.compound).firstOrNull ??
       (exercises.isEmpty ? null : exercises.first);
   if (lift == null) {
     return '${trainingGoalLabel(plan.profile.goal)} · ${plan.profile.daysPerWeek} 天/周';
@@ -269,7 +278,9 @@ String _cycleTargetLabel(GeneratedPlan plan) {
 String _intensityLabel(SessionResult session) {
   if (session.isRest || session.exercises.isEmpty) return '—';
   final rpe =
-      session.exercises.map((exercise) => exercise.rpe).reduce((a, b) => a + b) /
+      session.exercises
+          .map((exercise) => exercise.rpe)
+          .reduce((a, b) => a + b) /
       session.exercises.length;
   final rir = (10 - rpe).round().clamp(0, 5);
   return 'RIR $rir';
@@ -277,7 +288,8 @@ String _intensityLabel(SessionResult session) {
 
 String _primaryLoadLabel(SessionResult session) {
   if (session.isRest || session.exercises.isEmpty) return '—';
-  final primary = session.exercises.where((exercise) => exercise.compound).firstOrNull ??
+  final primary =
+      session.exercises.where((exercise) => exercise.compound).firstOrNull ??
       session.exercises.first;
   final kg = primary.loadKg;
   if (kg == null) return primary.load;
@@ -319,9 +331,13 @@ CycleReviewSnapshot _review({
   );
   final cycleEnd = cycleStart.add(Duration(days: cycleWeeks * 7));
   final cycleLogs = logs
-      .where((entry) => !entry.at.isBefore(cycleStart) && entry.at.isBefore(cycleEnd))
+      .where(
+        (entry) =>
+            !entry.at.isBefore(cycleStart) && entry.at.isBefore(cycleEnd),
+      )
       .toList();
-  final plannedSessions = stage?.plannedSessions ??
+  final plannedSessions =
+      stage?.plannedSessions ??
       plan.sessions.where((session) => !session.isRest).length * cycleWeeks;
   final completed = cycleLogs.length;
   final completionKnown = plannedSessions > 0;
@@ -363,7 +379,8 @@ CycleReviewSnapshot _review({
       : (surplus > 0 ? '+$surplus kcal' : '$surplus kcal');
 
   return CycleReviewSnapshot(
-    weekLabel: 'CYCLE ${currentWeek.toString().padLeft(2, '0')} · $cycleWeeks 周',
+    weekLabel:
+        'CYCLE ${currentWeek.toString().padLeft(2, '0')} · $cycleWeeks 周',
     completionPct: completionPct,
     completionKnown: completionKnown,
     intensityLabel: '继续观察',

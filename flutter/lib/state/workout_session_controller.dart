@@ -34,6 +34,8 @@ class SetPlan {
     this.exerciseSequence = 1,
     this.exerciseSetIndex = 1,
     this.plannedSets = 1,
+    this.prescribedHoldSeconds,
+    this.prescribedRepDurationSeconds,
   });
   final String exerciseId;
   final String name;
@@ -50,6 +52,47 @@ class SetPlan {
   final int exerciseSequence;
   final int exerciseSetIndex;
   final int plannedSets;
+  final int? prescribedHoldSeconds;
+  final int? prescribedRepDurationSeconds;
+  bool get isHold =>
+      exerciseId == 'plank' ||
+      exerciseId == 'side_plank' ||
+      RegExp(
+        r'秒|seconds|sec\b',
+        caseSensitive: false,
+      ).hasMatch(repsPrescription);
+  // Execution fallback when the engine has supplied a static exercise without a time unit.
+  int get holdSeconds => prescribedHoldSeconds != null
+      ? prescribedHoldSeconds!.clamp(1, 600)
+      : RegExp(
+          r'秒|seconds|sec\b',
+          caseSensitive: false,
+        ).hasMatch(repsPrescription)
+      ? (RegExp(r'\d+').allMatches(repsPrescription).lastOrNull == null
+                ? 30
+                : int.parse(
+                    RegExp(r'\d+').allMatches(repsPrescription).last.group(0)!,
+                  ))
+            .clamp(1, 600)
+      : 30;
+  int get guidedCycleMs => prescribedRepDurationSeconds != null
+      ? prescribedRepDurationSeconds!.clamp(1, 60) * 1000
+      : estimatedWorkMs == null
+      ? 6000
+      : estimatedWorkMs! ~/ targetReps;
+  int get guidedWorkMs =>
+      isHold ? holdSeconds * 1000 : guidedCycleMs * targetReps;
+
+  /// UI estimate from the engine's numeric tempo × target reps. The engine's
+  /// 55/35-second budgeting constants are deliberately not prescriptions.
+  int? get estimatedWorkMs {
+    final parts = tempo.trim().split('-');
+    if (parts.length != 4) return null;
+    final seconds = parts.map(int.tryParse).toList();
+    if (seconds.any((s) => s == null || s < 0)) return null;
+    final total = seconds.fold<int>(0, (sum, s) => sum + s!);
+    return total > 0 && targetReps > 0 ? total * targetReps * 1000 : null;
+  }
 }
 
 class SetCompletionEvidence {
@@ -61,6 +104,7 @@ class SetCompletionEvidence {
     this.painFlag = false,
     this.painArea,
     this.recoveryScore,
+    this.completionSource = 'manual',
   });
 
   final int? actualReps;
@@ -70,6 +114,7 @@ class SetCompletionEvidence {
   final bool painFlag;
   final String? painArea;
   final double? recoveryScore;
+  final String completionSource;
 }
 
 class WorkoutSessionController extends ChangeNotifier {
@@ -93,6 +138,7 @@ class WorkoutSessionController extends ChangeNotifier {
   String sessionTitle = '';
   String sessionType = 'logged';
   String planDay = '';
+  RecoveryDay? recoveryDay;
   WorkoutLogController? log;
   WorkoutDatabase? _store;
   WorkoutDatabase Function()? _storeFactory;
@@ -100,6 +146,9 @@ class WorkoutSessionController extends ChangeNotifier {
 
   /// True after the last set of a session is completed (not after abort).
   bool justFinished = false;
+  // Scoped to an attached 3D coach; ordinary Flutter training keeps its flow.
+  bool awaitCoachPreparation = false;
+  bool guidedPlayback = false;
 
   int _workoutElapsedMs = 0;
   int _setsFinished = 0;
@@ -141,7 +190,22 @@ class WorkoutSessionController extends ChangeNotifier {
   int get targetReps => plans.isEmpty ? 0 : plans[currentSet - 1].targetReps;
 
   int get completedSets => _setsFinished;
-  bool get hasResumableSession => _sessionId != null && isRunning;
+  int? get estimatedWorkMs => plans.isEmpty
+      ? null
+      : guidedPlayback
+      ? plans[currentSet - 1].guidedWorkMs
+      : plans[currentSet - 1].estimatedWorkMs;
+  bool get isHold => plans.isNotEmpty && plans[currentSet - 1].isHold;
+  int? get workRemainingMs => estimatedWorkMs == null
+      ? null
+      : (estimatedWorkMs! - setElapsedMs).clamp(0, estimatedWorkMs!);
+  String get workTimerLabel => guidedPlayback
+      ? '本组剩余 · 按计划自动进入休息'
+      : estimatedWorkMs == null
+      ? '实际用时 · 引擎未规定秒数'
+      : '预计本组剩余 · 到时请确认实际次数';
+  bool get hasResumableSession =>
+      _sessionId != null && phase != WorkoutPhase.idle;
 
   int get _currentRestMs => plans.isEmpty
       ? restDefaultMs
@@ -164,6 +228,7 @@ class WorkoutSessionController extends ChangeNotifier {
   /// Binds the live session queue to today's generated workout. Rest days
   /// leave [isRestDay] true and refuse to start a dummy set list.
   void applyToday(GeneratedPlan? plan) {
+    recoveryDay = null;
     bodyWeightKg = plan?.profile.weightKg ?? 70;
     if (plan == null || plan.sessions.isEmpty) {
       plans = List<SetPlan>.of(_fallbackPlans);
@@ -179,6 +244,9 @@ class WorkoutSessionController extends ChangeNotifier {
     sessionTitle = sessionTypeLabels[session.type] ?? session.type;
     sessionType = session.type;
     planDay = session.day;
+    recoveryDay = plan.recoveryDays
+        .where((r) => r.day == session.day)
+        .firstOrNull;
     if (session.isRest || session.exercises.isEmpty) {
       plans = const [];
       isRestDay = true;
@@ -287,6 +355,8 @@ class WorkoutSessionController extends ChangeNotifier {
             exerciseSequence: exerciseIndex + 1,
             exerciseSetIndex: i + 1,
             plannedSets: exercise.sets,
+            prescribedHoldSeconds: exercise.holdSeconds,
+            prescribedRepDurationSeconds: exercise.repDurationSeconds,
           ),
         );
       }
@@ -313,6 +383,8 @@ class WorkoutSessionController extends ChangeNotifier {
             'exerciseSequence': plan.exerciseSequence,
             'exerciseSetIndex': plan.exerciseSetIndex,
             'plannedSets': plan.plannedSets,
+            'prescribedHoldSeconds': plan.prescribedHoldSeconds,
+            'prescribedRepDurationSeconds': plan.prescribedRepDurationSeconds,
           },
         )
         .toList(growable: false),
@@ -345,6 +417,10 @@ class WorkoutSessionController extends ChangeNotifier {
               exerciseSetIndex:
                   (entry['exerciseSetIndex'] as num?)?.toInt() ?? 1,
               plannedSets: (entry['plannedSets'] as num?)?.toInt() ?? 1,
+              prescribedHoldSeconds: (entry['prescribedHoldSeconds'] as num?)
+                  ?.toInt(),
+              prescribedRepDurationSeconds:
+                  (entry['prescribedRepDurationSeconds'] as num?)?.toInt(),
             ),
           )
           .where(
@@ -365,7 +441,7 @@ class WorkoutSessionController extends ChangeNotifier {
         .map((m) => int.parse(m.group(0)!))
         .toList();
     if (nums.isEmpty) return 10;
-    return nums.last.clamp(5, 20);
+    return nums.last;
   }
 
   bool get isRunning =>
@@ -383,7 +459,9 @@ class WorkoutSessionController extends ChangeNotifier {
 
   /// mm:ss.cc — set-elapsed while active, rest countdown while resting.
   String get timerText {
-    final ms = phase == WorkoutPhase.rest ? restRemainingMs : setElapsedMs;
+    final ms = phase == WorkoutPhase.rest
+        ? restRemainingMs
+        : (workRemainingMs ?? setElapsedMs);
     final centis = ms ~/ 10;
     final minutes = centis ~/ 6000;
     final seconds = (centis % 6000) ~/ 100;
@@ -397,6 +475,7 @@ class WorkoutSessionController extends ChangeNotifier {
       return (restRemainingMs / total).clamp(0.0, 1.0);
     }
     if (phase == WorkoutPhase.active) {
+      if (estimatedWorkMs != null) return workRemainingMs! / estimatedWorkMs!;
       return (completedReps / targetReps).clamp(0.0, 1.0);
     }
     return 0.0;
@@ -487,6 +566,7 @@ class WorkoutSessionController extends ChangeNotifier {
       painArea: evidence?.painFlag == true
           ? _nonEmptyText(evidence?.painArea)
           : null,
+      completionSource: evidence?.completionSource ?? 'manual',
     );
     _completedSetEvidence[currentSet] = completedEvidence;
     _painFlag = _painFlag || completedEvidence.painFlag;
@@ -514,17 +594,35 @@ class WorkoutSessionController extends ChangeNotifier {
   }
 
   void skipRest() {
-    if (phase != WorkoutPhase.rest || isPaused) return;
+    if (phase != WorkoutPhase.rest) return;
     _syncClock();
-    restRemainingMs = _lastFiveMs;
-    isLastFiveSeconds = true;
+    if (phase != WorkoutPhase.rest) return;
     _persist('rest_skipped');
-    notifyListeners();
+    _advance(autoStart: true);
+  }
+
+  void skipCurrentSet() {
+    if (phase != WorkoutPhase.active || plans.isEmpty) return;
+    _syncClock();
+    final skipped = WorkoutSetLog(
+      setNumber: plans[currentSet - 1].exerciseSetIndex,
+      reps: completedReps,
+      durationMs: setElapsedMs,
+      completionSource: 'skipped',
+    );
+    _persistCurrentSet('skipped', skipped);
+    _persist('set_skipped', payload: {'set': currentSet});
+    if (currentSet >= totalSets) {
+      _finishWorkout();
+    } else {
+      _advance(autoStart: false);
+    }
   }
 
   void startNextSetNow() {
     if (phase != WorkoutPhase.rest || isPaused) return;
     _syncClock();
+    if (phase != WorkoutPhase.rest) return;
     _advance(autoStart: true);
   }
 
@@ -569,7 +667,7 @@ class WorkoutSessionController extends ChangeNotifier {
   void _finishWorkout() {
     _syncClock();
     _persist('session_completed', status: 'completed');
-    _recordWorkout(aborted: false);
+    _recordWorkout(aborted: _setsFinished < totalSets);
     justFinished = true;
     _reset(clearSession: true);
   }
@@ -632,6 +730,7 @@ class WorkoutSessionController extends ChangeNotifier {
   }
 
   void _advance({required bool autoStart}) {
+    autoStart = autoStart && !awaitCoachPreparation;
     final next = currentSet + 1;
     if (next > totalSets) {
       _reset();
@@ -718,7 +817,28 @@ class WorkoutSessionController extends ChangeNotifier {
     }
   }
 
-  void _onTick() => _syncClock(notify: true);
+  void _onTick() {
+    _syncClock(notify: !guidedPlayback);
+    if (guidedPlayback &&
+        phase == WorkoutPhase.active &&
+        !isPaused &&
+        plans.isNotEmpty) {
+      final plan = plans[currentSet - 1];
+      completedReps = plan.isHold
+          ? 0
+          : (setElapsedMs ~/ plan.guidedCycleMs).clamp(0, targetReps);
+      if (setElapsedMs >= plan.guidedWorkMs) {
+        completeSet(
+          SetCompletionEvidence(
+            actualReps: plan.isHold ? 1 : targetReps,
+            completionSource: 'guided',
+          ),
+        );
+        return;
+      }
+    }
+    if (guidedPlayback) notifyListeners();
+  }
 
   void _startResumeCountdown() {
     resumeCountdownSeconds = 3;

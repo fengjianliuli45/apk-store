@@ -13,6 +13,8 @@ class UnitySessionCoordinator {
     'complete_set',
     'toggle_pause',
     'skip_rest',
+    'skip_preparation',
+    'skip_set',
     'extend_rest',
     'end_session',
     'return_home',
@@ -25,6 +27,7 @@ class UnitySessionCoordinator {
     required this.bridge,
     this.onExitRequested,
     this.previewOnly = false,
+    this.guidedTraining = true,
     String? sessionId,
   }) : sessionId =
            sessionId ?? 'workout-${DateTime.now().millisecondsSinceEpoch}';
@@ -34,6 +37,7 @@ class UnitySessionCoordinator {
   final void Function()? onExitRequested;
   final String sessionId;
   final bool previewOnly;
+  final bool guidedTraining;
 
   final StreamController<UnityHostState> _states =
       StreamController<UnityHostState>.broadcast();
@@ -44,6 +48,18 @@ class UnitySessionCoordinator {
   final Set<String> _processedRuntimeEvents = <String>{};
   bool _runtimeReleaseRequested = false;
   bool _disposed = false;
+  bool _preparing = false;
+  bool _preparationPaused = false;
+  WorkoutPhase? _previousPhase;
+  Timer? _completionTimer;
+  bool _exitSent = false;
+
+  void _exit() {
+    if (_exitSent || _disposed) return;
+    _exitSent = true;
+    _completionTimer?.cancel();
+    onExitRequested?.call();
+  }
 
   Stream<UnityHostState> get states => _states.stream;
 
@@ -72,6 +88,9 @@ class UnitySessionCoordinator {
       }
 
       session.addListener(_sendSnapshotIfChanged);
+      if (!previewOnly) session.awaitCoachPreparation = true;
+      if (!previewOnly) session.guidedPlayback = guidedTraining;
+      _previousPhase = session.phase;
       await _sendSnapshot(UnityCommandType.loadSession);
     } catch (_) {
       _setState(UnityHostState.failed);
@@ -114,11 +133,22 @@ class UnitySessionCoordinator {
         session.pauseForInterruption('unity_render_fatal');
         _setState(UnityHostState.failed);
       case 'start_training':
-        if (session.phase == WorkoutPhase.ready) session.startSet();
+        if (session.phase == WorkoutPhase.ready && !_preparing) {
+          _preparing = true;
+          _preparationPaused = false;
+          _sendSnapshotIfChanged(force: true);
+        }
+      case 'preparation_complete':
+        if (_preparing &&
+            !_preparationPaused &&
+            session.phase == WorkoutPhase.ready) {
+          _preparing = false;
+          session.startSet();
+        }
       case 'register_rep':
-        session.registerRep();
-        if (session.justFinished) onExitRequested?.call();
+        if (!session.guidedPlayback) session.registerRep();
       case 'complete_set':
+        if (session.guidedPlayback) break;
         session.completeSet(
           SetCompletionEvidence(
             actualReps: _intValue(event.payload, 'actualReps', 'actual_reps'),
@@ -134,11 +164,23 @@ class UnitySessionCoordinator {
             ),
           ),
         );
-        if (session.justFinished) onExitRequested?.call();
       case 'toggle_pause':
-        session.togglePause();
+        if (_preparing) {
+          _preparationPaused = !_preparationPaused;
+          _sendSnapshotIfChanged(force: true);
+        } else {
+          session.togglePause();
+        }
       case 'skip_rest':
         session.skipRest();
+      case 'skip_preparation':
+        if (session.phase == WorkoutPhase.ready) {
+          _preparing = false;
+          _preparationPaused = false;
+          session.startSet();
+        }
+      case 'skip_set':
+        session.skipCurrentSet();
       case 'rest_complete':
         session.startNextSetNow();
       case 'extend_rest':
@@ -153,20 +195,36 @@ class UnitySessionCoordinator {
             'recovery_score',
           ),
         );
-        onExitRequested?.call();
+        _exit();
       case 'return_home':
-        onExitRequested?.call();
+        _exit();
       case 'host_interrupted':
+        if (_preparing) {
+          _preparationPaused = true;
+          _sendSnapshotIfChanged(force: true);
+        }
         session.pauseForInterruption('host_interruption');
       case 'host_back':
         session.pauseForInterruption('host_back');
-        onExitRequested?.call();
+        _exit();
     }
   }
 
   Future<void> _sendSnapshotIfChanged({bool force = false}) async {
     if (state != UnityHostState.loading && state != UnityHostState.ready) {
       return;
+    }
+    if (!previewOnly &&
+        (_previousPhase == WorkoutPhase.rest ||
+            _previousPhase == WorkoutPhase.active) &&
+        session.phase == WorkoutPhase.ready) {
+      _preparing = true;
+      _preparationPaused = false;
+    }
+    _previousPhase = session.phase;
+    if (session.justFinished && !previewOnly) {
+      _preparing = false;
+      _completionTimer ??= Timer(const Duration(seconds: 2), _exit);
     }
     final snapshot = _snapshot();
     final fingerprint = snapshot.entries
@@ -200,20 +258,39 @@ class UnitySessionCoordinator {
   }
 
   Map<String, Object?> _snapshot() {
+    final nextPlan = session.currentSet < session.plans.length
+        ? session.plans[session.currentSet]
+        : null;
     final mode = switch (session.phase) {
       WorkoutPhase.rest => 'rest',
       WorkoutPhase.ready || WorkoutPhase.idle => 'preview',
       WorkoutPhase.active => 'training',
     };
     return {
-      'mode': mode,
+      'mode': session.justFinished && !previewOnly ? 'completed' : mode,
+      'coachPreparing': _preparing,
+      'coachPreparationPaused': _preparationPaused,
       'previewOnly': previewOnly,
+      'guidedPlayback': session.guidedPlayback && !previewOnly,
+      'holdExercise': session.isHold,
+      'executionTempo':
+          session.plans.isEmpty ||
+              session.plans[session.currentSet - 1].estimatedWorkMs == null
+          ? '3-0-3-0'
+          : session.plans[session.currentSet - 1].tempo,
       'exerciseId': session.exerciseId,
       'exerciseLabel': session.exerciseName,
       'nextExerciseId': session.nextExerciseId,
       'nextExerciseLabel': session.nextExerciseName,
-      'set': session.currentSet,
-      'totalSets': session.totalSets,
+      'nextSetSummary': nextPlan == null
+          ? ''
+          : '第 ${nextPlan.exerciseSetIndex} / ${nextPlan.plannedSets} 组 · ${nextPlan.isHold ? '${nextPlan.holdSeconds} 秒' : '${nextPlan.targetReps} 次'}',
+      'set': session.plans.isEmpty
+          ? 1
+          : session.plans[session.currentSet - 1].exerciseSetIndex,
+      'totalSets': session.plans.isEmpty
+          ? 0
+          : session.plans[session.currentSet - 1].plannedSets,
       'rep': session.completedReps,
       'targetReps': session.targetReps,
       'repsPrescription': session.plans.isEmpty
@@ -235,6 +312,8 @@ class UnitySessionCoordinator {
           ? const <String>[]
           : session.plans[session.currentSet - 1].formCues,
       'elapsedSeconds': session.setElapsedMs / 1000,
+      'estimatedWorkSeconds': (session.estimatedWorkMs ?? 0) / 1000,
+      'remainingWorkSeconds': (session.workRemainingMs ?? 0) / 1000,
       'remainingSeconds': session.phase == WorkoutPhase.rest
           ? session.restRemainingMs ~/ 1000
           : 0,
@@ -292,6 +371,11 @@ class UnitySessionCoordinator {
   }
 
   void _setState(UnityHostState next) {
+    if (next == UnityHostState.failed || next == UnityHostState.unavailable) {
+      if (!previewOnly) session.awaitCoachPreparation = false;
+      if (!previewOnly) session.guidedPlayback = false;
+      _preparing = false;
+    }
     state = next;
     if (!_states.isClosed) _states.add(next);
   }
@@ -304,6 +388,9 @@ class UnitySessionCoordinator {
 
   Future<void> dispose() async {
     _disposed = true;
+    _completionTimer?.cancel();
+    if (!previewOnly) session.awaitCoachPreparation = false;
+    if (!previewOnly) session.guidedPlayback = false;
     session.removeListener(_sendSnapshotIfChanged);
     await _eventSubscription?.cancel();
     await releaseRuntime();

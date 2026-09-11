@@ -10,6 +10,143 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  test('rest snapshot uses next exercise set and hold target', () async {
+    final session = WorkoutSessionController()
+      ..plans = const [
+        SetPlan('push_up', '俯卧撑', 12, plannedSets: 1),
+        SetPlan('plank', '平板支撑', 30, repsPrescription: '30秒', plannedSets: 3),
+      ]
+      ..startSession()
+      ..startSet();
+    final bridge = _FakeUnityRuntimeBridge();
+    final coordinator = UnitySessionCoordinator(
+      session: session,
+      bridge: bridge,
+      sessionId: 'next-target',
+    );
+    await coordinator.start();
+    session.completeSet();
+    await _flushEvents();
+    expect(bridge.commands.last.payload['nextExerciseId'], 'plank');
+    expect(bridge.commands.last.payload['nextSetSummary'], '第 1 / 3 组 · 30 秒');
+    session.skipRest();
+    await _flushEvents();
+    expect(bridge.commands.last.payload['nextSetSummary'], '');
+    await coordinator.dispose();
+    session.dispose();
+  });
+  test(
+    'stage skip controls route to host without granting completed sets',
+    () async {
+      final session = WorkoutSessionController()
+        ..plans = const [
+          SetPlan('push_up', '俯卧撑', 8),
+          SetPlan('push_up', '俯卧撑', 8),
+        ]
+        ..startSession();
+      final bridge = _FakeUnityRuntimeBridge();
+      final coordinator = UnitySessionCoordinator(
+        session: session,
+        bridge: bridge,
+        sessionId: 'skip',
+      );
+      await coordinator.start();
+      bridge.emit(_event('s1', 'skip_preparation', sessionId: 'skip'));
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.active);
+      bridge.emit(_event('s2', 'skip_set', sessionId: 'skip'));
+      await _flushEvents();
+      expect(session.currentSet, 2);
+      expect(session.completedSets, 0);
+      expect(bridge.commands.last.payload['coachPreparing'], true);
+      bridge.emit(_event('s2', 'skip_set', sessionId: 'skip'));
+      await _flushEvents();
+      expect(session.currentSet, 2);
+      await coordinator.dispose();
+      session.dispose();
+    },
+  );
+
+  test(
+    'teaching pauses on interruption and next set waits without recording work',
+    () async {
+      final session = WorkoutSessionController()
+        ..plans = const [
+          SetPlan('bodyweight_squat', '深蹲', 1, restMs: 10000),
+          SetPlan('push_up', '俯卧撑', 1),
+        ]
+        ..startSession();
+      final bridge = _FakeUnityRuntimeBridge();
+      final coordinator = UnitySessionCoordinator(
+        session: session,
+        bridge: bridge,
+        sessionId: 'flow',
+      );
+      await coordinator.start();
+      bridge.emit(_event('start', 'start_training', sessionId: 'flow'));
+      bridge.emit(_event('interrupt', 'host_interrupted', sessionId: 'flow'));
+      bridge.emit(_event('early', 'preparation_complete', sessionId: 'flow'));
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.ready);
+      expect(session.setElapsedMs, 0);
+      expect(bridge.commands.last.payload['coachPreparationPaused'], true);
+      bridge.emit(_event('resume', 'toggle_pause', sessionId: 'flow'));
+      bridge.emit(
+        _event('old', 'preparation_complete', sessionId: 'old-session'),
+      );
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.ready);
+      bridge.emit(
+        _event('prepared', 'preparation_complete', sessionId: 'flow'),
+      );
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.active);
+      session.completeSet();
+      session.startNextSetNow();
+      await _flushEvents();
+      expect(session.currentSet, 2);
+      expect(session.phase, WorkoutPhase.ready);
+      expect(session.setElapsedMs, 0);
+      expect(session.completedReps, 0);
+      expect(bridge.commands.last.payload['coachPreparing'], true);
+      bridge.emit(
+        _event('prepared-next', 'preparation_complete', sessionId: 'flow'),
+      );
+      await _flushEvents();
+      expect(session.phase, WorkoutPhase.active);
+      await coordinator.dispose();
+      expect(session.awaitCoachPreparation, false);
+      session.dispose();
+    },
+  );
+
+  test('tempo and estimated work survive Unity snapshots and pause', () async {
+    final session = WorkoutSessionController()
+      ..plans = const [
+        SetPlan('bodyweight_squat', '深蹲', 12, tempo: '3-1-2-0', restMs: 90000),
+      ]
+      ..startSession();
+    final bridge = _FakeUnityRuntimeBridge();
+    final coordinator = UnitySessionCoordinator(
+      session: session,
+      bridge: bridge,
+      sessionId: 'tempo',
+    );
+    await coordinator.start();
+    expect(bridge.commands.last.payload['tempo'], '3-1-2-0');
+    expect(bridge.commands.last.payload['estimatedWorkSeconds'], 72);
+    session.startSet();
+    await _flushEvents();
+    session.togglePause();
+    await _flushEvents();
+    expect(bridge.commands.last.payload['paused'], true);
+    expect(bridge.commands.last.payload['tempo'], '3-1-2-0');
+    expect(bridge.commands.last.payload['elapsedSeconds'], isA<num>());
+    expect(session.completedReps, 0);
+    expect(session.completedSets, 0);
+    await coordinator.dispose();
+    session.dispose();
+  });
 
   test(
     'preview ignores workout controls and never records a workout',
@@ -56,7 +193,9 @@ void main() {
     'Unity intents mutate the Flutter-owned session and exit on completion',
     () async {
       final session = WorkoutSessionController()
-        ..plans = const [SetPlan('bodyweight_squat', '徒手深蹲', 1)]
+        ..plans = const [
+          SetPlan('bodyweight_squat', '徒手深蹲', 1, tempo: '0-0-1-0'),
+        ]
         ..startSession();
       final bridge = _FakeUnityRuntimeBridge();
       var exits = 0;
@@ -74,6 +213,11 @@ void main() {
 
       bridge.emit(_event('start-1', 'start_training'));
       await _flushEvents();
+      expect(session.phase, WorkoutPhase.ready);
+      expect(bridge.commands.last.payload['coachPreparing'], true);
+      expect(session.setElapsedMs, 0);
+      bridge.emit(_event('prepared-1', 'preparation_complete'));
+      await _flushEvents();
       expect(session.phase, WorkoutPhase.active);
 
       final completion = _event('rep-1', 'register_rep');
@@ -81,7 +225,16 @@ void main() {
       bridge.emit(completion);
       await _flushEvents();
 
+      expect(
+        session.justFinished,
+        isFalse,
+        reason: 'manual taps cannot advance guided training',
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 1150));
       expect(session.justFinished, isTrue);
+      expect(bridge.commands.last.payload['mode'], 'completed');
+      expect(exits, 0, reason: 'show completion before returning home');
+      await Future<void>.delayed(const Duration(milliseconds: 2100));
       expect(exits, 1, reason: 'duplicate runtime events must be idempotent');
       await coordinator.dispose();
       session.dispose();
@@ -160,6 +313,9 @@ void main() {
     await coordinator.start();
     bridge.emit(_event('ready-3', 'unity_ready', sessionId: 'session-3'));
     bridge.emit(_event('start-3', 'start_training', sessionId: 'session-3'));
+    bridge.emit(
+      _event('prepared-3', 'preparation_complete', sessionId: 'session-3'),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 120));
 
     final latest = bridge.commands.lastWhere(
@@ -218,6 +374,7 @@ void main() {
         session: session,
         bridge: bridge,
         sessionId: 'evidence-session',
+        guidedTraining: false,
       );
       await coordinator.start();
 
@@ -225,6 +382,13 @@ void main() {
         _event(
           'start-evidence',
           'start_training',
+          sessionId: 'evidence-session',
+        ),
+      );
+      bridge.emit(
+        _event(
+          'prepared-evidence',
+          'preparation_complete',
           sessionId: 'evidence-session',
         ),
       );
@@ -274,12 +438,20 @@ void main() {
         session: session,
         bridge: bridge,
         sessionId: 'sentinel-session',
+        guidedTraining: false,
       );
       await coordinator.start();
       bridge.emit(
         _event(
           'start-sentinel',
           'start_training',
+          sessionId: 'sentinel-session',
+        ),
+      );
+      bridge.emit(
+        _event(
+          'prepared-sentinel',
+          'preparation_complete',
           sessionId: 'sentinel-session',
         ),
       );

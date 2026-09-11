@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import androidx.annotation.Keep
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.plugin.common.EventChannel
@@ -77,6 +78,7 @@ class MainActivity : FlutterActivity() {
     }
 }
 
+@Keep
 object UnityRuntimeBridge : EventChannel.StreamHandler {
     const val METHOD_CHANNEL = "com.restpod.hud/unity"
     const val EVENT_CHANNEL = "com.restpod.hud/unity_events"
@@ -92,6 +94,8 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
     @Volatile private var runtimeReady = false
     @Volatile private var activeSessionId = ""
 
+    @Keep
+    @JvmStatic
     fun isAvailable(): Boolean {
         // The checked-in Unity export currently contains arm64 native code
         // only. The app also packages x86_64 Flutter libraries so UI tests can
@@ -106,6 +110,8 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
         }.isSuccess
     }
 
+    @Keep
+    @JvmStatic
     fun prepare(activity: Activity): Boolean {
         if (!isAvailable()) return false
         return runCatching {
@@ -122,6 +128,8 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
         }.isSuccess
     }
 
+    @Keep
+    @JvmStatic
     fun send(encoded: String): Boolean {
         if (!isAvailable()) return false
         runCatching {
@@ -136,6 +144,8 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
         return sendNow(encoded)
     }
 
+    @Keep
+    @JvmStatic
     fun disposeSession() {
         synchronized(pendingCommands) { pendingCommands.clear() }
         activeSessionId = ""
@@ -147,6 +157,7 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
     }
 
     @JvmStatic
+    @Keep
     fun onRuntimeUnloaded() {
         runtimeReady = false
         activeSessionId = ""
@@ -154,6 +165,7 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
     }
 
     @JvmStatic
+    @Keep
     fun emitHostEvent(type: String) {
         val encoded = JSONObject().apply {
             put("event_id", UUID.randomUUID().toString().replace("-", ""))
@@ -167,6 +179,7 @@ object UnityRuntimeBridge : EventChannel.StreamHandler {
     }
 
     @JvmStatic
+    @Keep
     fun emitEvent(encoded: String) {
         mainHandler.post {
             if (runCatching { JSONObject(encoded).optString("type") }.getOrNull() == "unity_ready") {

@@ -86,6 +86,12 @@ TRAINING_VARS = {
     "recomposition":   {"load_pct": "65-80% 1RM", "load_pct_mid": 0.72, "reps": "8-12", "sets_range": (3, 4), "rest_sec": 90,  "rpe": 7.5, "tempo": "3-1-2-0", "rir": "1-3"},
 }
 
+# Executable timing is an explicit prescription contract. It must not be
+# inferred from the session-duration budgeting constants below.
+STATIC_HOLD_EXERCISES = frozenset({"plank", "side_plank", "hollow_hold", "superman_hold", "isometric_wall_curl"})
+HOLD_SECONDS_BY_LEVEL = {"beginner": 20, "intermediate": 30, "advanced": 45}
+CONTROLLED_REP_SECONDS = 6
+
 # ── 时间估算常量 ──────────────────────────────────────────
 # 处方里的 rest_sec 是「组间休息下限」；实操中复合大动作会歇更久，做组本身也更慢
 # （上下器械、找配重、离心节奏）。这里只用于**估时**，不改动作的处方参数。
@@ -158,6 +164,8 @@ class ExerciseEntry:
     form_cues: list[str] = field(default_factory=list)
     target_muscle: str = ""  # 这个动作是为哪个肌群配额排进来的（容量统计用）
     load_kg: float | None = None  # 有起始 1RM 时算出的建议重量；否则 None（首周找）
+    hold_seconds: int | None = None
+    rep_duration_seconds: int | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -177,6 +185,8 @@ class ExerciseEntry:
             "compound": self.compound,
             "form_cues": self.form_cues,
             "target_muscle": self.target_muscle,
+            "hold_seconds": self.hold_seconds,
+            "rep_duration_seconds": self.rep_duration_seconds,
         }
 
 
@@ -395,18 +405,26 @@ def build_sessions(
                 name_en=ex.name_en,
                 exercise_id=ex.id,
                 sets=sets,
-                reps=vars_["reps"],
+                reps=(f"{HOLD_SECONDS_BY_LEVEL.get(profile.level, 20)}秒"
+                      if ex.id in STATIC_HOLD_EXERCISES else vars_["reps"]),
                 load=load_text,
                 load_kg=load_kg,
                 rest_sec=vars_["rest_sec"],
                 rpe=vars_["rpe"],
-                tempo=vars_["tempo"],
+                tempo=("静态保持" if ex.id in STATIC_HOLD_EXERCISES else vars_["tempo"]),
                 notes=f"RIR {vars_['rir']}",
                 order=state["order"],
                 primary_muscles=ex.primary_muscles,
                 compound=ex.compound,
                 form_cues=ex.form_cues,
                 target_muscle=muscle,
+                hold_seconds=(HOLD_SECONDS_BY_LEVEL.get(profile.level, 20)
+                              if ex.id in STATIC_HOLD_EXERCISES else None),
+                rep_duration_seconds=(None if ex.id in STATIC_HOLD_EXERCISES else
+                                      (sum(int(v) for v in vars_["tempo"].split("-"))
+                                       if len(vars_["tempo"].split("-")) == 4
+                                       and all(v.isdigit() for v in vars_["tempo"].split("-"))
+                                       else CONTROLLED_REP_SECONDS)),
             ))
             used_ids.add(ex.id)
             state["order"] += 1

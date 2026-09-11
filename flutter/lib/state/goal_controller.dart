@@ -3,7 +3,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Matches the 训练目标 options in docs/Stopwatch-app-design-blueprint-v2.md
 // §6.2 入门问答, question 1.
-enum FitnessGoal { weightLoss, muscleGain, toning, endurance, recovery }
+enum FitnessGoal {
+  weightLoss,
+  muscleGain,
+  toning,
+  endurance,
+  recovery,
+  strength,
+}
+
+const engineSupportedGoals = [
+  FitnessGoal.weightLoss,
+  FitnessGoal.muscleGain,
+  FitnessGoal.toning,
+  FitnessGoal.strength,
+];
 
 extension FitnessGoalLabel on FitnessGoal {
   String get label => switch (this) {
@@ -12,6 +26,7 @@ extension FitnessGoalLabel on FitnessGoal {
     FitnessGoal.toning => '塑形',
     FitnessGoal.endurance => '体能',
     FitnessGoal.recovery => '恢复',
+    FitnessGoal.strength => '力量',
   };
 
   String get description => switch (this) {
@@ -20,19 +35,18 @@ extension FitnessGoalLabel on FitnessGoal {
     FitnessGoal.toning => '线条紧致，兼顾力量和有氧',
     FitnessGoal.endurance => '提升耐力和心肺能力',
     FitnessGoal.recovery => '低强度恢复，保护身体状态',
+    FitnessGoal.strength => '以提升力量为目标，采用引擎力量处方',
   };
 
-  /// fitness-planner's engine only models 4 strength-training goals
-  /// (hypertrophy/fat_loss/strength/recomposition) — 体能 and 恢复 don't
-  /// map cleanly onto any of them, so both fall back to recomposition
-  /// (maintenance macros, moderate training vars) as the closest safe
-  /// default rather than distorting a goal the engine wasn't built for.
+  /// Legacy endurance/recovery values remain readable but cannot generate a
+  /// different goal silently. Loading them reopens goal selection.
   String get engineGoal => switch (this) {
     FitnessGoal.weightLoss => 'fat_loss',
     FitnessGoal.muscleGain => 'hypertrophy',
     FitnessGoal.toning => 'recomposition',
-    FitnessGoal.endurance => 'recomposition',
-    FitnessGoal.recovery => 'recomposition',
+    FitnessGoal.strength => 'strength',
+    FitnessGoal.endurance ||
+    FitnessGoal.recovery => throw StateError('该目标尚无对应引擎，请重新选择训练目标'),
   };
 }
 
@@ -51,12 +65,15 @@ class GoalController extends ChangeNotifier {
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_kGoal);
-    goal = stored == null ? null : FitnessGoal.values.byName(stored);
+    goal = engineSupportedGoals.where((g) => g.name == stored).firstOrNull;
     _welcomeGoal = prefs.getString(_kWelcomeGoal);
     notifyListeners();
   }
 
   Future<void> choose(FitnessGoal value) async {
+    if (!engineSupportedGoals.contains(value)) {
+      throw ArgumentError('Unsupported engine goal');
+    }
     if (goal != value) _welcomeGoal = null;
     goal = value;
     notifyListeners();

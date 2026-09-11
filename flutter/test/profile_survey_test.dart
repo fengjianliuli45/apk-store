@@ -24,6 +24,9 @@ void main() {
             initialFields: const {
               'days_per_week': 7,
               'minutes_per_session': 15,
+              'injuries': ['knee'],
+              'dietary_restrictions': ['no_dairy'],
+              'kcal_adjust': 100,
             },
             onSubmit: (fields) => submitted = fields,
           ),
@@ -40,6 +43,9 @@ void main() {
     await tester.tap(find.text('生成计划'));
     expect(submitted, isNotNull);
     expect(submitted!.containsKey('days_per_week'), false);
+    expect(submitted!['injuries'], ['knee']);
+    expect(submitted!['dietary_restrictions'], ['no_dairy']);
+    expect(submitted!['kcal_adjust'], 100);
     expect(submitted!['minutes_per_session'], greaterThanOrEqualTo(minimum));
     final plan = gateway.generate({...submitted!, 'goal': 'hypertrophy'});
     expect(plan.profile.daysPerWeek, 3);

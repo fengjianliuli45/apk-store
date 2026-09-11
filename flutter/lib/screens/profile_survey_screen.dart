@@ -5,6 +5,7 @@ import '../planner/planner_gateway.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 import '../widgets/gradient_background.dart';
+import '../widgets/planner_constraints_fields.dart';
 
 /// Second half of onboarding, after GoalSurveyScreen picks 训练目标: fills
 /// in the rest of the fields fitness-planner's PlannerGateway.generate()
@@ -68,6 +69,9 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
   late final TextEditingController _targetWeightController;
 
   late _Scene _scene;
+  late List<String> _equipment;
+  Map<String, dynamic> _constraints = {};
+  String? _constraintsError;
   late String _level;
 
   int? _minimumMinutes;
@@ -99,6 +103,9 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
           : _numText(initial['target_weight_kg'], 0),
     );
     _scene = _sceneFromEquipment(initial['equipment']);
+    _equipment = List<String>.from(
+      initial['equipment'] as List? ?? _scene.equipment,
+    );
     _level = (initial['level'] as String?) ?? 'beginner';
     _minutesPerSession =
         (initial['minutes_per_session'] as num?)?.toInt() ?? 30;
@@ -138,6 +145,34 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
 
   Future<void> _next() async {
     if (_calculating) return;
+    if (_step == 1) {
+      final age = int.tryParse(_ageController.text.trim());
+      final height = double.tryParse(_heightController.text.trim());
+      final weight = double.tryParse(_weightController.text.trim());
+      final fatText = _bodyFatController.text.trim();
+      final targetText = _targetWeightController.text.trim();
+      final fat = double.tryParse(fatText);
+      final target = double.tryParse(targetText);
+      bool outside(double? value, double min, double max) =>
+          value == null || !value.isFinite || value < min || value > max;
+      final error = age == null || age < 16 || age > 80
+          ? '年龄须为 16–80 岁的整数'
+          : outside(height, 120, 250)
+          ? '身高须为 120–250 cm'
+          : outside(weight, 35, 250)
+          ? '体重须为 35–250 kg'
+          : fatText.isNotEmpty && outside(fat, 3, 60)
+          ? '体脂须为 3–60%，也可留空'
+          : targetText.isNotEmpty &&
+                (target == null || !target.isFinite || target <= 0)
+          ? '请填写有效目标体重，也可留空'
+          : null;
+      if (error != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
+        return;
+      }
+    }
     if (_step == 2) {
       setState(() {
         _calculating = true;
@@ -148,7 +183,7 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
         final minimum = gateway.minSessionMinutes(
           level: _level,
           goal: widget.engineGoal,
-          equipment: _scene.equipment,
+          equipment: _equipment,
         );
         if (!mounted) return;
         setState(() {
@@ -164,21 +199,32 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
       return;
     }
     if (_step == 3) {
+      if (_constraintsError != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(_constraintsError!)));
+        return;
+      }
       if (_minimumMinutes == null || _minutesPerSession < _minimumMinutes!) {
         return;
       }
       final bodyFat = double.tryParse(_bodyFatController.text);
       final targetWeight = double.tryParse(_targetWeightController.text);
       final answers = <String, dynamic>{
+        ...?widget.initialFields,
+        ..._constraints,
         'gender': _gender,
         'age': int.tryParse(_ageController.text) ?? 28,
         'height_cm': double.tryParse(_heightController.text) ?? 170.0,
         'weight_kg': double.tryParse(_weightController.text) ?? 65.0,
         'level': _level,
         'minutes_per_session': _minutesPerSession,
-        'equipment': _scene.equipment,
+        'equipment': _equipment,
         'meals_per_day': _mealsPerDay,
       };
+      // Frequency is recalculated; clearing an optional field must remove it.
+      answers.remove('days_per_week');
+      answers.remove('body_fat_pct');
+      answers.remove('target_weight_kg');
       if (bodyFat != null) answers['body_fat_pct'] = bodyFat;
       if (targetWeight != null) {
         answers['target_weight_kg'] = targetWeight;
@@ -191,6 +237,11 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
 
   void _back() {
     if (_calculating) return;
+    if (_step == 3 && _constraintsError != null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(_constraintsError!)));
+      return;
+    }
     if (_step == 0) {
       widget.onBackToGoal?.call();
       return;
@@ -285,10 +336,43 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
             _ChoiceCard(
               label: scene.label,
               selected: _scene == scene,
-              onTap: () => setState(() => _scene = scene),
+              onTap: () => setState(() {
+                _scene = scene;
+                _equipment = List.of(scene.equipment);
+              }),
             ),
             const SizedBox(height: 12),
           ],
+          const Text('请勾选实际可用器械，场景仅提供预选：'),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final entry in const {
+                'bodyweight': '徒手',
+                'dumbbell': '哑铃',
+                'barbell': '杠铃',
+                'cable': '绳索',
+                'machine': '器械',
+                'band': '弹力带',
+                'pull_up_bar': '单杠',
+                'kettlebell': '壶铃',
+                'bench': '训练凳',
+                'rack': '深蹲架',
+              }.entries)
+                FilterChip(
+                  label: Text(entry.value),
+                  selected: _equipment.contains(entry.key),
+                  onSelected: (on) => setState(() {
+                    if (on) {
+                      _equipment.add(entry.key);
+                    } else {
+                      _equipment.remove(entry.key);
+                    }
+                    if (_equipment.isEmpty) _equipment.add('bodyweight');
+                  }),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -414,6 +498,13 @@ class _ProfileSurveyScreenState extends State<ProfileSurveyScreen> {
                   onSelected: (_) => setState(() => _mealsPerDay = n),
                 ),
             ],
+          ),
+          PlannerConstraintsFields(
+            initial: {...?widget.initialFields, ..._constraints},
+            onChanged: (values, error) {
+              _constraints = values;
+              _constraintsError = error;
+            },
           ),
         ],
       ),

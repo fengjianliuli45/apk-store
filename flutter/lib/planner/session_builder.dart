@@ -12,16 +12,37 @@ import 'models.dart';
 /// 基准表 = 增肌目标。其他目标按 [goalVolumeScale] 缩放。
 const _baseWeeklyVolume = {
   'beginner': {
-    'chest': 10, 'back': 12, 'quads': 10, 'hamstrings': 6, 'shoulders': 8,
-    'biceps': 6, 'triceps': 6, 'calves': 4, 'core': 4,
+    'chest': 10,
+    'back': 12,
+    'quads': 10,
+    'hamstrings': 6,
+    'shoulders': 8,
+    'biceps': 6,
+    'triceps': 6,
+    'calves': 4,
+    'core': 4,
   },
   'intermediate': {
-    'chest': 14, 'back': 16, 'quads': 14, 'hamstrings': 8, 'shoulders': 12,
-    'biceps': 8, 'triceps': 8, 'calves': 6, 'core': 6,
+    'chest': 14,
+    'back': 16,
+    'quads': 14,
+    'hamstrings': 8,
+    'shoulders': 12,
+    'biceps': 8,
+    'triceps': 8,
+    'calves': 6,
+    'core': 6,
   },
   'advanced': {
-    'chest': 16, 'back': 18, 'quads': 16, 'hamstrings': 10, 'shoulders': 14,
-    'biceps': 10, 'triceps': 10, 'calves': 8, 'core': 8,
+    'chest': 16,
+    'back': 18,
+    'quads': 16,
+    'hamstrings': 10,
+    'shoulders': 14,
+    'biceps': 10,
+    'triceps': 10,
+    'calves': 8,
+    'core': 8,
   },
 };
 
@@ -37,18 +58,31 @@ const weeklyVolume = _baseWeeklyVolume;
 
 /// 最低有效量（MEV）：每个肌群 ≥ 这个，计划就是科学完整的（一定长肌肉）。
 const mevWeekly = {
-  'chest': 8, 'back': 10, 'quads': 8, 'hamstrings': 6, 'shoulders': 8,
-  'biceps': 6, 'triceps': 6, 'calves': 6, 'core': 4,
+  'chest': 8,
+  'back': 10,
+  'quads': 8,
+  'hamstrings': 6,
+  'shoulders': 8,
+  'biceps': 6,
+  'triceps': 6,
+  'calves': 6,
+  'core': 4,
 };
 
 /// 按 level + goal 返回「最优训练量」(MAV) —— 每周每肌群组数的上限目标。
-Map<String, int> weeklyVolumeFor(String level, String goal, [int cycleOffset = 0]) {
+Map<String, int> weeklyVolumeFor(
+  String level,
+  String goal, [
+  int cycleOffset = 0,
+]) {
   final base = _baseWeeklyVolume[level] ?? _baseWeeklyVolume['beginner']!;
   final scale = goalVolumeScale[goal] ?? 1.0;
   final off = (1.0 + 0.08 * cycleOffset).clamp(0.8, 1.25);
   return {
     for (final e in base.entries)
-      e.key: (e.value * scale * off).round() < 2 ? 2 : (e.value * scale * off).round(),
+      e.key: (e.value * scale * off).round() < 2
+          ? 2
+          : (e.value * scale * off).round(),
   };
 }
 
@@ -60,11 +94,69 @@ const maxSetsPerMuscleSession = {
 };
 
 const _trainingVars = {
-  'hypertrophy': {'load_pct': '65-80% 1RM', 'load_pct_mid': 0.72, 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
-  'strength': {'load_pct': '≥80% 1RM', 'load_pct_mid': 0.85, 'reps': '3-6', 'sets_range': [3, 5], 'rest_sec': 150, 'rpe': 8.0, 'tempo': '受控', 'rir': '1-2'},
-  'fat_loss': {'load_pct': '60-75% 1RM', 'load_pct_mid': 0.68, 'reps': '10-15', 'sets_range': [3, 4], 'rest_sec': 45, 'rpe': 7.0, 'tempo': '3-1-2-0', 'rir': '2-3'},
-  'recomposition': {'load_pct': '65-80% 1RM', 'load_pct_mid': 0.72, 'reps': '8-12', 'sets_range': [3, 4], 'rest_sec': 90, 'rpe': 7.5, 'tempo': '3-1-2-0', 'rir': '1-3'},
+  'hypertrophy': {
+    'load_pct': '65-80% 1RM',
+    'load_pct_mid': 0.72,
+    'reps': '8-12',
+    'sets_range': [3, 4],
+    'rest_sec': 90,
+    'rpe': 7.5,
+    'tempo': '3-1-2-0',
+    'rir': '1-3',
+  },
+  'strength': {
+    'load_pct': '≥80% 1RM',
+    'load_pct_mid': 0.85,
+    'reps': '3-6',
+    'sets_range': [3, 5],
+    'rest_sec': 150,
+    'rpe': 8.0,
+    'tempo': '受控',
+    'rir': '1-2',
+  },
+  'fat_loss': {
+    'load_pct': '60-75% 1RM',
+    'load_pct_mid': 0.68,
+    'reps': '10-15',
+    'sets_range': [3, 4],
+    'rest_sec': 45,
+    'rpe': 7.0,
+    'tempo': '3-1-2-0',
+    'rir': '2-3',
+  },
+  'recomposition': {
+    'load_pct': '65-80% 1RM',
+    'load_pct_mid': 0.72,
+    'reps': '8-12',
+    'sets_range': [3, 4],
+    'rest_sec': 90,
+    'rpe': 7.5,
+    'tempo': '3-1-2-0',
+    'rir': '1-3',
+  },
 };
+
+const _staticHoldExercises = {
+  'plank',
+  'side_plank',
+  'hollow_hold',
+  'superman_hold',
+  'isometric_wall_curl',
+};
+const _holdSecondsByLevel = {
+  'beginner': 20,
+  'intermediate': 30,
+  'advanced': 45,
+};
+const _controlledRepSeconds = 6;
+
+int _prescribedRepSeconds(String tempo) {
+  final parts = tempo.split('-');
+  if (parts.length == 4 && parts.every((part) => int.tryParse(part) != null)) {
+    return parts.fold(0, (total, part) => total + int.parse(part));
+  }
+  return _controlledRepSeconds;
+}
 
 // 时间估算常量（只用于估时，不改动作的处方参数）。
 const _workSecCompound = 55;
@@ -76,7 +168,12 @@ const _bigMuscles = {'chest', 'back', 'quads', 'hamstrings', 'shoulders'};
 
 // 负重器械：拥有其一即视为"有器械"，纯自重动作在选池里降权
 const _loadedEquipment = {
-  'barbell', 'dumbbell', 'cable', 'machine', 'kettlebell', 'trap_bar'
+  'barbell',
+  'dumbbell',
+  'cable',
+  'machine',
+  'kettlebell',
+  'trap_bar',
 };
 
 const sessionMuscles = {
@@ -91,11 +188,61 @@ const sessionMuscles = {
 
 /// Kept for docs/compat; volume math now uses [_actualMuscleFrequency].
 const splitFrequency = {
-  'full_body': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2, 'biceps': 2, 'triceps': 2, 'calves': 1, 'core': 2},
-  'upper_lower': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2, 'biceps': 2, 'triceps': 2, 'calves': 2, 'core': 1},
-  'push_pull_legs': {'chest': 1.5, 'back': 1.5, 'quads': 1.5, 'hamstrings': 1, 'shoulders': 1.5, 'biceps': 1.5, 'triceps': 1.5, 'calves': 1, 'core': 1},
-  'ppl_upper_lower': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 1.5, 'shoulders': 2.5, 'biceps': 2, 'triceps': 2, 'calves': 1, 'core': 1},
-  'ppl_ppl': {'chest': 2, 'back': 2, 'quads': 2, 'hamstrings': 2, 'shoulders': 2.5, 'biceps': 2, 'triceps': 2, 'calves': 2, 'core': 1},
+  'full_body': {
+    'chest': 2,
+    'back': 2,
+    'quads': 2,
+    'hamstrings': 2,
+    'shoulders': 2,
+    'biceps': 2,
+    'triceps': 2,
+    'calves': 1,
+    'core': 2,
+  },
+  'upper_lower': {
+    'chest': 2,
+    'back': 2,
+    'quads': 2,
+    'hamstrings': 2,
+    'shoulders': 2,
+    'biceps': 2,
+    'triceps': 2,
+    'calves': 2,
+    'core': 1,
+  },
+  'push_pull_legs': {
+    'chest': 1.5,
+    'back': 1.5,
+    'quads': 1.5,
+    'hamstrings': 1,
+    'shoulders': 1.5,
+    'biceps': 1.5,
+    'triceps': 1.5,
+    'calves': 1,
+    'core': 1,
+  },
+  'ppl_upper_lower': {
+    'chest': 2,
+    'back': 2,
+    'quads': 2,
+    'hamstrings': 1.5,
+    'shoulders': 2.5,
+    'biceps': 2,
+    'triceps': 2,
+    'calves': 1,
+    'core': 1,
+  },
+  'ppl_ppl': {
+    'chest': 2,
+    'back': 2,
+    'quads': 2,
+    'hamstrings': 2,
+    'shoulders': 2.5,
+    'biceps': 2,
+    'triceps': 2,
+    'calves': 2,
+    'core': 1,
+  },
 };
 
 const _accessorySets = {'glutes': 3, 'rear_delt': 3};
@@ -107,8 +254,15 @@ const _secondaryMusclesByType = {
 const _secondarySessionCap = 3;
 
 const _muscleCn = {
-  'chest': '胸', 'back': '背', 'quads': '股四头', 'hamstrings': '腘绳',
-  'shoulders': '肩', 'biceps': '二头', 'triceps': '三头', 'calves': '小腿', 'core': '核心',
+  'chest': '胸',
+  'back': '背',
+  'quads': '股四头',
+  'hamstrings': '腘绳',
+  'shoulders': '肩',
+  'biceps': '二头',
+  'triceps': '三头',
+  'calves': '小腿',
+  'core': '核心',
 };
 
 Map<String, int> _actualMuscleFrequency(
@@ -160,8 +314,9 @@ List<SessionResult> buildSessions(
   final goal = profile.goal;
   final vars_ = _trainingVars[goal] ?? _trainingVars['hypertrophy']!;
   final volume = weeklyVolumeFor(level, goal, profile.volumeCycleOffset);
-  final exerciseOffset =
-      profile.exerciseCycleOffset < 0 ? 0 : profile.exerciseCycleOffset;
+  final exerciseOffset = profile.exerciseCycleOffset < 0
+      ? 0
+      : profile.exerciseCycleOffset;
   final bwProgress = profile.bodyweightProgress;
   final cap = maxSetsPerMuscleSession[level] ?? 8;
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
@@ -171,8 +326,9 @@ List<SessionResult> buildSessions(
   final loadMid = (vars_['load_pct_mid'] as num?)?.toDouble() ?? 0.72;
   final loadLabel = vars_['load_pct'] as String;
 
-  final totalBudgetSec =
-      (profile.minutesPerSession * 60).clamp(15 * 60, 1 << 30).toInt();
+  final totalBudgetSec = (profile.minutesPerSession * 60)
+      .clamp(15 * 60, 1 << 30)
+      .toInt();
 
   final distribution = <String, List<int>>{
     for (final e in volume.entries)
@@ -186,20 +342,26 @@ List<SessionResult> buildSessions(
     final sessionType = dayInfo.type;
 
     if (sessionType == 'rest') {
-      sessions.add(SessionResult(
-        day: dayName, type: 'rest', durationMin: 0,
-        exercises: const [], totalSets: 0,
-      ));
+      sessions.add(
+        SessionResult(
+          day: dayName,
+          type: 'rest',
+          durationMin: 0,
+          exercises: const [],
+          totalSets: 0,
+        ),
+      );
       continue;
     }
 
     final targetMuscles = sessionMuscles[sessionType] ?? const <String>[];
-    final secondary =
-        _secondaryMusclesByType[sessionType] ?? const <String>{};
-    final primaryMusclesToday =
-        targetMuscles.where((m) => !secondary.contains(m)).toList();
-    final secondaryMusclesToday =
-        targetMuscles.where((m) => secondary.contains(m)).toList();
+    final secondary = _secondaryMusclesByType[sessionType] ?? const <String>{};
+    final primaryMusclesToday = targetMuscles
+        .where((m) => !secondary.contains(m))
+        .toList();
+    final secondaryMusclesToday = targetMuscles
+        .where((m) => secondary.contains(m))
+        .toList();
 
     final sessionTargets = <String, int>{};
     final sessionExposure = <String, int>{}; // 本周该肌群第几次练（0 起）
@@ -220,8 +382,9 @@ List<SessionResult> buildSessions(
     }
 
     final nBig = targetMuscles.where(_bigMuscles.contains).length;
-    final warmupSec =
-        (_warmupSecPerBigMuscle * (nBig > 4 ? 4 : nBig)).clamp(0, _warmupCapSec).toInt();
+    final warmupSec = (_warmupSecPerBigMuscle * (nBig > 4 ? 4 : nBig))
+        .clamp(0, _warmupCapSec)
+        .toInt();
     final workBudgetSec = (totalBudgetSec - warmupSec) < 8 * 60
         ? 8 * 60
         : totalBudgetSec - warmupSec;
@@ -233,9 +396,9 @@ List<SessionResult> buildSessions(
       level: level,
     );
     // 有负重器械的用户，纯自重动作排到后面（否则轮换会给他轮到俯卧撑）。
-    final hasLoadedGear =
-        profile.equipment.any(_loadedEquipment.contains);
-    int bwDemoted(Exercise e) => (hasLoadedGear &&
+    final hasLoadedGear = profile.equipment.any(_loadedEquipment.contains);
+    int bwDemoted(Exercise e) =>
+        (hasLoadedGear &&
             e.equipmentRequired.length == 1 &&
             e.equipmentRequired.first == 'bodyweight')
         ? 1
@@ -252,13 +415,13 @@ List<SessionResult> buildSessions(
           injCautioned(a.$2),
           bwDemoted(a.$2),
           a.$2.compound ? 0 : 1,
-          a.$2.skillLevel != 'beginner' ? 1 : 0
+          a.$2.skillLevel != 'beginner' ? 1 : 0,
         );
         final bKey = (
           injCautioned(b.$2),
           bwDemoted(b.$2),
           b.$2.compound ? 0 : 1,
-          b.$2.skillLevel != 'beginner' ? 1 : 0
+          b.$2.skillLevel != 'beginner' ? 1 : 0,
         );
         final c0 = aKey.$1.compareTo(bKey.$1);
         if (c0 != 0) return c0;
@@ -280,17 +443,20 @@ List<SessionResult> buildSessions(
 
     // 徒手进阶：同 movement_pattern 的自重变式按 progressionRank 排成阶梯（稳定排序）
     List<Exercise> bwLadder(String pattern) {
-      final rungs = exercises.indexed
-          .where((e) =>
-              e.$2.equipmentRequired.length == 1 &&
-              e.$2.equipmentRequired.first == 'bodyweight' &&
-              e.$2.movementPattern == pattern &&
-              e.$2.progressionRank != null)
-          .toList()
-        ..sort((a, b) {
-          final c = a.$2.progressionRank!.compareTo(b.$2.progressionRank!);
-          return c != 0 ? c : a.$1.compareTo(b.$1);
-        });
+      final rungs =
+          exercises.indexed
+              .where(
+                (e) =>
+                    e.$2.equipmentRequired.length == 1 &&
+                    e.$2.equipmentRequired.first == 'bodyweight' &&
+                    e.$2.movementPattern == pattern &&
+                    e.$2.progressionRank != null,
+              )
+              .toList()
+            ..sort((a, b) {
+              final c = a.$2.progressionRank!.compareTo(b.$2.progressionRank!);
+              return c != 0 ? c : a.$1.compareTo(b.$1);
+            });
       return rungs.map((e) => e.$2).toList();
     }
 
@@ -304,8 +470,9 @@ List<SessionResult> buildSessions(
       final ladder = bwLadder(ex.movementPattern);
       if (ladder.isEmpty) return (ex, '');
       final target = ex.progressionRank! + step;
-      final avail =
-          ladder.where((e) => !used.contains(e.id) || e.id == ex.id).toList();
+      final avail = ladder
+          .where((e) => !used.contains(e.id) || e.id == ex.id)
+          .toList();
       final pickFrom = avail.isEmpty ? ladder : avail;
       final chosen = pickFrom.reduce((a, b) {
         final da = ((a.progressionRank! - target).abs(), a.progressionRank!);
@@ -313,8 +480,9 @@ List<SessionResult> buildSessions(
         if (da.$1 != db.$1) return da.$1 < db.$1 ? a : b;
         return da.$2 <= db.$2 ? a : b;
       });
-      final harder =
-          ladder.where((e) => e.progressionRank! > chosen.progressionRank!).toList();
+      final harder = ladder
+          .where((e) => e.progressionRank! > chosen.progressionRank!)
+          .toList();
       final hint = harder.isNotEmpty
           ? '做满次数上限×全组且有余力 → 进阶「${harder.first.name}」'
           : '已是最难变式，加次数 / 放慢离心';
@@ -323,11 +491,17 @@ List<SessionResult> buildSessions(
 
     List<Exercise> pool(String muscle) {
       var p = exercises
-          .where((e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id))
+          .where(
+            (e) => e.primaryMuscles.contains(muscle) && !usedIds.contains(e.id),
+          )
           .toList();
       if (p.isEmpty) {
         p = exercises
-            .where((e) => e.secondaryMuscles.contains(muscle) && !usedIds.contains(e.id))
+            .where(
+              (e) =>
+                  e.secondaryMuscles.contains(muscle) &&
+                  !usedIds.contains(e.id),
+            )
             .toList();
       }
       return p;
@@ -349,6 +523,8 @@ List<SessionResult> buildSessions(
       // 徒手动作：按已挣得的进阶档换成对应难度的变式
       final (bwEx, bwHint) = bwPick(ex, usedIds);
       ex = bwEx;
+      final isStaticHold = _staticHoldExercises.contains(ex.id);
+      final holdSeconds = _holdSecondsByLevel[profile.level] ?? 20;
       final cost = _setSeconds(prescribedRest, ex.compound);
       final fitSets = (workBudgetSec - usedSec) ~/ cost;
       if (fitSets < 2) return 0;
@@ -356,31 +532,36 @@ List<SessionResult> buildSessions(
       if (sets > setsRange[1]) sets = setsRange[1];
       if (sets > fitSets) sets = fitSets;
       if (sets < 2) return 0;
-      var (loadText, loadKg) =
-          suggestLoad(ex, oneRmMap, loadMid, loadLabel);
+      var (loadText, loadKg) = suggestLoad(ex, oneRmMap, loadMid, loadLabel);
       if (bwHint.isNotEmpty &&
           ex.equipmentRequired.length == 1 &&
           ex.equipmentRequired.first == 'bodyweight') {
         loadText = '自重 · $bwHint';
       }
-      sessionExercises.add(ExerciseEntry(
-        name: ex.name,
-        nameEn: ex.nameEn,
-        exerciseId: ex.id,
-        sets: sets,
-        reps: vars_['reps'] as String,
-        load: loadText,
-        loadKg: loadKg == 0 ? null : loadKg,
-        restSec: vars_['rest_sec'] as int,
-        rpe: vars_['rpe'] as double,
-        tempo: vars_['tempo'] as String,
-        notes: 'RIR ${vars_['rir']}',
-        order: order,
-        primaryMuscles: ex.primaryMuscles,
-        compound: ex.compound,
-        formCues: ex.formCues,
-        targetMuscle: muscle,
-      ));
+      sessionExercises.add(
+        ExerciseEntry(
+          name: ex.name,
+          nameEn: ex.nameEn,
+          exerciseId: ex.id,
+          sets: sets,
+          reps: isStaticHold ? '$holdSeconds秒' : vars_['reps'] as String,
+          load: loadText,
+          loadKg: loadKg == 0 ? null : loadKg,
+          restSec: vars_['rest_sec'] as int,
+          rpe: vars_['rpe'] as double,
+          tempo: isStaticHold ? '静态保持' : vars_['tempo'] as String,
+          notes: 'RIR ${vars_['rir']}',
+          order: order,
+          primaryMuscles: ex.primaryMuscles,
+          compound: ex.compound,
+          formCues: ex.formCues,
+          targetMuscle: muscle,
+          holdSeconds: isStaticHold ? holdSeconds : null,
+          repDurationSeconds: isStaticHold
+              ? null
+              : _prescribedRepSeconds(vars_['tempo'] as String),
+        ),
+      );
       usedIds.add(ex.id);
       order++;
       usedSec += sets * cost;
@@ -403,7 +584,9 @@ List<SessionResult> buildSessions(
         final tgt = sessionTargets[muscle] ?? 0;
         final got = deliveredSession[muscle] ?? 0;
         if (got == 0 || got >= tgt) continue;
-        final n = sessionExercises.where((e) => e.targetMuscle == muscle).length;
+        final n = sessionExercises
+            .where((e) => e.targetMuscle == muscle)
+            .length;
         if (n >= 3) continue;
         if (tryAdd(muscle, tgt - got) > 0) progressed = true;
       }
@@ -422,15 +605,18 @@ List<SessionResult> buildSessions(
     if (totalSets > 0) {
       estMin = ((warmupSec + usedSec) / 60).round();
       if (estMin < 1) estMin = 1;
-      if (estMin > profile.minutesPerSession) estMin = profile.minutesPerSession;
+      if (estMin > profile.minutesPerSession)
+        estMin = profile.minutesPerSession;
     }
-    sessions.add(SessionResult(
-      day: dayName,
-      type: sessionType,
-      durationMin: estMin,
-      exercises: sessionExercises,
-      totalSets: totalSets,
-    ));
+    sessions.add(
+      SessionResult(
+        day: dayName,
+        type: sessionType,
+        durationMin: estMin,
+        exercises: sessionExercises,
+        totalSets: totalSets,
+      ),
+    );
   }
 
   return sessions;
@@ -442,7 +628,9 @@ Map<String, dynamic> _recommendCapacity(UserProfile profile, int coveragePct) {
   final ratio = 100 / (coveragePct < 1 ? 1 : coveragePct);
   var recMinutes = ((profile.minutesPerSession * ratio) / 5).round() * 5;
   if (recMinutes > 120) recMinutes = 120;
-  final recDays = (profile.daysPerWeek ?? 3) + 1 > 6 ? 6 : (profile.daysPerWeek ?? 3) + 1;
+  final recDays = (profile.daysPerWeek ?? 3) + 1 > 6
+      ? 6
+      : (profile.daysPerWeek ?? 3) + 1;
   final options = <String>[];
   if (recMinutes > profile.minutesPerSession) {
     options.add('每节练到约 $recMinutes 分钟');
@@ -454,7 +642,8 @@ Map<String, dynamic> _recommendCapacity(UserProfile profile, int coveragePct) {
   return {
     'coverage_pct': coveragePct,
     'suggestion': options.join('，或'),
-    'text': '按你选的目标训练量，当前时间/频率约能兑现 $coveragePct%。'
+    'text':
+        '按你选的目标训练量，当前时间/频率约能兑现 $coveragePct%。'
         '想完整拿到：${options.join('，或')}。（可选，不影响现在开练）',
   };
 }
@@ -467,10 +656,16 @@ Map<String, dynamic> analyzeVolume(
   List<SessionResult> sessions,
 ) {
   final level = profile.level;
-  final optimal = weeklyVolumeFor(level, profile.goal, profile.volumeCycleOffset); // MAV 上限
+  final optimal = weeklyVolumeFor(
+    level,
+    profile.goal,
+    profile.volumeCycleOffset,
+  ); // MAV 上限
   final frequency = _actualMuscleFrequency(split.weeklySchedule);
-  final primaryFrequency =
-      _actualMuscleFrequency(split.weeklySchedule, primaryOnly: true);
+  final primaryFrequency = _actualMuscleFrequency(
+    split.weeklySchedule,
+    primaryOnly: true,
+  );
 
   final delivered = <String, int>{for (final m in optimal.keys) m: 0};
   for (final s in sessions) {
@@ -506,8 +701,7 @@ Map<String, dynamic> analyzeVolume(
     if (got < mev) belowMev.add(cn);
   });
 
-  final coveragePct =
-      coveredT == 0 ? 100 : (100 * coveredD / coveredT).round();
+  final coveragePct = coveredT == 0 ? 100 : (100 * coveredD / coveredT).round();
   final vsOptimalPct = optT == 0 ? 100 : (100 * optD / optT).round();
 
   final notes = <String>[];
@@ -520,8 +714,10 @@ Map<String, dynamic> analyzeVolume(
     notes.add('训练量已达标（相当于最优的 $vsOptimalPct%）。想冲最大增速：每次加约 15 分钟。');
   }
   if (indirect.isNotEmpty) {
-    notes.add('${indirect.join('/')}：当前分肢不单独安排，靠复合动作间接带到；'
-        '想直接练需加训练日或换分肢。');
+    notes.add(
+      '${indirect.join('/')}：当前分肢不单独安排，靠复合动作间接带到；'
+      '想直接练需加训练日或换分肢。',
+    );
   }
 
   return {

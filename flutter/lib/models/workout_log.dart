@@ -8,6 +8,7 @@ class WorkoutSetLog {
     this.rpe,
     this.painFlag = false,
     this.painArea,
+    this.completionSource = 'manual',
   });
 
   final int setNumber;
@@ -18,6 +19,7 @@ class WorkoutSetLog {
   final double? rpe;
   final bool painFlag;
   final String? painArea;
+  final String completionSource;
 
   Map<String, dynamic> toJson() => {
     'setNumber': setNumber,
@@ -28,6 +30,7 @@ class WorkoutSetLog {
     'rpe': rpe,
     'painFlag': painFlag,
     'painArea': painArea,
+    'completionSource': completionSource,
   };
 
   Map<String, dynamic> toEngineJson() => {
@@ -35,6 +38,7 @@ class WorkoutSetLog {
     if (weightKg != null) 'weight_kg': weightKg,
     if (rir != null) 'rir': rir,
     if (rpe != null) 'rpe': rpe,
+    if (completionSource != 'manual') 'completion_source': completionSource,
   };
 
   factory WorkoutSetLog.fromJson(Map<String, dynamic> json) => WorkoutSetLog(
@@ -46,6 +50,7 @@ class WorkoutSetLog {
     rpe: (json['rpe'] as num?)?.toDouble(),
     painFlag: json['painFlag'] as bool? ?? false,
     painArea: json['painArea'] as String?,
+    completionSource: json['completionSource'] as String? ?? 'manual',
   );
 }
 

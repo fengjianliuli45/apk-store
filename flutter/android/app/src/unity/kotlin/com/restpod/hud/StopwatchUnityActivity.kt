@@ -7,9 +7,11 @@ import android.os.Handler
 import android.os.Looper
 import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
+import androidx.annotation.Keep
 import com.unity3d.player.UnityPlayerActivity
 
 /** Full-screen, single-instance host for the exported Unity runtime. */
+@Keep
 class StopwatchUnityActivity : UnityPlayerActivity() {
     private val mainHandler = Handler(Looper.getMainLooper())
     private var unloadRequested = false
@@ -18,7 +20,11 @@ class StopwatchUnityActivity : UnityPlayerActivity() {
     private val startupTimeout = Runnable {
         if (!unloadRequested) {
             UnityRuntimeBridge.emitHostEvent("render_fatal")
-            unloadAndReturn()
+            // A Unity player that has not announced readiness may still be in
+            // native startup. Calling unload()/destroy() here races that work
+            // and can crash in libunity JNI_OnUnload. Return Flutter to the
+            // foreground while leaving this Activity warm in the back stack.
+            showFlutter()
         }
     }
 
@@ -97,13 +103,6 @@ class StopwatchUnityActivity : UnityPlayerActivity() {
         UnityRuntimeBridge.emitHostEvent("host_back")
     }
 
-    private fun unloadAndReturn() {
-        if (unloadRequested) return
-        unloadRequested = true
-        showFlutter()
-        mUnityPlayer.unload()
-    }
-
     private fun showFlutter() {
         startActivity(Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
@@ -116,6 +115,7 @@ class StopwatchUnityActivity : UnityPlayerActivity() {
         @Volatile private var runtimeInitialized = false
 
         /** Called reflectively so Flutter-only builds do not link Unity classes. */
+        @Keep
         @JvmStatic
         fun requestReturnToFlutter(): Boolean {
             val activity = current ?: return false
@@ -126,6 +126,7 @@ class StopwatchUnityActivity : UnityPlayerActivity() {
             return true
         }
 
+        @Keep
         @JvmStatic
         fun onRuntimeReady() {
             val activity = current ?: return
